@@ -15,6 +15,7 @@ struct GoogleApiErrorResponse {
 }
 
 /// Details within a standard Google API error response.
+#[allow(unused)]
 #[derive(Deserialize, Debug)]
 struct GoogleApiErrorDetail {
     code: i32,

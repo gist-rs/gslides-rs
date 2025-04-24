@@ -1,18 +1,8 @@
 // examples/fetch_presentation.rs
 
-use gslides_rs::{
-    client,
-    errors::SlidesApiError,
-    models::{
-        common::Unit,
-        elements::{PageElement, PageElementKind}, // Import PageElementKind
-        presentation::Presentation,
-        shape::Shape, // Import Shape
-    },
-};
+use gslides_rs::{client, errors::SlidesApiError};
 
 use dotenvy::dotenv;
-use serde_json::Value; // <-- Add this import
 use std::env;
 
 #[tokio::main]
@@ -40,28 +30,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                     .unwrap_or_else(|| "[Untitled]".to_string())
             );
             // ... (print other presentation info) ...
-
-            // --- Debugging: Print raw 'outline' JSON if found ---
-            if let Some(slides) = &presentation.slides {
-                if let Some(first_slide) = slides.first() {
-                    if let Some(elements) = &first_slide.page_elements {
-                        for element in elements {
-                            if let PageElementKind::Shape(shape) = &element.element_kind {
-                                if let Some(props) = &shape.shape_properties {
-                                    let outline_value = &props.outline;
-
-                                    println!(
-                                        "\nFound raw 'outline' JSON for element '{}':\n{}",
-                                        element.object_id,
-                                        serde_json::to_string_pretty(outline_value)? // Pretty print the Value
-                                    );
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-            // --- End Debugging ---
         }
         Err(e) => {
             eprintln!("\nError fetching presentation:");

@@ -74,14 +74,6 @@ impl<'de> Deserialize<'de> for PageElement {
         const FIELD_SHEETS_CHART: &str = "sheetsChart";
         const FIELD_SPEAKER_SPOTLIGHT: &str = "speakerSpotlight";
 
-        // Temporary storage for fields during map visiting
-        let mut object_id: Option<String> = None;
-        let mut size: Option<Size> = None;
-        let mut transform: Option<AffineTransform> = None;
-        let mut title: Option<String> = None;
-        let mut description: Option<String> = None;
-        let mut element_kind: Option<PageElementKind> = None;
-
         // Visitor implementation
         struct PageElementVisitor;
 

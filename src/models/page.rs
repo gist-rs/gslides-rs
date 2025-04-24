@@ -43,6 +43,7 @@ pub struct Page {
     pub object_id: String,
 
     /// The type of the page. This might be omitted in some contexts (e.g., top-level slides).
+    #[serde(default)]
     pub page_type: Option<PageType>,
 
     /// The page elements rendered on the page. Use `pageElements.get` to retrieve elements.

@@ -1,6 +1,11 @@
 // examples/fetch_presentation.rs
 
-use gslides_rs::{client, errors::SlidesApiError};
+use gslides_rs::{
+    client,
+    errors::SlidesApiError,
+    // Import specific element kinds if you want to match on them, otherwise Debug print works
+    // models::elements::{PageElement, PageElementKind},
+};
 
 use dotenvy::dotenv;
 use std::env;
@@ -29,15 +34,78 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                     .title
                     .unwrap_or_else(|| "[Untitled]".to_string())
             );
-            // ... (print other presentation info) ...
+            println!("ID: {}", presentation.presentation_id);
+            println!(
+                "Locale: {}",
+                presentation
+                    .locale
+                    .unwrap_or_else(|| "[Not Set]".to_string())
+            );
+            if let Some(size) = &presentation.page_size {
+                println!(
+                    "Page Size: {}x{} {}",
+                    size.width
+                        .as_ref()
+                        .map(|d| d.magnitude.unwrap_or(0.0))
+                        .unwrap_or(0.0),
+                    size.height
+                        .as_ref()
+                        .map(|d| d.magnitude.unwrap_or(0.0))
+                        .unwrap_or(0.0),
+                    size.width
+                        .as_ref()
+                        .and_then(|d| d.unit.as_ref())
+                        .map(|u| format!("{:?}", u))
+                        .unwrap_or_else(|| "UNIT_UNSPECIFIED".to_string())
+                );
+            }
+            println!(
+                "Number of Slides: {}",
+                presentation.slides.as_ref().map_or(0, |s| s.len())
+            );
+            println!(
+                "Number of Masters: {}",
+                presentation.masters.as_ref().map_or(0, |m| m.len())
+            );
+            println!(
+                "Number of Layouts: {}",
+                presentation.layouts.as_ref().map_or(0, |l| l.len())
+            );
+
+            // --- Updated section to print full element details ---
+            if let Some(slides) = &presentation.slides {
+                if let Some(first_slide) = slides.first() {
+                    println!(
+                        "\n--- Elements on first slide (ID: {}) ---",
+                        first_slide.object_id
+                    );
+                    if let Some(elements) = &first_slide.page_elements {
+                        if elements.is_empty() {
+                            println!("  (No elements found on this slide)");
+                        } else {
+                            for (index, element) in elements.iter().enumerate() {
+                                println!("\n[Element {} ID: {}]", index + 1, element.object_id);
+                                // Pretty-print the entire deserialized element structure
+                                println!("{:#?}", element);
+                            }
+                        }
+                    } else {
+                        println!("  (No elements array found for this slide)");
+                    }
+                    println!("\n--- End of elements for first slide ---");
+                } else {
+                    println!("\nPresentation has no slides.");
+                }
+            } else {
+                println!("\nPresentation has no slides array.");
+            }
+            // --- End updated section ---
         }
         Err(e) => {
             eprintln!("\nError fetching presentation:");
             match e {
                 SlidesApiError::Network(err) => eprintln!("  Network/Request Error: {}", err),
                 SlidesApiError::JsonDeserialization(err) => {
-                    // Error still occurs, but now we might get further?
-                    // Or the error might occur when printing the Value if parsing failed earlier.
                     eprintln!("  JSON Parsing Error: {}", err);
                     eprintln!("  (Check deserialization_error.json if it was created)");
                 }

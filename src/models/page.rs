@@ -15,10 +15,11 @@ use crate::models::properties::{
 
 /// The type of the page.
 /// Derived from: https://developers.google.com/slides/api/reference/rest/v1/presentations.pages#PageType
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 pub enum PageType {
-    /// The page type is unspecified.
+    /// The page type is unspecified or unknown.
+    #[default] // Make Unspecified the default if #[serde(default)] is used on Option<PageType>
     PageTypeUnspecified,
     /// A slide page.
     Slide,
@@ -41,8 +42,8 @@ pub struct Page {
     /// the same namespace.
     pub object_id: String,
 
-    /// The type of the page.
-    pub page_type: PageType,
+    /// The type of the page. This might be omitted in some contexts (e.g., top-level slides).
+    pub page_type: Option<PageType>,
 
     /// The page elements rendered on the page. Use `pageElements.get` to retrieve elements.
     pub page_elements: Option<Vec<PageElement>>,

@@ -2,10 +2,11 @@ use serde::{Deserialize, Serialize};
 
 /// Describes the type of relative link between slides.
 /// Derived from: https://developers.google.com/slides/api/reference/rest/v1/presentations.pages/other#RelativeSlideLink
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Default, Serialize, Deserialize)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 pub enum RelativeSlideLink {
     /// An unspecified relative slide link.
+    #[default]
     RelativeSlideLinkUnspecified,
     /// A link to the next slide.
     NextSlide,
@@ -18,10 +19,15 @@ pub enum RelativeSlideLink {
 }
 
 /// Represents the specific destination of a Link.
-/// The JSON representation uses the field name ("url", "relativeLink", etc.) as the key.
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)] // Removed Default derive
 #[serde(rename_all = "camelCase")]
 pub enum LinkKind {
+    /// Represents no link destination. Added for Default impl.
+    /// Note: The API might represent "no link" by omitting the 'link' field entirely,
+    /// rather than using a specific 'none' variant key. This 'None' variant
+    /// primarily serves the Default trait implementation.
+    None, // New variant for Default
+
     /// If set, indicates this is a link to the external web page at this URL.
     Url(String),
     /// If set, indicates this is a link to a slide in this presentation, addressed by its relative position.
@@ -34,9 +40,16 @@ pub enum LinkKind {
     SlideIndex(i32),
 }
 
+#[allow(clippy::derivable_impls)]
+impl Default for LinkKind {
+    fn default() -> Self {
+        LinkKind::None // Explicitly define 'None' as the default
+    }
+}
+
 /// A hypertext link.
 /// Derived from: https://developers.google.com/slides/api/reference/rest/v1/presentations.pages/other#Link
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Link {
     /// The destination of the link. Uses flatten to represent the union based on JSON key.

@@ -100,11 +100,11 @@ impl<'de> Deserialize<'de> for PageElement {
                 let mut description: Option<String> = None;
                 let mut element_kind: Option<PageElementKind> = None;
 
-                println!("--- Deserializing PageElement ---"); // Add trace
+                // println!("--- Deserializing PageElement ---"); // Add trace
 
                 // Iterate over map keys
                 while let Some(key) = map.next_key::<String>()? {
-                    println!("Found key: {}", key); // Print each key encountered
+                    // println!("Found key: {}", key); // Print each key encountered
                     match key.as_str() {
                         FIELD_OBJECT_ID => {
                             if object_id.is_some() {
@@ -138,7 +138,7 @@ impl<'de> Deserialize<'de> for PageElement {
                         }
                         // Element Kind handling: Check if already found, then deserialize value
                         FIELD_ELEMENT_GROUP => {
-                            println!("Matched key: {}", FIELD_ELEMENT_GROUP); // Add trace
+                            // println!("Matched key: {}", FIELD_ELEMENT_GROUP); // Add trace
                             if element_kind.is_some() { /* ... error ... */ }
                             match map.next_value() {
                                 // Explicitly handle result for debugging
@@ -152,7 +152,7 @@ impl<'de> Deserialize<'de> for PageElement {
                             }
                         }
                         FIELD_SHAPE => {
-                            println!("Matched key: {}", FIELD_SHAPE); // Add trace
+                            // println!("Matched key: {}", FIELD_SHAPE); // Add trace
                             if element_kind.is_some() { /* ... error ... */ }
                             match map.next_value() {
                                 // Explicitly handle result for debugging
@@ -165,7 +165,7 @@ impl<'de> Deserialize<'de> for PageElement {
                         }
                         // --- Repeat the pattern for ALL element kind fields ---
                         FIELD_IMAGE => {
-                            println!("Matched key: {}", FIELD_IMAGE);
+                            // println!("Matched key: {}", FIELD_IMAGE);
                             if element_kind.is_some() { /* ... error ... */ }
                             match map.next_value() {
                                 Ok(value) => element_kind = Some(PageElementKind::Image(value)),
@@ -176,7 +176,7 @@ impl<'de> Deserialize<'de> for PageElement {
                             }
                         }
                         FIELD_VIDEO => {
-                            println!("Matched key: {}", FIELD_VIDEO);
+                            // println!("Matched key: {}", FIELD_VIDEO);
                             if element_kind.is_some() { /* ... error ... */ }
                             match map.next_value() {
                                 Ok(value) => element_kind = Some(PageElementKind::Video(value)),
@@ -187,7 +187,7 @@ impl<'de> Deserialize<'de> for PageElement {
                             }
                         }
                         FIELD_LINE => {
-                            println!("Matched key: {}", FIELD_LINE);
+                            // println!("Matched key: {}", FIELD_LINE);
                             if element_kind.is_some() { /* ... error ... */ }
                             match map.next_value() {
                                 Ok(value) => element_kind = Some(PageElementKind::Line(value)),
@@ -198,7 +198,7 @@ impl<'de> Deserialize<'de> for PageElement {
                             }
                         }
                         FIELD_TABLE => {
-                            println!("Matched key: {}", FIELD_TABLE);
+                            // println!("Matched key: {}", FIELD_TABLE);
                             if element_kind.is_some() { /* ... error ... */ }
                             match map.next_value() {
                                 Ok(value) => element_kind = Some(PageElementKind::Table(value)),
@@ -209,7 +209,7 @@ impl<'de> Deserialize<'de> for PageElement {
                             }
                         }
                         FIELD_WORD_ART => {
-                            println!("Matched key: {}", FIELD_WORD_ART);
+                            // println!("Matched key: {}", FIELD_WORD_ART);
                             if element_kind.is_some() { /* ... error ... */ }
                             match map.next_value() {
                                 Ok(value) => element_kind = Some(PageElementKind::WordArt(value)),
@@ -220,7 +220,7 @@ impl<'de> Deserialize<'de> for PageElement {
                             }
                         }
                         FIELD_SHEETS_CHART => {
-                            println!("Matched key: {}", FIELD_SHEETS_CHART);
+                            // println!("Matched key: {}", FIELD_SHEETS_CHART);
                             if element_kind.is_some() { /* ... error ... */ }
                             match map.next_value() {
                                 Ok(value) => {
@@ -233,7 +233,7 @@ impl<'de> Deserialize<'de> for PageElement {
                             }
                         }
                         FIELD_SPEAKER_SPOTLIGHT => {
-                            println!("Matched key: {}", FIELD_SPEAKER_SPOTLIGHT);
+                            // println!("Matched key: {}", FIELD_SPEAKER_SPOTLIGHT);
                             if element_kind.is_some() { /* ... error ... */ }
                             match map.next_value() {
                                 Ok(value) => {
@@ -254,8 +254,8 @@ impl<'de> Deserialize<'de> for PageElement {
                     }
                 }
 
-                println!("--- Finished processing keys for PageElement ---");
-                println!("Final element_kind is Some: {}", element_kind.is_some());
+                // println!("--- Finished processing keys for PageElement ---");
+                // println!("Final element_kind is Some: {}", element_kind.is_some());
 
                 // Check required fields and construct PageElement
                 let object_id =

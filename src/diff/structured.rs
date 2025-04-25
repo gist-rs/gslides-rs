@@ -34,15 +34,13 @@ impl ValueRepr {
     pub fn format_for_display(&self) -> String {
         match self {
             ValueRepr::String(s) => {
-                // Escape common control characters for literal display
                 let escaped_s = s
                     .replace('\\', "\\\\") // Must escape backslash first!
-                    .replace('\n', "\\n") // Replace newline char with literal '\'+'n'
-                    .replace('\r', "\\r") // Replace carriage return char with literal '\'+'r'
-                    .replace('\t', "\\t") // Replace tab char with literal '\'+'t'
-                    .replace('\'', "\\'"); // Escape single quote as we use it for delimiting
-
-                format!("`{}`", escaped_s) // Add quotes around the escaped string
+                    .replace('\n', "\\n")
+                    .replace('\r', "\\r")
+                    .replace('\t', "\\t")
+                    .replace('\'', "\\'"); // Escape single quote as we use it
+                format!("'{}'", escaped_s)
             }
             ValueRepr::Number(n) => n.to_string(),
             ValueRepr::Boolean(b) => b.to_string(),

@@ -189,6 +189,7 @@ fn main() -> Result<(), DiffError> {
     // --- Setup Comparer ---
     let comparer = ComparerBuilder::new()
         .set_base(base_presentation)
+        .set_simplify(true)
         .build()?; // Returns DiffError if base isn't set
 
     // --- Perform Comparison ---

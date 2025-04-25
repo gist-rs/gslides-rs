@@ -32,7 +32,10 @@ fn main() -> Result<(), DiffError> {
 
     // --- Setup Comparer ---
     println!("Setting up comparer with base presentation...");
-    let comparer = ComparerBuilder::new().set_base(base_presentation).build()?;
+    let comparer = ComparerBuilder::new()
+        .set_base(base_presentation)
+        .set_simplify(true)
+        .build()?;
 
     // --- Perform Comparison ---
     println!("Comparing presentations...");

@@ -11,6 +11,7 @@ use super::error::DiffError;
 #[derive(Default)]
 pub struct ComparerBuilder {
     base: Option<Presentation>,
+    is_simplify: bool,
 }
 
 impl ComparerBuilder {
@@ -24,19 +25,30 @@ impl ComparerBuilder {
         self
     }
 
+    // Set simplified result or not.
+    pub fn set_simplify(mut self, is_simplify: bool) -> Self {
+        self.is_simplify = is_simplify;
+        self
+    }
+
     /// Builds the `Comparer`.
     /// Returns an error if the base presentation was not set.
     pub fn build(self) -> Result<Comparer, DiffError> {
         let base = self
             .base
-            .ok_or_else(|| DiffError::InvalidPath("Template presentation not set".to_string()))?; // Use a suitable error
-        Ok(Comparer { base })
+            .ok_or_else(|| DiffError::InvalidPath("Base presentation not set".to_string()))?; // Corrected error message
+        Ok(Comparer {
+            base,
+            // Pass the flag from the builder to the Comparer
+            is_simplify: self.is_simplify,
+        })
     }
 }
 
 /// Compares presentations against a stored base.
 pub struct Comparer {
     base: Presentation,
+    is_simplify: bool,
 }
 
 impl Comparer {
@@ -45,19 +57,18 @@ impl Comparer {
     /// Returns a `ComparisonResult` containing the structured diff.
     pub fn compare(&self, other: &Presentation) -> Result<ComparisonResult, DiffError> {
         // Convert Presentation structs to serde_json::Value for treediff
-        // Errors here are handled by `DiffError::Serialization` via `?`
         let base_val: JsonValue = serde_json::to_value(&self.base)?;
         let other_val: JsonValue = serde_json::to_value(other)?;
 
         // Perform the diff using the ChangeCollector delegate
         let mut collector = ChangeCollector::new();
-        // Map the delegate's error (serde_json::Error) to our DiffError::Diffing
         diff(&base_val, &other_val, &mut collector);
 
         Ok(ComparisonResult {
-            base: self.base.clone(), // Store clones for context generation
+            base: self.base.clone(),
             compared: other.clone(),
             changes: collector.changes,
+            is_simplify: self.is_simplify,
         })
     }
 }
@@ -67,6 +78,7 @@ pub struct ComparisonResult {
     base: Presentation,
     compared: Presentation,
     changes: Vec<Change>,
+    is_simplify: bool,
 }
 
 impl ComparisonResult {
@@ -82,6 +94,6 @@ impl ComparisonResult {
 
     /// Generates and returns a human-readable summary of the differences.
     pub fn get_readable_diff(&self) -> Result<String, DiffError> {
-        generate_readable_summary(&self.changes)
+        generate_readable_summary(&self.changes, self.is_simplify)
     }
 }

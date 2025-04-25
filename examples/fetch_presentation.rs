@@ -6,7 +6,7 @@ use gslides_rs::{
 };
 
 use dotenvy::dotenv;
-use std::env;
+use std::{env, fs::File, io::Write};
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -19,6 +19,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         return Ok(());
     }
     let presentation_id = &args[1];
+    let output_filename = "output.json";
 
     println!("Attempting to fetch presentation: {}", presentation_id);
     let http_client = reqwest::Client::new();
@@ -30,6 +31,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 "Title: {}",
                 presentation
                     .title
+                    .clone()
                     .unwrap_or_else(|| "[Untitled]".to_string())
             );
             println!("ID: {}", presentation.presentation_id);
@@ -37,6 +39,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 "Locale: {}",
                 presentation
                     .locale
+                    .clone()
                     .unwrap_or_else(|| "[Not Set]".to_string())
             );
             if let Some(size) = &presentation.page_size {
@@ -69,6 +72,23 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 "Number of Layouts: {}",
                 presentation.layouts.as_ref().map_or(0, |l| l.len())
             );
+
+            // --- Serialize and Write to File ---
+            println!("\nSerializing presentation to JSON...");
+            // Use `to_string_pretty` for readable output
+            let json_output = serde_json::to_string_pretty(&presentation)?; // Propagate serialization errors
+
+            println!("Writing presentation data to {}...", output_filename);
+            // Create or truncate the output file
+            let mut file = File::create(output_filename)?; // Propagate file creation errors
+                                                           // Write the JSON string bytes to the file
+            file.write_all(json_output.as_bytes())?; // Propagate file writing errors
+
+            println!(
+                "Successfully wrote presentation data to {}.",
+                output_filename
+            );
+            // --- End Serialize and Write to File ---
 
             // --- Updated section to print full element details ---
             if let Some(slides) = &presentation.slides {

@@ -50,12 +50,15 @@ pub enum PlaceholderType {
 pub struct Placeholder {
     /// The type of the placeholder.
     #[serde(rename = "type")]
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub placeholder_type: Option<PlaceholderType>,
     /// The index of the placeholder. If the same placeholder types are present on the
     /// same page, they would have different index values.
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub index: Option<i32>,
     /// The object ID of this shape's parent placeholder. If unset, the parent
     /// placeholder shape does not exist, so the shape does not inherit properties
     /// from any other shape.
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub parent_object_id: Option<String>,
 }

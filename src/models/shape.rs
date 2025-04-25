@@ -238,15 +238,19 @@ pub enum ShapeType {
 #[serde(rename_all = "camelCase")]
 pub struct Shape {
     /// The type of the shape.
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub shape_type: Option<ShapeType>,
 
     /// The text content of the shape.
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub text: Option<TextContent>,
 
     /// The properties of the shape.
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub shape_properties: Option<ShapeProperties>,
 
     /// The placeholder information for the shape. If set, the shape is a placeholder shape
     /// and inherits properties from the corresponding placeholder shape on the layout or master.
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub placeholder: Option<Placeholder>,
 }

@@ -20,6 +20,7 @@ pub struct StretchedPictureFill {
     pub content_url: String,
 
     /// The original size of the picture fill. Read-only.
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub size: Option<Size>, // Read-only
 }
 
@@ -33,18 +34,23 @@ pub struct StretchedPictureFill {
 pub struct CropProperties {
     /// The offset specifies the left edge of the crop rectangle relative to the
     /// left edge of the object's original bounding box.
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub left_offset: Option<f32>,
     /// The offset specifies the right edge of the crop rectangle relative to the
     /// right edge of the object's original bounding box.
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub right_offset: Option<f32>,
     /// The offset specifies the top edge of the crop rectangle relative to the
     /// top edge of the object's original bounding box.
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub top_offset: Option<f32>,
     /// The offset specifies the bottom edge of the crop rectangle relative to the
     /// bottom edge of the object's original bounding box.
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub bottom_offset: Option<f32>,
     /// The rotation angle of the crop window around its center, in radians.
     /// Rotation angle is applied after the offset.
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub angle: Option<f32>,
 }
 
@@ -54,10 +60,13 @@ pub struct CropProperties {
 #[serde(rename_all = "camelCase")]
 pub struct ColorStop {
     /// The color of the gradient stop.
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub color: Option<OpaqueColor>,
     /// The alpha value of this color in the gradient band. Defaults to 1.0 (fully opaque).
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub alpha: Option<f32>,
     /// The relative position of the color stop in the gradient band (0.0 to 1.0).
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub position: Option<f32>,
 }
 
@@ -68,8 +77,10 @@ pub struct ColorStop {
 pub struct Recolor {
     /// The name of the recolor effect (e.g., "grayscale", "sepia"). Determined
     /// from `recolor_stops` by matching against the page's color scheme. Read-only.
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub name: Option<String>, // Read-only
 
     /// The recolor effect represented by a gradient of color stops. Read-only.
-    pub recolor_stops: Option<Vec<ColorStop>>, // Read-only
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub recolor_stops: Option<Vec<ColorStop>,>, // Read-only
 }

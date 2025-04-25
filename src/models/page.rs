@@ -43,7 +43,7 @@ pub struct Page {
     pub object_id: String,
 
     /// The type of the page. This might be omitted in some contexts (e.g., top-level slides).
-    #[serde(default)]
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub page_type: Option<PageType>,
 
     /// The page elements rendered on the page. Use `pageElements.get` to retrieve elements.
@@ -53,9 +53,11 @@ pub struct Page {
     /// update requests to assert the page revision hasn't changed since the last
     /// read operation. Only populated if the user has edit access to the
     /// presentation. The revision ID is an opaque string.
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub revision_id: Option<String>,
 
     /// The properties of the page.
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub page_properties: Option<PageProperties>,
 
     // --- Page type specific properties ---
@@ -64,12 +66,15 @@ pub struct Page {
     pub slide_properties: Option<SlideProperties>,
 
     /// Layout specific properties. Only set if page_type = LAYOUT.
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub layout_properties: Option<LayoutProperties>,
 
     /// Notes specific properties. Only set if page_type = NOTES.
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub notes_properties: Option<NotesProperties>,
 
     /// Master specific properties. Only set if page_type = MASTER.
     /// Note: Masters inherit properties from PageProperties. Specific MasterProperties might be minimal.
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub master_properties: Option<MasterProperties>,
 }

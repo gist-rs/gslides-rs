@@ -38,12 +38,16 @@ pub struct PageElement {
     /// The object ID for this page element.
     pub object_id: String, // Assuming objectId is always present
     /// The size of the page element.
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub size: Option<Size>,
     /// The transform of the page element.
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub transform: Option<AffineTransform>,
     /// The title of the page element.
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub title: Option<String>,
     /// The description of the page element.
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub description: Option<String>,
     /// The specific kind of element and its properties.
     // No longer flattened, handled by manual Deserialize below.

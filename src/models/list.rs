@@ -10,6 +10,7 @@ use crate::models::properties::TextStyle;
 #[serde(rename_all = "camelCase")]
 pub struct NestingLevel {
     /// The style of a bullet at this level of nesting.
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub bullet_style: Option<TextStyle>,
 }
 
@@ -23,5 +24,6 @@ pub struct List {
 
     /// A map of nesting levels (0-8) to the properties of bullets at the associated level.
     /// The keys are integers representing the nesting level.
-    pub nesting_level: Option<HashMap<i32, NestingLevel>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub nesting_level: Option<HashMap<i32, NestingLevel>,>,
 }

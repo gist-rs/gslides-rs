@@ -9,8 +9,10 @@ use crate::models::properties::{ParagraphStyle, TextStyle};
 #[serde(rename_all = "camelCase")]
 pub struct TextRun {
     /// The text content of this run.
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub content: Option<String>,
     /// The styling applied to this run.
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub style: Option<TextStyle>,
 }
 
@@ -19,8 +21,10 @@ pub struct TextRun {
 #[serde(rename_all = "camelCase")]
 pub struct ParagraphMarker {
     /// The paragraph's style.
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub style: Option<ParagraphStyle>,
     /// The bullet for this paragraph.
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub bullet: Option<Bullet>,
 }
 
@@ -40,10 +44,13 @@ pub enum AutoTextType {
 pub struct AutoText {
     /// The type of this auto text.
     #[serde(rename = "type")]
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub auto_text_type: Option<AutoTextType>,
     /// Output only. The rendered content of this auto text.
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub content: Option<String>, // Read-only
     /// The styling applied to this auto text.
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub style: Option<TextStyle>,
 }
 
@@ -68,15 +75,18 @@ pub enum TextElementKind {
 pub struct TextElement {
     /// The zero-based start index of this text element, exclusive, in UTF-16 code units.
     /// Often omitted, indices are implicitly defined by order.
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub start_index: Option<u32>, // API uses integer, u32 suitable for indices
 
     /// The zero-based end index of this text element, exclusive, in UTF-16 code units.
     /// Often omitted, indices are implicitly defined by order.
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub end_index: Option<u32>, // API uses integer
 
     /// The specific kind of text element. Contains the properties specific to that kind.
     /// Uses flatten to merge the variant key ("textRun", "paragraphMarker", etc.)
     /// alongside the optional startIndex/endIndex fields.
     #[serde(flatten)]
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub kind: Option<TextElementKind>, // Made Option<> in case element is empty/invalid? Check API examples. Usually present. Let's keep it Option for robustness.
 }

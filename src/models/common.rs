@@ -20,8 +20,10 @@ pub enum Unit {
 #[serde(rename_all = "camelCase")]
 pub struct Dimension {
     /// The magnitude.
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub magnitude: Option<f64>,
     /// The units for magnitude.
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub unit: Option<Unit>,
 }
 
@@ -31,8 +33,10 @@ pub struct Dimension {
 #[serde(rename_all = "camelCase")]
 pub struct Size {
     /// The width. Missing width does not inherit from parents.
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub width: Option<Dimension>,
     /// The height. Missing height does not inherit from parents.
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub height: Option<Dimension>,
 }
 
@@ -49,17 +53,24 @@ pub struct Size {
 #[serde(rename_all = "camelCase")]
 pub struct AffineTransform {
     /// The X coordinate scaling element.
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub scale_x: Option<f64>,
     /// The Y coordinate scaling element.
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub scale_y: Option<f64>,
     /// The X coordinate shearing element.
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub shear_x: Option<f64>,
     /// The Y coordinate shearing element.
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub shear_y: Option<f64>,
     /// The X coordinate translation element.
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub translate_x: Option<f64>,
     /// The Y coordinate translation element.
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub translate_y: Option<f64>,
     /// The units for the translation elements.
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub unit: Option<Unit>,
 }

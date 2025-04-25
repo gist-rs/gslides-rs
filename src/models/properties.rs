@@ -36,45 +36,57 @@ pub enum BaselineOffset {
 pub struct TextStyle {
     /// The background color of the text. If set, the color is either opaque or
     /// transparent, depending on if the `opaque_color` field in it is set.
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub background_color: Option<OptionalColor>,
 
     /// The foreground color of the text. If set, the color is either opaque or
     /// transparent, depending on if the `opaque_color` field in it is set.
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub foreground_color: Option<OptionalColor>,
 
     /// The font family of the text. Can be any font from the Font menu in Slides
     /// or from Google Fonts. If unrecognized, rendered in Arial.
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub font_family: Option<String>,
 
     /// The size of the text's font. When read, specified in points.
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub font_size: Option<Dimension>,
 
     /// Whether the text is rendered as bold.
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub bold: Option<bool>,
 
     /// Whether the text is italicized.
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub italic: Option<bool>,
 
     /// Whether the text is underlined.
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub underline: Option<bool>,
 
     /// Whether the text is struck through.
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub strikethrough: Option<bool>,
 
     /// Whether the text is in small capital letters.
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub small_caps: Option<bool>,
 
     /// The text's vertical offset from its normal position (superscript, subscript).
     /// Text with superscript/subscript is automatically rendered smaller.
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub baseline_offset: Option<BaselineOffset>,
 
     /// The hyperlink destination of the text. If unset, there is no link.
     /// Links are not inherited from parent text.
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub link: Option<Link>,
 
     /// Output only. The font family and rendered weight of the text.
     /// This indicates the actual font used to render the text, which may differ
     /// from `font_family`. This property is read-only.
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub weighted_font_family: Option<WeightedFontFamily>, // Read-only
 }
 
@@ -128,32 +140,41 @@ pub enum SpacingMode {
 #[serde(rename_all = "camelCase")]
 pub struct ParagraphStyle {
     /// The text alignment for this paragraph.
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub alignment: Option<Alignment>,
 
     /// The text direction of this paragraph. Defaults to LEFT_TO_RIGHT if unset and not inherited.
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub direction: Option<TextDirection>,
 
     /// The amount indentation for the paragraph on the side that corresponds to
     /// the end of the text, based on the current text direction.
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub indent_end: Option<Dimension>,
 
     /// The amount of indentation for the start of the first line of the paragraph.
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub indent_first_line: Option<Dimension>,
 
     /// The amount indentation for the paragraph on the side that corresponds to
     /// the start of the text, based on the current text direction.
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub indent_start: Option<Dimension>,
 
     /// The amount of space between lines, as a percentage of normal (100.0 corresponds to 100%).
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub line_spacing: Option<f32>,
 
     /// The amount of extra space above the paragraph.
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub space_above: Option<Dimension>,
 
     /// The amount of extra space below the paragraph.
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub space_below: Option<Dimension>,
 
     /// The spacing mode for the paragraph (COLLAPSE_LISTS or NEVER_COLLAPSE).
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub spacing_mode: Option<SpacingMode>,
 }
 
@@ -165,11 +186,13 @@ pub struct PageProperties {
     /// The background fill of the page. If unset, the background fill is inherited
     /// from a parent page if it exists. If the page has no parent, the fill defaults
     /// to the Slides editor default.
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub page_background_fill: Option<PageBackgroundFill>,
 
     /// The color scheme of the page. If unset, the color scheme is inherited from
     /// a parent page. If the page has no parent, the color scheme uses a default
     /// Slides color scheme. Only the first 12 `ThemeColorType`s are editable.
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub color_scheme: Option<ColorScheme>,
 }
 
@@ -181,9 +204,11 @@ pub struct PageProperties {
 #[serde(rename_all = "camelCase")]
 pub struct SlideProperties {
     /// Output only. The object ID of the layout that this slide is based on.
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub layout_object_id: Option<String>, // Read-only
 
     /// Output only. The object ID of the master that this slide is based on.
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub master_object_id: Option<String>, // Read-only
 
     /// Output only. The notes page that this slide is associated with. Defines appearance
@@ -191,6 +216,7 @@ pub struct SlideProperties {
     /// The `BODY` placeholder shape contains the speaker notes (see `NotesProperties.speakerNotesObjectId`).
     /// The text content/styles of the notes shape are editable, but the page itself is read-only.
     /// Boxed to handle recursive type (`SlideProperties` -> `Page` -> `SlideProperties`).
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub notes_page: Option<Box<Page>>, // Use Box for indirection; Read-only aspects within Page
 
     /// Whether the slide is skipped in the presentation mode. Defaults to false.
@@ -204,10 +230,13 @@ pub struct SlideProperties {
 #[serde(rename_all = "camelCase")]
 pub struct LayoutProperties {
     /// The object ID of the master that this layout is based on.
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub master_object_id: Option<String>,
     /// The name of the layout (e.g., "TITLE_AND_BODY").
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub name: Option<String>,
     /// Output only. The human-readable name of the layout (e.g., "Title and body").
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub display_name: Option<String>, // Read-only
 }
 
@@ -219,6 +248,7 @@ pub struct NotesProperties {
     /// The object ID of the shape on this notes page that contains the speaker notes
     /// for the corresponding slide. The actual shape may not always exist until text is inserted.
     /// The `GetPresentation` or `GetPage` action will always return the latest object ID for this shape.
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub speaker_notes_object_id: Option<String>,
 }
 
@@ -228,5 +258,6 @@ pub struct NotesProperties {
 #[serde(rename_all = "camelCase")]
 pub struct MasterProperties {
     /// Output only. The human-readable name of the master.
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub display_name: Option<String>, // Read-only
 }

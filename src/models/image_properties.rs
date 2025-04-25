@@ -12,27 +12,35 @@ use crate::models::shape_properties::{Outline, Shadow}; // Reusing Outline and S
 #[serde(rename_all = "camelCase")]
 pub struct ImageProperties {
     /// The brightness effect of the image. Value between -1.0 and 1.0. Read-only.
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub brightness: Option<f32>, // Read-only
 
     /// The contrast effect of the image. Value between -1.0 and 1.0. Read-only.
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub contrast: Option<f32>, // Read-only
 
     /// The transparency effect of the image. Value between 0.0 and 1.0. Read-only.
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub transparency: Option<f32>, // Read-only
 
     /// The crop properties of the image. If not set, image is not cropped. Read-only.
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub crop_properties: Option<CropProperties>, // Read-only
 
     /// The outline of the image. If not set, image has no outline.
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub outline: Option<Outline>,
 
     /// The shadow of the image. If not set, image has no shadow. Read-only.
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub shadow: Option<Shadow>, // Read-only
 
     /// The hyperlink destination of the image. If unset, there is no link.
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub link: Option<Link>,
 
     /// The recolor effect of the image. If not set, image is not recolored. Read-only.
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub recolor: Option<Recolor>, // Read-only
 }
 

@@ -7,6 +7,7 @@ use serde::{Deserialize, Serialize};
 #[serde(rename_all = "camelCase")]
 pub struct WordArt {
     /// The text rendered as word art.
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub rendered_text: Option<String>,
     // Note: WordArt styling is complex and not directly exposed via simple properties.
     // Modifications usually involve replacing the WordArt element.

@@ -9,6 +9,7 @@ use crate::models::image_properties::ImageProperties; // For chart image propert
 #[serde(rename_all = "camelCase")]
 pub struct SheetsChartProperties {
     /// The properties of the embedded chart image. Read-only.
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub chart_image_properties: Option<ImageProperties>, // Read-only
 }
 
@@ -19,15 +20,19 @@ pub struct SheetsChartProperties {
 #[serde(rename_all = "camelCase")]
 pub struct SheetsChart {
     /// The ID of the Google Sheets spreadsheet that contains the source chart.
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub spreadsheet_id: Option<String>,
 
     /// The ID of the specific chart in the Google Sheets spreadsheet that is embedded.
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub chart_id: Option<i32>, // API spec uses integer
 
     /// The properties of the Sheets chart. Read-only.
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub sheets_chart_properties: Option<SheetsChartProperties>, // Read-only
 
     /// The URL of an image of the embedded chart, with a default lifetime of 30 minutes. Read-only.
     /// This URL is tagged with the account of the requester.
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub content_url: Option<String>, // Read-only
 }

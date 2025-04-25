@@ -13,12 +13,15 @@ pub struct Presentation {
     pub presentation_id: String,
 
     /// The size of pages in the presentation.
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub page_size: Option<Size>,
 
     /// The slides in the presentation. A slide inherits properties from a slide layout.
-    pub slides: Option<Vec<Page>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub slides: Option<Vec<Page>,>,
 
     /// The title of the presentation.
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub title: Option<String>,
 
     /// The slide masters in the presentation. A slide master contains all common
@@ -28,20 +31,24 @@ pub struct Presentation {
     /// - The master page properties define the common page properties inherited by its layouts.
     /// - Any other shapes on the master slide appear on all slides using that master,
     ///   regardless of their layout.
-    pub masters: Option<Vec<Page>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub masters: Option<Vec<Page>,>,
 
     /// The layouts in the presentation. A layout is a base that determines
     /// how content is arranged and styled on the slides that inherit from that
     /// layout.
-    pub layouts: Option<Vec<Page>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub layouts: Option<Vec<Page>,>,
 
     /// The locale of the presentation, as an IETF BCP 47 language tag (e.g., "en-US").
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub locale: Option<String>,
 
     /// Output only. The revision ID of the presentation. Can be used in update requests
     /// to assert the presentation revision hasn't changed since the last read
     /// operation. Only populated if the user has edit access to the presentation.
     /// The revision ID is not a sequential number but an opaque string.
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub revision_id: Option<String>,
 
     /// The notes master in the presentation. It serves three purposes:
@@ -54,5 +61,6 @@ pub struct Presentation {
     /// - Any other shapes on the notes master appear on all notes pages.
     ///
     /// The notes master is read-only.
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub notes_master: Option<Page>,
 }

@@ -15,9 +15,11 @@ pub struct TextContent {
     /// Output only. The text contents broken down into its component parts (TextElements),
     /// including styling information. This property is read-only. To update text content,
     /// use specific requests like InsertTextRequest, DeleteTextRequest, etc.
-    pub text_elements: Option<Vec<TextElement>>, // Read-only
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub text_elements: Option<Vec<TextElement>,>, // Read-only
 
     /// The bulleted lists used in this text, keyed by list ID. A `List` defines
     /// the properties applying to bullets at various nesting levels.
-    pub lists: Option<HashMap<String, List>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub lists: Option<HashMap<String, List>,>,
 }

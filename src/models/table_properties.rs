@@ -28,10 +28,13 @@ pub struct TableBorderFill {
 #[serde(rename_all = "camelCase")]
 pub struct TableBorderProperties {
     /// The fill of the table border.
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub table_border_fill: Option<TableBorderFill>,
     /// The thickness of the border.
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub weight: Option<Dimension>,
     /// The dash style of the border.
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub dash_style: Option<DashStyle>,
 }
 
@@ -41,8 +44,10 @@ pub struct TableBorderProperties {
 #[serde(rename_all = "camelCase")]
 pub struct TableBorderCell {
     /// The location of the border within the border table.
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub location: Option<TableCellLocation>,
     /// The border properties.
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub table_border_properties: Option<TableBorderProperties>,
 }
 
@@ -55,7 +60,8 @@ pub struct TableBorderCell {
 pub struct TableBorderRow {
     /// Properties of each border cell. When a border's adjacent table cells are
     /// merged, it is not included in the response.
-    pub table_border_cells: Option<Vec<TableBorderCell>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub table_border_cells: Option<Vec<TableBorderCell>,>,
 }
 
 /// The background fill of a table cell.
@@ -64,8 +70,10 @@ pub struct TableBorderRow {
 #[serde(rename_all = "camelCase")]
 pub struct TableCellBackgroundFill {
     /// The background fill property state.
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub property_state: Option<PropertyState>,
     /// Solid color fill. Only solid fill is currently supported.
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub solid_fill: Option<SolidFill>,
     // Note: Similar to PageBackgroundFill, represented as optional fields.
 }
@@ -76,8 +84,10 @@ pub struct TableCellBackgroundFill {
 #[serde(rename_all = "camelCase")]
 pub struct TableCellProperties {
     /// The background fill of the table cell. Default matches editor defaults.
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub table_cell_background_fill: Option<TableCellBackgroundFill>,
     /// The alignment of the content in the table cell. Default matches editor defaults.
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub content_alignment: Option<ContentAlignment>,
 }
 
@@ -87,6 +97,7 @@ pub struct TableCellProperties {
 #[serde(rename_all = "camelCase")]
 pub struct TableColumnProperties {
     /// Width of a column.
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub column_width: Option<Dimension>,
 }
 
@@ -97,6 +108,7 @@ pub struct TableColumnProperties {
 pub struct TableRowProperties {
     /// Minimum height of the row. The row will be rendered this tall, but may be
     /// taller if content requires it.
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub min_row_height: Option<Dimension>,
 }
 
@@ -106,9 +118,12 @@ pub struct TableRowProperties {
 #[serde(rename_all = "camelCase")]
 pub struct TableRange {
     /// The starting location of the range.
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub location: Option<TableCellLocation>,
     /// The row span of the table range.
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub row_span: Option<i32>,
     /// The column span of the table range.
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub column_span: Option<i32>,
 }

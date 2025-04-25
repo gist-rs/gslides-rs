@@ -40,9 +40,11 @@ pub enum ArrowStyle {
 #[serde(rename_all = "camelCase")]
 pub struct LineConnection {
     /// The object ID of the connected page element.
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub connected_object_id: Option<String>,
     /// The index of the connection site on the connected page element.
     /// Refer to the API guide for connection site indices.
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub connection_site_index: Option<i32>,
 }
 
@@ -113,22 +115,30 @@ pub enum LineCategory {
 #[serde(rename_all = "camelCase")]
 pub struct LineProperties {
     /// The fill of the line.
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub line_fill: Option<LineFill>,
     /// The thickness of the line.
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub weight: Option<Dimension>,
     /// The dash style of the line.
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub dash_style: Option<DashStyle>,
     /// The style of the arrow at the beginning of the line.
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub start_arrow: Option<ArrowStyle>,
     /// The style of the arrow at the end of the line.
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub end_arrow: Option<ArrowStyle>,
     /// The hyperlink destination of the line. If unset, there is no link.
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub link: Option<Link>,
     /// The connection at the beginning of the line. If unset, no connection.
     /// Only valid for connector types.
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub start_connection: Option<LineConnection>,
     /// The connection at the end of the line. If unset, no connection.
     /// Only valid for connector types.
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub end_connection: Option<LineConnection>,
 }
 
@@ -138,10 +148,13 @@ pub struct LineProperties {
 #[serde(rename_all = "camelCase")]
 pub struct Line {
     /// The properties of the line.
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub line_properties: Option<LineProperties>,
     /// The type of the line.
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub line_type: Option<LineType>,
     // Note: lineCategory is available in the API but primarily for creation/update requests.
     // It might not always be populated in GET responses, hence optional here.
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub line_category: Option<LineCategory>,
 }

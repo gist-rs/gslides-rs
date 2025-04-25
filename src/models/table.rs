@@ -13,8 +13,10 @@ use crate::models::text::TextContent;
 #[serde(rename_all = "camelCase")]
 pub struct TableCellLocation {
     /// The 0-based row index.
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub row_index: Option<i32>,
     /// The 0-based column index.
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub column_index: Option<i32>,
 }
 
@@ -24,18 +26,23 @@ pub struct TableCellLocation {
 #[serde(rename_all = "camelCase")]
 pub struct TableCell {
     /// The location of the cell within the table. Read-only.
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub location: Option<TableCellLocation>, // Read-only
 
     /// Row span of the cell. Read-only.
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub row_span: Option<i32>, // Read-only
 
     /// Column span of the cell. Read-only.
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub column_span: Option<i32>, // Read-only
 
     /// The text content of the cell.
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub text: Option<TextContent>,
 
     /// The properties of the table cell.
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub table_cell_properties: Option<TableCellProperties>,
 }
 
@@ -45,12 +52,15 @@ pub struct TableCell {
 #[serde(rename_all = "camelCase")]
 pub struct TableRow {
     /// Height of the row.
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub row_height: Option<Dimension>,
     /// Properties and contents of each cell. Cells spanning multiple columns are
     /// represented only once with a column_span > 1. Cells spanning multiple
     /// rows are contained in only the topmost row and have a row_span > 1.
-    pub table_cells: Option<Vec<TableCell>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub table_cells: Option<Vec<TableCell>,>,
     /// Properties of the row.
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub table_row_properties: Option<TableRowProperties>,
 }
 
@@ -65,14 +75,18 @@ pub struct Table {
     pub columns: i32, // API shows required integer
 
     /// Properties of each column.
-    pub table_columns: Option<Vec<TableColumnProperties>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub table_columns: Option<Vec<TableColumnProperties>,>,
 
     /// Properties and contents of each row.
-    pub table_rows: Option<Vec<TableRow>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub table_rows: Option<Vec<TableRow>,>,
 
     /// Properties of horizontal cell borders. A grid with `rows + 1` rows and `columns` columns.
-    pub horizontal_border_rows: Option<Vec<TableBorderRow>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub horizontal_border_rows: Option<Vec<TableBorderRow>,>,
 
     /// Properties of vertical cell borders. A grid with `rows` rows and `columns + 1` columns.
-    pub vertical_border_rows: Option<Vec<TableBorderRow>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub vertical_border_rows: Option<Vec<TableBorderRow>,>,
 }

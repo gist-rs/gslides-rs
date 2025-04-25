@@ -66,14 +66,19 @@ pub enum AutofitType {
 #[derive(Debug, Clone, PartialEq, Default, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Autofit {
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub autofit_type: Option<AutofitType>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub font_scale: Option<f32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub line_spacing_reduction: Option<f32>,
 }
 #[derive(Debug, Clone, PartialEq, Default, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct SolidFill {
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub color: Option<OpaqueColor>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub alpha: Option<f32>,
 }
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -106,21 +111,31 @@ impl Default for ShapeBackgroundFillContent {
 #[derive(Debug, Clone, PartialEq, Default, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ShapeBackgroundFill {
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub property_state: Option<PropertyState>,
     #[serde(flatten)]
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub fill_kind: Option<ShapeBackgroundFillContent>,
 }
 #[derive(Debug, Clone, PartialEq, Default, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Shadow {
     #[serde(rename = "type")]
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub shadow_type: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub alignment: Option<RectanglePosition>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub transform: Option<AffineTransform>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub blur_radius: Option<Dimension>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub color: Option<OpaqueColor>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub alpha: Option<f32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub rotate_with_shape: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub property_state: Option<PropertyState>,
 }
 
@@ -128,9 +143,13 @@ pub struct Shadow {
 #[derive(Debug, Clone, PartialEq, Default, Serialize, Deserialize)] // Added Default
 #[serde(rename_all = "camelCase")]
 pub struct Outline {
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub outline_fill: Option<OutlineFill>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub weight: Option<Dimension>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub dash_style: Option<DashStyle>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub property_state: Option<PropertyState>,
 }
 

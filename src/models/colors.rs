@@ -5,10 +5,13 @@ use serde::{Deserialize, Serialize};
 #[serde(rename_all = "camelCase")]
 pub struct RgbColor {
     /// The red component of the color, from 0.0 to 1.0.
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub red: Option<f32>,
     /// The green component of the color, from 0.0 to 1.0.
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub green: Option<f32>,
     /// The blue component of the color, from 0.0 to 1.0.
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub blue: Option<f32>,
 }
 
@@ -66,6 +69,7 @@ pub struct OpaqueColor {
 pub struct OptionalColor {
     /// If set, this will be used as an opaque color. If unset, the color is rendered as transparent.
     // This now uses the OpaqueColor struct again.
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub opaque_color: Option<OpaqueColor>,
 }
 

@@ -30,7 +30,7 @@ pub struct Presentation {
     ///   regardless of their layout.
     pub masters: Option<Vec<Page>>,
 
-    /// The layouts in the presentation. A layout is a template that determines
+    /// The layouts in the presentation. A layout is a base that determines
     /// how content is arranged and styled on the slides that inherit from that
     /// layout.
     pub layouts: Option<Vec<Page>>,

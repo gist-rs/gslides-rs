@@ -1,5 +1,3 @@
-// examples/fetch_presentation.rs
-
 use gslides_rs::{
     client,
     errors::SlidesApiError,

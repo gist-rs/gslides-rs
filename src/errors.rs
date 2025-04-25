@@ -1,5 +1,3 @@
-// src/errors.rs
-
 use thiserror::Error;
 
 /// Represents errors that can occur when interacting with the Google Slides API client.

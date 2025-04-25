@@ -1,4 +1,20 @@
-use serde::{Deserialize, Serialize};
+use serde::{ser::SerializeMap, Deserialize, Serialize, Serializer};
+
+impl Serialize for Link {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        match &self.destination {
+            LinkKind::None => {
+                // If the destination is LinkKind::None, serialize an empty JSON object {}
+                let map = serializer.serialize_map(Some(0))?;
+                map.end()
+            }
+            other_kind => other_kind.serialize(serializer),
+        }
+    }
+}
 
 /// Describes the type of relative link between slides.
 /// Derived from: https://developers.google.com/slides/api/reference/rest/v1/presentations.pages/other#RelativeSlideLink
@@ -49,7 +65,7 @@ impl Default for LinkKind {
 
 /// A hypertext link.
 /// Derived from: https://developers.google.com/slides/api/reference/rest/v1/presentations.pages/other#Link
-#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, PartialEq, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Link {
     /// The destination of the link. Uses flatten to represent the union based on JSON key.

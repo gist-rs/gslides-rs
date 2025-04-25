@@ -63,6 +63,7 @@ pub struct Page {
     // --- Page type specific properties ---
     // Only one of these will be populated based on `page_type`.
     /// Slide specific properties. Only set if page_type = SLIDE.
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub slide_properties: Option<SlideProperties>,
 
     /// Layout specific properties. Only set if page_type = LAYOUT.

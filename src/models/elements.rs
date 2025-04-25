@@ -100,8 +100,11 @@ impl<'de> Deserialize<'de> for PageElement {
                 let mut description: Option<String> = None;
                 let mut element_kind: Option<PageElementKind> = None;
 
+                println!("--- Deserializing PageElement ---"); // Add trace
+
                 // Iterate over map keys
                 while let Some(key) = map.next_key::<String>()? {
+                    println!("Found key: {}", key); // Print each key encountered
                     match key.as_str() {
                         FIELD_OBJECT_ID => {
                             if object_id.is_some() {
@@ -135,67 +138,124 @@ impl<'de> Deserialize<'de> for PageElement {
                         }
                         // Element Kind handling: Check if already found, then deserialize value
                         FIELD_ELEMENT_GROUP => {
-                            if element_kind.is_some() {
-                                return Err(de::Error::custom("Multiple element kinds found"));
+                            println!("Matched key: {}", FIELD_ELEMENT_GROUP); // Add trace
+                            if element_kind.is_some() { /* ... error ... */ }
+                            match map.next_value() {
+                                // Explicitly handle result for debugging
+                                Ok(value) => {
+                                    element_kind = Some(PageElementKind::ElementGroup(value))
+                                }
+                                Err(e) => {
+                                    eprintln!("Error deserializing ElementGroup: {}", e);
+                                    return Err(e); // Propagate the actual error
+                                }
                             }
-                            element_kind = Some(PageElementKind::ElementGroup(map.next_value()?));
                         }
                         FIELD_SHAPE => {
-                            if element_kind.is_some() {
-                                return Err(de::Error::custom("Multiple element kinds found"));
+                            println!("Matched key: {}", FIELD_SHAPE); // Add trace
+                            if element_kind.is_some() { /* ... error ... */ }
+                            match map.next_value() {
+                                // Explicitly handle result for debugging
+                                Ok(value) => element_kind = Some(PageElementKind::Shape(value)),
+                                Err(e) => {
+                                    eprintln!("Error deserializing Shape: {}", e);
+                                    return Err(e); // Propagate the actual error
+                                }
                             }
-                            element_kind = Some(PageElementKind::Shape(map.next_value()?));
                         }
+                        // --- Repeat the pattern for ALL element kind fields ---
                         FIELD_IMAGE => {
-                            if element_kind.is_some() {
-                                return Err(de::Error::custom("Multiple element kinds found"));
+                            println!("Matched key: {}", FIELD_IMAGE);
+                            if element_kind.is_some() { /* ... error ... */ }
+                            match map.next_value() {
+                                Ok(value) => element_kind = Some(PageElementKind::Image(value)),
+                                Err(e) => {
+                                    eprintln!("Error deserializing Image: {}", e);
+                                    return Err(e);
+                                }
                             }
-                            element_kind = Some(PageElementKind::Image(map.next_value()?));
                         }
                         FIELD_VIDEO => {
-                            if element_kind.is_some() {
-                                return Err(de::Error::custom("Multiple element kinds found"));
+                            println!("Matched key: {}", FIELD_VIDEO);
+                            if element_kind.is_some() { /* ... error ... */ }
+                            match map.next_value() {
+                                Ok(value) => element_kind = Some(PageElementKind::Video(value)),
+                                Err(e) => {
+                                    eprintln!("Error deserializing Video: {}", e);
+                                    return Err(e);
+                                }
                             }
-                            element_kind = Some(PageElementKind::Video(map.next_value()?));
                         }
                         FIELD_LINE => {
-                            if element_kind.is_some() {
-                                return Err(de::Error::custom("Multiple element kinds found"));
+                            println!("Matched key: {}", FIELD_LINE);
+                            if element_kind.is_some() { /* ... error ... */ }
+                            match map.next_value() {
+                                Ok(value) => element_kind = Some(PageElementKind::Line(value)),
+                                Err(e) => {
+                                    eprintln!("Error deserializing Line: {}", e);
+                                    return Err(e);
+                                }
                             }
-                            element_kind = Some(PageElementKind::Line(map.next_value()?));
                         }
                         FIELD_TABLE => {
-                            if element_kind.is_some() {
-                                return Err(de::Error::custom("Multiple element kinds found"));
+                            println!("Matched key: {}", FIELD_TABLE);
+                            if element_kind.is_some() { /* ... error ... */ }
+                            match map.next_value() {
+                                Ok(value) => element_kind = Some(PageElementKind::Table(value)),
+                                Err(e) => {
+                                    eprintln!("Error deserializing Table: {}", e);
+                                    return Err(e);
+                                }
                             }
-                            element_kind = Some(PageElementKind::Table(map.next_value()?));
                         }
                         FIELD_WORD_ART => {
-                            if element_kind.is_some() {
-                                return Err(de::Error::custom("Multiple element kinds found"));
+                            println!("Matched key: {}", FIELD_WORD_ART);
+                            if element_kind.is_some() { /* ... error ... */ }
+                            match map.next_value() {
+                                Ok(value) => element_kind = Some(PageElementKind::WordArt(value)),
+                                Err(e) => {
+                                    eprintln!("Error deserializing WordArt: {}", e);
+                                    return Err(e);
+                                }
                             }
-                            element_kind = Some(PageElementKind::WordArt(map.next_value()?));
                         }
                         FIELD_SHEETS_CHART => {
-                            if element_kind.is_some() {
-                                return Err(de::Error::custom("Multiple element kinds found"));
+                            println!("Matched key: {}", FIELD_SHEETS_CHART);
+                            if element_kind.is_some() { /* ... error ... */ }
+                            match map.next_value() {
+                                Ok(value) => {
+                                    element_kind = Some(PageElementKind::SheetsChart(value))
+                                }
+                                Err(e) => {
+                                    eprintln!("Error deserializing SheetsChart: {}", e);
+                                    return Err(e);
+                                }
                             }
-                            element_kind = Some(PageElementKind::SheetsChart(map.next_value()?));
                         }
                         FIELD_SPEAKER_SPOTLIGHT => {
-                            if element_kind.is_some() {
-                                return Err(de::Error::custom("Multiple element kinds found"));
+                            println!("Matched key: {}", FIELD_SPEAKER_SPOTLIGHT);
+                            if element_kind.is_some() { /* ... error ... */ }
+                            match map.next_value() {
+                                Ok(value) => {
+                                    element_kind = Some(PageElementKind::SpeakerSpotlight(value))
+                                }
+                                Err(e) => {
+                                    eprintln!("Error deserializing SpeakerSpotlight: {}", e);
+                                    return Err(e);
+                                }
                             }
-                            element_kind =
-                                Some(PageElementKind::SpeakerSpotlight(map.next_value()?));
                         }
                         // Ignore unknown fields if necessary, or return an error
                         _ => {
+                            println!("Ignoring unknown key: {}", key); // Add trace
                             let _ = map.next_value::<serde_json::Value>()?; // Consume the value to advance map
                                                                             // Optionally log unknown field: log::debug!("Ignoring unknown field: {}", key);
                         }
                     }
                 }
+
+                println!("--- Finished processing keys for PageElement ---");
+                println!("Final element_kind is Some: {}", element_kind.is_some());
 
                 // Check required fields and construct PageElement
                 let object_id =

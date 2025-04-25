@@ -93,7 +93,11 @@ pub async fn get_presentation_sa(
 
         // Attempt to deserialize.
         match serde_json::from_slice::<Presentation>(&bytes) {
-            Ok(presentation) => Ok(presentation),
+            Ok(presentation) => {
+                let filename = "changed_presentation.json";
+                fs::write(filename, &bytes);
+                Ok(presentation)
+            }
             Err(e) => {
                 // --- Write failing JSON to file ---
                 let filename = "deserialization_error.json";

@@ -19,7 +19,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         return Ok(());
     }
     let presentation_id = &args[1];
-    let output_filename = "output.json";
+    // let output_filename = "output.json";
 
     println!("Attempting to fetch presentation: {}", presentation_id);
     let http_client = reqwest::Client::new();
@@ -73,22 +73,22 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 presentation.layouts.as_ref().map_or(0, |l| l.len())
             );
 
-            // --- Serialize and Write to File ---
-            println!("\nSerializing presentation to JSON...");
-            // Use `to_string_pretty` for readable output
-            let json_output = serde_json::to_string_pretty(&presentation)?; // Propagate serialization errors
+            // // --- Serialize and Write to File ---
+            // println!("\nSerializing presentation to JSON...");
+            // // Use `to_string_pretty` for readable output
+            // let json_output = serde_json::to_string_pretty(&presentation)?; // Propagate serialization errors
 
-            println!("Writing presentation data to {}...", output_filename);
-            // Create or truncate the output file
-            let mut file = File::create(output_filename)?; // Propagate file creation errors
-                                                           // Write the JSON string bytes to the file
-            file.write_all(json_output.as_bytes())?; // Propagate file writing errors
+            // println!("Writing presentation data to {}...", output_filename);
+            // // Create or truncate the output file
+            // let mut file = File::create(output_filename)?; // Propagate file creation errors
+            //                                                // Write the JSON string bytes to the file
+            // file.write_all(json_output.as_bytes())?; // Propagate file writing errors
 
-            println!(
-                "Successfully wrote presentation data to {}.",
-                output_filename
-            );
-            // --- End Serialize and Write to File ---
+            // println!(
+            //     "Successfully wrote presentation data to {}.",
+            //     output_filename
+            // );
+            // // --- End Serialize and Write to File ---
 
             // --- Updated section to print full element details ---
             if let Some(slides) = &presentation.slides {

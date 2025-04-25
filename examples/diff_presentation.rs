@@ -18,6 +18,7 @@ fn main() -> Result<(), DiffError> {
 
     // --- Configuration ---
     let base_file_path = "base_presentation.json"; // Path to your basebase JSON
+                                                   // let compare_file_path = "output.json"; // Path to the JSON to compare
     let compare_file_path = "changed_presentation.json"; // Path to the JSON to compare
 
     // --- Load Presentations ---

@@ -142,7 +142,7 @@
                 },
                 {
                   "startIndex": 3,
-                  "endIndex": 4,
+                  "endIndex": 7,
                   "paragraphMarker": {
                     "style": {
                       "direction": "LEFT_TO_RIGHT"
@@ -151,9 +151,9 @@
                 },
                 {
                   "startIndex": 3,
-                  "endIndex": 4,
+                  "endIndex": 7,
                   "textRun": {
-                    "content": "\n",
+                    "content": "123\n",
                     "style": {
                       "foregroundColor": {
                         "opaqueColor": {
@@ -9473,7 +9473,7 @@
     }
   ],
   "locale": "en",
-  "revisionId": "d20AcabjYnpwiA",
+  "revisionId": "2n7EKtHp4nRmmg",
   "notesMaster": {
     "objectId": "n",
     "pageType": "NOTES_MASTER",

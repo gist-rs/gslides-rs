@@ -94,6 +94,11 @@ impl ComparisonResult {
 
     /// Generates and returns a human-readable summary of the differences.
     pub fn get_readable_diff(&self) -> Result<String, DiffError> {
-        generate_readable_summary(&self.changes, self.is_simplify)
+        generate_readable_summary(
+            &self.base,     // Pass old presentation
+            &self.compared, // Pass new presentation
+            &self.changes,
+            self.is_simplify,
+        )
     }
 }

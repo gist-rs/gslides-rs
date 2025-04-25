@@ -32,16 +32,20 @@ impl ValueRepr {
         match self {
             ValueRepr::String(s) => {
                 let escaped_s = s
-                    .replace('\\', "\\\\") // Must escape backslash first!
+                    .replace('\\', "\\\\")
                     .replace('\n', "\\n")
                     .replace('\r', "\\r")
                     .replace('\t', "\\t")
-                    .replace('\'', "\\'"); // Escape single quote as we use it
-                                           // Truncate long strings for readability in diffs
+                    // NOTE: No need to escape single quote ' anymore if not using them for wrapping
+                    // .replace('\'', "\\'");
+                    // Also escape backticks if they appear in the string itself
+                    .replace('`', "\\`");
+
+                // Truncate long strings for readability in diffs
                 if escaped_s.len() > 60 {
-                    format!("'{}...'", &escaped_s[..57])
+                    format!("{}...", &escaped_s[..57])
                 } else {
-                    format!("'{}'", escaped_s)
+                    escaped_s // Keep the original escaped string
                 }
             }
             ValueRepr::Number(n) => n.to_string(),

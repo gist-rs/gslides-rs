@@ -3,7 +3,6 @@ use serde_json::Value as JsonValue;
 use treediff::{value::Key, Delegate};
 
 /// Represents a simplified view of a value involved in a change.
-/// Based on Section 5 of the design document.
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub enum ValueRepr {
     String(String),
@@ -11,14 +10,12 @@ pub enum ValueRepr {
     Boolean(bool),
     Null,
     // Summaries for complex types
-    Array(String), // e.g., "[Array len=5]"
+    Array(String),  // e.g., "[Array len=5]"
     Object(String), // e.g., "{Object}"
-                   // Add more specific types if needed (e.g., Color, TransformSummary)
 }
 
 impl ValueRepr {
-    /// Helper to convert treediff's JsonValue to our ValueRepr.
-    /// Summarizes complex types.
+    /// Helper to convert treediff's JsonValue to our ValueRepr. Summarizes complex types.
     fn from_json_value(val: &JsonValue) -> Self {
         match val {
             JsonValue::Null => ValueRepr::Null,
@@ -40,7 +37,12 @@ impl ValueRepr {
                     .replace('\r', "\\r")
                     .replace('\t', "\\t")
                     .replace('\'', "\\'"); // Escape single quote as we use it
-                format!("'{}'", escaped_s)
+                                           // Truncate long strings for readability in diffs
+                if escaped_s.len() > 60 {
+                    format!("'{}...'", &escaped_s[..57])
+                } else {
+                    format!("'{}'", escaped_s)
+                }
             }
             ValueRepr::Number(n) => n.to_string(),
             ValueRepr::Boolean(b) => b.to_string(),
@@ -51,7 +53,6 @@ impl ValueRepr {
 }
 
 /// The type of difference detected.
-/// Based on Section 5 of the design document.
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
 pub enum ChangeType {
     Added,
@@ -60,22 +61,15 @@ pub enum ChangeType {
 }
 
 /// Represents a single difference found between two structures.
-/// Based on Section 5 of the design document.
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct Change {
-    /// Dot-separated path with bracket notation for array indices.
-    /// Example: "slides[1].pageElements[0].shape.text.textElements[0].textRun.content"
     pub path: String,
-    /// The type of change.
     pub change_type: ChangeType,
-    /// The value before the change (None for Added).
-    pub old_value: Option<ValueRepr>,
-    /// The value after the change (None for Removed).
-    pub new_value: Option<ValueRepr>,
+    pub old_value: Option<ValueRepr>, // Uses generic ValueRepr
+    pub new_value: Option<ValueRepr>, // Uses generic ValueRepr
 }
 
 /// treediff Delegate implementation to collect changes into `Vec<Change>`.
-/// Based on Section 4 of the design document.
 #[derive(Debug)]
 pub(crate) struct ChangeCollector {
     pub(crate) changes: Vec<Change>,
@@ -89,19 +83,12 @@ impl ChangeCollector {
             current_path: Vec::new(),
         }
     }
-
-    /// Helper to format the current path stack into a string.
-    /// Uses dot notation for fields and bracket notation for indices.
     fn format_path(&self) -> String {
-        self.current_path.join("") // Segments now include their own separators (.) or brackets ([])
+        self.current_path.join("")
     }
 }
 
-// *** Implement Delegate with correct method names and lifetimes ***
-// The Delegate trait requires a lifetime parameter 'a bound to the values being compared.
-// The methods removed/added also take a lifetime 'b for the key.
 impl<'a> Delegate<'a, Key, JsonValue> for ChangeCollector {
-    // Use `push` instead of `push_path_segment`
     fn push(&mut self, segment: &Key) {
         let segment_str = match segment {
             Key::String(s) => {
@@ -116,44 +103,43 @@ impl<'a> Delegate<'a, Key, JsonValue> for ChangeCollector {
         self.current_path.push(segment_str);
     }
 
-    // Use `pop` instead of `pop_path_segment`
     fn pop(&mut self) {
         self.current_path.pop();
     }
 
-    // Add lifetimes 'a and 'b as required by the trait
     fn removed<'b>(&mut self, _key: &'b Key, value: &'a JsonValue) {
         let path = self.format_path();
         self.changes.push(Change {
             path,
             change_type: ChangeType::Removed,
-            old_value: Some(ValueRepr::from_json_value(value)),
+            old_value: Some(ValueRepr::from_json_value(value)), // Use generic
             new_value: None,
         });
     }
 
-    // Add lifetimes 'a and 'b as required by the trait
     fn added<'b>(&mut self, _key: &'b Key, value: &'a JsonValue) {
         let path = self.format_path();
         self.changes.push(Change {
             path,
             change_type: ChangeType::Added,
             old_value: None,
-            new_value: Some(ValueRepr::from_json_value(value)),
+            new_value: Some(ValueRepr::from_json_value(value)), // Use generic
         });
     }
 
-    // Add lifetime 'a as required by the trait
     fn modified(&mut self, old: &'a JsonValue, new: &'a JsonValue) {
         let path = self.format_path();
-        self.changes.push(Change {
-            path,
-            change_type: ChangeType::Modified,
-            old_value: Some(ValueRepr::from_json_value(old)),
-            new_value: Some(ValueRepr::from_json_value(new)),
-        });
-    }
+        let old_repr = ValueRepr::from_json_value(old); // Use generic
+        let new_repr = ValueRepr::from_json_value(new); // Use generic
 
-    // Implement `unchanged` if needed, otherwise default is fine
-    // fn unchanged(&mut self, _v: &'a JsonValue) {}
+        // Only record if values actually differ after representation
+        if old_repr != new_repr {
+            self.changes.push(Change {
+                path,
+                change_type: ChangeType::Modified,
+                old_value: Some(old_repr),
+                new_value: Some(new_repr),
+            });
+        }
+    }
 }

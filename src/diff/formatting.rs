@@ -293,53 +293,203 @@ fn format_rgb_to_hex(rgb: &RgbColor) -> String {
     format!("#{:02x}{:02x}{:02x}", r, g, b)
 }
 
-//=============================================================================
-// Human-Readable Summary Generation - Main Function
-//=============================================================================
+// =============================================================================
+// Human-Readable Summary Generation - Consolidation Logic
+// =============================================================================
 
-/// Generates a human-readable summary string from the structured changes, grouped by slide.
-/// Retrieves color details from full presentation objects. Filters based on allowlist.
+/// Attempts to consolidate Add/Remove pairs for color components into a single "Modified Color" change.
+/// Returns Some((line, description)) if consolidation occurs, None otherwise.
+/// Updates processed_indices if consolidation is successful.
+fn try_consolidate_color_change(
+    current_index: usize,
+    current_change: &Change,
+    slide_index_opt: Option<usize>,
+    remaining_path: &str, // Path relative to slide/presentation root
+    full_path: &str,      // Original full path for uniqueness tracking and lookup
+    changes: &[Change],
+    processed_indices: &mut HashSet<usize>,
+    consolidated_color_paths_general: &mut HashSet<String>,
+    consolidated_color_paths_slide: &mut BTreeMap<usize, HashSet<String>>,
+    old_val_root: &JsonValue,
+    new_val_root: &JsonValue,
+    is_simplify: bool,
+) -> Option<(String, String)> {
+    // Returns (line, description)
+
+    // Only proceed if the current change is an Add or Remove on a color component path
+    if current_change.change_type != ChangeType::Added
+        && current_change.change_type != ChangeType::Removed
+    {
+        return None;
+    }
+    // Describe target based on the relative path
+    let change_target_desc = describe_change_target(remaining_path);
+    if change_target_desc != "Color Object Components Changed" {
+        return None;
+    }
+
+    // Look ahead for the opposite change type *at the exact same full path*
+    for next_index in (current_index + 1)..changes.len() {
+        if processed_indices.contains(&next_index) {
+            continue;
+        }
+        let next_change = &changes[next_index];
+
+        // Check if the next change is at the *exact same path*
+        if next_change.path == full_path {
+            // Check if the next change is also identified as a color component change
+            // (Parse its path just to be sure, though matching full_path should suffice)
+            let (_next_slide_opt, next_remaining_path) = parse_slide_path(&next_change.path)
+                .map_or((None, next_change.path.clone()), |(_, rp)| (Some(0), rp)); // Slide index doesn't matter here
+            let next_change_target_desc = describe_change_target(&next_remaining_path);
+
+            if next_change_target_desc == "Color Object Components Changed" {
+                // Check for Add vs Remove pairing
+                if (current_change.change_type == ChangeType::Added
+                    && next_change.change_type == ChangeType::Removed)
+                    || (current_change.change_type == ChangeType::Removed
+                        && next_change.change_type == ChangeType::Added)
+                {
+                    // --- Pair Found ---
+                    let processed_paths_ref = match slide_index_opt {
+                        Some(idx) => consolidated_color_paths_slide.entry(idx).or_default(),
+                        None => consolidated_color_paths_general,
+                    };
+
+                    // Use the exact full path for tracking consolidation uniqueness
+                    if !processed_paths_ref.contains(full_path) {
+                        let friendly_location = map_path_to_friendly_name(remaining_path);
+                        let consolidated_desc = "Modified Color".to_string();
+
+                        // Retrieve color details using the full path
+                        let (old_hex, new_hex) = {
+                            let default_hex = "?".to_string();
+                            if let (Some(old_color_val), Some(new_color_val)) = (
+                                get_value_at_path(old_val_root, full_path),
+                                get_value_at_path(new_val_root, full_path),
+                            ) {
+                                match (
+                                    serde_json::from_value::<RgbColor>(old_color_val.clone()),
+                                    serde_json::from_value::<RgbColor>(new_color_val.clone()),
+                                ) {
+                                    (Ok(old_c), Ok(new_c)) => {
+                                        (format_rgb_to_hex(&old_c), format_rgb_to_hex(&new_c))
+                                    }
+                                    _ => (default_hex.clone(), default_hex.clone()),
+                                }
+                            } else {
+                                // If lookup fails, maybe the path points *inside* the color object (e.g. just 'red')
+                                // Try looking up the parent path containing the RgbColor object
+                                if let Some(parent_path_end) = full_path.rfind('.') {
+                                    let parent_path = &full_path[..parent_path_end];
+                                    if let (Some(old_color_obj), Some(new_color_obj)) = (
+                                        get_value_at_path(old_val_root, parent_path),
+                                        get_value_at_path(new_val_root, parent_path),
+                                    ) {
+                                        match (
+                                            serde_json::from_value::<RgbColor>(
+                                                old_color_obj.clone(),
+                                            ),
+                                            serde_json::from_value::<RgbColor>(
+                                                new_color_obj.clone(),
+                                            ),
+                                        ) {
+                                            (Ok(old_c), Ok(new_c)) => (
+                                                format_rgb_to_hex(&old_c),
+                                                format_rgb_to_hex(&new_c),
+                                            ),
+                                            _ => (default_hex.clone(), default_hex.clone()), // Inner failed
+                                        }
+                                    } else {
+                                        (default_hex.clone(), default_hex.clone())
+                                        // Parent lookup failed
+                                    }
+                                } else {
+                                    (default_hex.clone(), default_hex.clone()) // No parent path delimiter
+                                }
+                            }
+                        };
+
+                        let line = if old_hex != "?" && new_hex != "?" {
+                            format!(
+                                "- {} from `{}` to `{}` {}",
+                                consolidated_desc,
+                                old_hex,
+                                new_hex,
+                                format_location(&friendly_location, is_simplify)
+                            )
+                        } else {
+                            // Fallback if color lookup failed
+                            format!(
+                                "- {} {}",
+                                consolidated_desc,
+                                format_location(&friendly_location, is_simplify)
+                            )
+                        };
+
+                        processed_paths_ref.insert(full_path.to_string()); // Mark path as consolidated
+                        processed_indices.insert(current_index); // Mark both changes as processed
+                        processed_indices.insert(next_index);
+
+                        return Some((line, consolidated_desc)); // Return the consolidated result
+                    } else {
+                        // Path already consolidated for this group, mark as processed but don't generate line
+                        processed_indices.insert(current_index);
+                        processed_indices.insert(next_index);
+                        return None; // Indicate handled by consolidation but no *new* line needed
+                    }
+                }
+                // If pair types don't match (e.g., Add/Add), stop looking ahead for *this* path
+                break;
+            } else {
+                // If the item at the same path isn't a color component change, stop lookahead for this path.
+                break;
+            }
+        } else {
+            // If paths don't match, we might find the pair later, but not *immediately* following.
+            // If the diff list guarantees locality this might be optimizable, but for now, we only consolidate immediate pairs at the *same* path.
+            // Optimization: If the next change path is lexicographically much larger, maybe break? For now, continue search.
+        }
+    } // End lookahead loop
+
+    // If no pair was found and consolidated
+    None
+}
+
+// =============================================================================
+// Human-Readable Summary Generation - Main Function (Modified)
+// =============================================================================
+
 pub(crate) fn generate_readable_summary(
     old_presentation: &Presentation,
     new_presentation: &Presentation,
     changes: &[Change],
     is_simplify: bool,
 ) -> Result<String, DiffError> {
-    // Convert presentations to serde_json::Value for traversal (once)
     let old_val = serde_json::to_value(old_presentation)?;
     let new_val = serde_json::to_value(new_presentation)?;
 
-    // Define which change descriptions should appear in the final summary
     const ALLOWED_DESCRIPTIONS: &[&str] = &[
         "PresentationId",
         "RevisionId",
-        "Title",          // General
-        "Text Content",   // Content (Covers Add/Remove/Modify)
-        "Modified Color", // Consolidated Color result
-        "Font Family",    // Specific Style property
-                          // Add other specific descriptions like "Font Size", "Bold Style" if desired
+        "Title",
+        "Text Content",
+        "Modified Color",
+        "Font Family",
+        // Add others like "Font Size", "Bold Style" here if needed
     ];
 
     // --- Debug Setup ---
     // println!("--- DEBUG: Starting generate_readable_summary ---");
-    // println!("--- DEBUG: Allowlist: {:?}", ALLOWED_DESCRIPTIONS);
-    // println!("--- DEBUG: Raw changes received ({}):", changes.len());
-    // for (idx, change) in changes.iter().enumerate() {
-    //      println!("  [{}] Path: '{}', Type: {:?}, Old: {:?}, New: {:?}",
-    //               idx, change.path, change.change_type, change.old_value, change.new_value);
-    // }
-    // println!("--- DEBUG: End Raw changes ---");
+    // ...
 
     let mut changes_by_slide: BTreeMap<usize, Vec<String>> = BTreeMap::new();
     let mut general_changes: Vec<String> = Vec::new();
     let mut summarized_counts = (0, 0, 0); // (add, remove, modify) *after filtering*
 
     let mut processed_indices: HashSet<usize> = HashSet::new();
-    // Track paths where color Add/Remove pairs have been consolidated per group
     let mut consolidated_color_paths_general: HashSet<String> = HashSet::new();
     let mut consolidated_color_paths_slide: BTreeMap<usize, HashSet<String>> = BTreeMap::new();
-
-    // No longer need added_object_tracker
 
     for i in 0..changes.len() {
         if processed_indices.contains(&i) {
@@ -350,134 +500,64 @@ pub(crate) fn generate_readable_summary(
         let (slide_index_opt, remaining_path) = parse_slide_path(&change.path)
             .map_or((None, change.path.clone()), |(idx, rp)| (Some(idx), rp));
 
-        let mut handled_by_consolidation = false;
         let mut generated_line: Option<String> = None;
-        let mut generated_desc: Option<String> = None; // Final description used for filtering
+        let mut generated_desc: Option<String> = None;
+        let mut handled_by_consolidation = false;
 
-        // Determine description based on path
-        let change_target_desc = describe_change_target(&remaining_path);
-        // println!("--- DEBUG: Index {}: Path '{}', Initial Desc: '{}'", i, change.path, change_target_desc);
-
-        // --- 1. Consolidate Color Add/Remove pairs -> "Modified Color" ---
-        if change_target_desc == "Color Object Components Changed" {
-            let current_change_type = change.change_type.clone();
-            if current_change_type == ChangeType::Added
-                || current_change_type == ChangeType::Removed
-            {
-                // Look ahead for the opposite change type *at the exact same path*
-                for j in (i + 1)..changes.len() {
-                    if processed_indices.contains(&j) {
-                        continue;
-                    }
-                    let next_change = &changes[j];
-
-                    if next_change.path == change.path {
-                        let (_next_slide_opt, next_remaining_path) =
-                            parse_slide_path(&next_change.path)
-                                .map_or((None, next_change.path.clone()), |(_, rp)| (Some(0), rp));
-                        let next_change_target_desc = describe_change_target(&next_remaining_path);
-                        // Ensure the lookahead item is also identified as the color trigger
-                        if next_change_target_desc == "Color Object Components Changed" {
-                            // Check for Add vs Remove pairing
-                            if (current_change_type == ChangeType::Added
-                                && next_change.change_type == ChangeType::Removed)
-                                || (current_change_type == ChangeType::Removed
-                                    && next_change.change_type == ChangeType::Added)
-                            {
-                                // --- Pair Found ---
-                                let processed_paths_ref = match slide_index_opt {
-                                    Some(idx) => {
-                                        consolidated_color_paths_slide.entry(idx).or_default()
-                                    }
-                                    None => &mut consolidated_color_paths_general,
-                                };
-                                // Use the exact change path for tracking consolidation uniqueness
-                                if !processed_paths_ref.contains(&change.path) {
-                                    let friendly_location =
-                                        map_path_to_friendly_name(&remaining_path);
-                                    let consolidated_desc = "Modified Color".to_string(); // This is the key for filtering
-
-                                    // Retrieve color details by looking up the full object at the path
-                                    let (old_hex, new_hex) = {
-                                        let default_hex = "?".to_string();
-                                        if let (Some(old_color_val), Some(new_color_val)) = (
-                                            get_value_at_path(&old_val, &change.path),
-                                            get_value_at_path(&new_val, &change.path),
-                                        ) {
-                                            match (
-                                                serde_json::from_value::<RgbColor>(
-                                                    old_color_val.clone(),
-                                                ),
-                                                serde_json::from_value::<RgbColor>(
-                                                    new_color_val.clone(),
-                                                ),
-                                            ) {
-                                                (Ok(old_c), Ok(new_c)) => (
-                                                    format_rgb_to_hex(&old_c),
-                                                    format_rgb_to_hex(&new_c),
-                                                ),
-                                                _ => (default_hex.clone(), default_hex.clone()),
-                                            }
-                                        } else {
-                                            (default_hex.clone(), default_hex.clone())
-                                        }
-                                    };
-
-                                    // Format the line, including details if available
-                                    let line = if old_hex != "?" && new_hex != "?" {
-                                        format!(
-                                            "- {} from `{}` to `{}` {}",
-                                            consolidated_desc,
-                                            old_hex,
-                                            new_hex,
-                                            format_location(&friendly_location, is_simplify)
-                                        )
-                                    } else {
-                                        format!(
-                                            "- {} {}",
-                                            consolidated_desc,
-                                            format_location(&friendly_location, is_simplify)
-                                        ) // Fallback
-                                    };
-
-                                    generated_line = Some(line);
-                                    generated_desc = Some(consolidated_desc); // Store the *consolidated* description
-                                    processed_paths_ref.insert(change.path.clone());
-                                // Mark this path as consolidated for this group
-                                // println!("--- DEBUG: Index {}: Stored consolidated 'Modified Color' line for path '{}'", i, change.path);
-                                } else {
-                                    // Path already consolidated for this group, skip generating another line
-                                    // println!("--- DEBUG: Index {}: Path '{}' already consolidated. Skipping generation.", i, change.path);
-                                }
-                                // Mark both original Add/Remove events as processed
-                                processed_indices.insert(i);
-                                processed_indices.insert(j);
-                                handled_by_consolidation = true;
-                                break; // Found pair, stop lookahead for change 'i'
-                            }
-                        } else {
-                            /* Desc mismatch */
-                            break;
-                        }
-                    } else {
-                        /* Path mismatch */
-                        break;
-                    }
-                } // End lookahead loop
-            }
-        } // End Color Consolidation
+        // --- 1. Attempt Color Consolidation ---
+        if let Some((consolidated_line, consolidated_desc)) = try_consolidate_color_change(
+            i,
+            change,
+            slide_index_opt,
+            &remaining_path,
+            &change.path, // Pass the full path
+            changes,
+            &mut processed_indices,
+            &mut consolidated_color_paths_general,
+            &mut consolidated_color_paths_slide,
+            &old_val,
+            &new_val,
+            is_simplify,
+        ) {
+            // Consolidation successful and generated a line
+            generated_line = Some(consolidated_line);
+            generated_desc = Some(consolidated_desc);
+            handled_by_consolidation = true;
+            // try_consolidate_color_change already marked indices as processed
+            // println!("--- DEBUG: Index {}: Handled by color consolidation. Line: '{}'", i, generated_line.as_ref().unwrap_or(&"N/A".to_string()));
+        } else if processed_indices.contains(&i) {
+            // This check handles the case where try_consolidate found a pair,
+            // marked indices as processed, but returned None because the path
+            // was *already* consolidated earlier (avoid duplicate summary lines).
+            handled_by_consolidation = true; // Mark as handled so it skips step 2
+                                             // println!("--- DEBUG: Index {}: Already processed by prior consolidation.", i);
+        }
 
         // --- 2. Handle Non-Consolidated Changes ---
         if !handled_by_consolidation {
             // Ensure index wasn't processed during a failed lookahead or other logic
-            if processed_indices.contains(&i) {
-                continue;
-            }
-            processed_indices.insert(i); // Mark as processed now
+            // (Redundant check now, as try_consolidate handles marking)
+            // if processed_indices.contains(&i) { continue; }
+
+            processed_indices.insert(i); // Mark as processed now if not already
 
             let friendly_path = map_path_to_friendly_name(&remaining_path);
-            // Use the description determined by describe_change_target
-            let desc = change_target_desc;
+            // Determine description based *only* on the current change if not consolidated
+            let desc = describe_change_target(&remaining_path);
+            // println!("--- DEBUG: Index {}: Handling as non-consolidated. Desc: '{}'", i, desc);
+
+            // --- DEBUG PRINT (moved from above for clarity) ---
+            if change.path.ends_with(".textRun.content")
+                && change.change_type == ChangeType::Modified
+            {
+                println!(
+                    "--- DEBUG TEXT MOD --- Path: '{}', Old: {:?}, New: {:?}",
+                    change.path,
+                    change.old_value.as_ref().map(|v| v.format_for_display()),
+                    change.new_value.as_ref().map(|v| v.format_for_display())
+                );
+            }
+            // --- END DEBUG PRINT ---
 
             // Format the line based on change type
             let line = match change.change_type {
@@ -485,8 +565,7 @@ pub(crate) fn generate_readable_summary(
                     let val_str = change
                         .new_value
                         .as_ref()
-                        .map_or_else(|| "?".to_string(), |v| v.format_for_display());
-                    // Special format for Text Content additions
+                        .map_or("?".to_string(), |v| v.format_for_display());
                     if desc == "Text Content" {
                         format!(
                             "- Added Text Content `{}` {}",
@@ -494,7 +573,6 @@ pub(crate) fn generate_readable_summary(
                             format_location(&friendly_path, is_simplify)
                         )
                     } else {
-                        // Generic Add format for other allowed types
                         format!(
                             "- Added {} `{}` {}",
                             desc,
@@ -507,8 +585,7 @@ pub(crate) fn generate_readable_summary(
                     let val_str = change
                         .old_value
                         .as_ref()
-                        .map_or_else(|| "?".to_string(), |v| v.format_for_display());
-                    // Special format for Text Content removals
+                        .map_or("?".to_string(), |v| v.format_for_display());
                     if desc == "Text Content" {
                         format!(
                             "- Removed Text Content `{}` {}",
@@ -516,7 +593,6 @@ pub(crate) fn generate_readable_summary(
                             format_location(&friendly_path, is_simplify)
                         )
                     } else {
-                        // Generic Remove format
                         format!(
                             "- Removed {} `{}` {}",
                             desc,
@@ -549,42 +625,45 @@ pub(crate) fn generate_readable_summary(
 
         // --- 3. Filter and Add Line ---
         if let (Some(line), Some(desc)) = (generated_line, generated_desc) {
-            // Check the final description against the allowlist
             // println!("--- DEBUG: Index {}: Checking filter for Desc: '{}'", i, desc);
             if ALLOWED_DESCRIPTIONS.contains(&desc.as_str()) {
-                // Increment the correct count based on the *effective* change type
-                if desc == "Modified Color" {
-                    // Consolidated changes count as Modify
-                    summarized_counts.2 += 1;
+                // Determine the effective change type for counting
+                let effective_change_type = if desc == "Modified Color" {
+                    ChangeType::Modified // Consolidated color counts as Modify
                 } else {
-                    // Use the original change type for non-consolidated items
-                    match change.change_type {
-                        ChangeType::Added => summarized_counts.0 += 1,
-                        ChangeType::Removed => summarized_counts.1 += 1,
-                        ChangeType::Modified => summarized_counts.2 += 1,
-                    }
+                    change.change_type.clone() // Use original type for others
+                };
+
+                // Increment summary count
+                match effective_change_type {
+                    ChangeType::Added => summarized_counts.0 += 1,
+                    ChangeType::Removed => summarized_counts.1 += 1,
+                    ChangeType::Modified => summarized_counts.2 += 1,
                 }
-                // Add the formatted line to the appropriate group (slide or general)
+
+                // Add the formatted line to the appropriate group
                 match slide_index_opt {
                     Some(idx) => changes_by_slide.entry(idx).or_default().push(line.clone()),
                     None => general_changes.push(line.clone()),
                 };
-                // println!("--- DEBUG: Adding ALLOWED line (Desc: '{}'): '{}'", desc, line);
+                // println!("--- DEBUG: Adding ALLOWED line (Desc: '{}', Type: {:?}): '{}'", desc, effective_change_type, line);
             } else {
-                // Description was not in the allowlist, filter it out
+                // Filtered out
                 // println!("--- DEBUG: Filtering out line (Desc: '{}'): '{}'", desc, line);
             }
         } else if !handled_by_consolidation {
-            // This case indicates no line was generated for a change that wasn't consolidated.
-            // Could happen if Added Text Content lookup failed before.
-            // println!("--- WARNING: Index {}: No line generated and not consolidated. Desc was '{}'", i, change_target_desc);
+            // This indicates no line was generated for a change that wasn't consolidated.
+            // Should be rare now, potentially if describe_change_target returned something unexpected?
+            let original_desc = describe_change_target(&remaining_path); // Re-calculate for logging
+                                                                         // println!("--- WARNING: Index {}: No line generated and not consolidated. Original Desc was '{}', Path: '{}'", i, original_desc, change.path);
+        } else {
+            // Line generation skipped because it was handled by consolidation but no new line was needed (already consolidated)
+            // println!("--- DEBUG: Index {}: Consolidation handled, no new line needed.", i);
         }
     } // End main loop processing changes
 
     // --- Final Summary Assembly ---
-    // println!("--- DEBUG: Finished processing loop ---");
-    // println!("--- DEBUG: Summarized Counts (after filter): Add={}, Remove={}, Modify={}", summarized_counts.0, summarized_counts.1, summarized_counts.2);
-    // ... other final debug prints ...
+    // ... (rest of the function remains the same) ...
 
     let final_total = summarized_counts.0 + summarized_counts.1 + summarized_counts.2;
     let mut final_summary = format!(
@@ -606,8 +685,7 @@ pub(crate) fn generate_readable_summary(
     for (slide_index, slide_lines) in &changes_by_slide {
         if slide_lines.is_empty() {
             continue;
-        } // Skip slides with no relevant changes
-          // Use write! macro which returns a Result, handle potential error
+        }
         write!(final_summary, "\n\n### Slide {}:\n", slide_index + 1)?;
         final_summary.push_str(&slide_lines.join("\n"));
     }
@@ -619,10 +697,15 @@ pub(crate) fn generate_readable_summary(
     {
         final_summary
             .push_str("\n\nNote: Changes were detected but filtered out by relevance settings.");
-    } else if final_total == 0 {
-        final_summary.push_str("\n\nNo relevant changes detected.")
+    } else if final_total == 0 && !changes.is_empty() {
+        // Check if there were original changes
+        final_summary.push_str(
+            "\n\nNote: Changes detected, but none matched the relevance criteria for the summary.",
+        );
+    } else if final_total == 0 && changes.is_empty() {
+        // No changes at all
+        final_summary.push_str("\n\nNo changes detected.")
     }
 
-    // println!("--- DEBUG: Final Summary Generated ---");
     Ok(final_summary)
 }

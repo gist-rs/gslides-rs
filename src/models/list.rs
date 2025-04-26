@@ -1,5 +1,5 @@
+use indexmap::IndexMap;
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
 
 // Import TextStyle needed for NestingLevel's bulletStyle
 use crate::models::properties::TextStyle;
@@ -25,5 +25,5 @@ pub struct List {
     /// A map of nesting levels (0-8) to the properties of bullets at the associated level.
     /// The keys are integers representing the nesting level.
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub nesting_level: Option<HashMap<i32, NestingLevel>,>,
+    pub nesting_level: Option<IndexMap<i32, NestingLevel>>,
 }

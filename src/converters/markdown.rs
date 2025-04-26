@@ -195,7 +195,7 @@ pub fn extract_text_from_presentation(presentation: &Presentation) -> String {
         }
     }
 
-    full_text.trim_end().to_string() // Trim any trailing whitespace/newlines
+    full_text.to_string()
 }
 
 // --- Optional: Example Usage (Requires enabling test feature or separate binary) ---

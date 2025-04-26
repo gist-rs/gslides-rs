@@ -1,0 +1,23 @@
+## Summary of Changes (Text Content)
+
+- Lines Added: 4
+- Lines Removed: 3
+
+---
+
+--- a/presentation.md
++++ b/presentation.md
+@@ -1,7 +1,8 @@
+ # Presentation
+-test-parser
++test-parser-v2
+ 
+ ## Slide 1
+ 
+-Hello
+-world
+\ No newline at end of file
++こんにちは
++世界
++123
+\ No newline at end of file

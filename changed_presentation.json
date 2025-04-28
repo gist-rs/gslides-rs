@@ -291,6 +291,816 @@
           "propertyState": "INHERIT"
         }
       }
+    },
+    {
+      "objectId": "g351625ec973_0_0",
+      "pageElements": [
+        {
+          "objectId": "g351625ec973_0_5",
+          "size": {
+            "width": {
+              "magnitude": 3000000,
+              "unit": "EMU"
+            },
+            "height": {
+              "magnitude": 3000000,
+              "unit": "EMU"
+            }
+          },
+          "transform": {
+            "scaleX": 1,
+            "scaleY": 1,
+            "translateX": 952500,
+            "translateY": 2190750,
+            "unit": "EMU"
+          },
+          "table": {
+            "rows": 2,
+            "columns": 2,
+            "tableRows": [
+              {
+                "rowHeight": {
+                  "magnitude": 381000,
+                  "unit": "EMU"
+                },
+                "tableCells": [
+                  {
+                    "location": {},
+                    "rowSpan": 1,
+                    "columnSpan": 1,
+                    "text": {
+                      "textElements": [
+                        {
+                          "endIndex": 4,
+                          "paragraphMarker": {
+                            "style": {
+                              "lineSpacing": 100,
+                              "alignment": "START",
+                              "indentStart": {
+                                "unit": "PT"
+                              },
+                              "indentEnd": {
+                                "unit": "PT"
+                              },
+                              "spaceAbove": {
+                                "unit": "PT"
+                              },
+                              "spaceBelow": {
+                                "unit": "PT"
+                              },
+                              "indentFirstLine": {
+                                "unit": "PT"
+                              },
+                              "direction": "LEFT_TO_RIGHT",
+                              "spacingMode": "COLLAPSE_LISTS"
+                            }
+                          }
+                        },
+                        {
+                          "endIndex": 4,
+                          "textRun": {
+                            "content": "foo\n",
+                            "style": {
+                              "backgroundColor": {},
+                              "foregroundColor": {
+                                "opaqueColor": {
+                                  "rgbColor": {
+                                    "red": 1
+                                  }
+                                }
+                              },
+                              "bold": true,
+                              "italic": false,
+                              "fontFamily": "Consolas",
+                              "fontSize": {
+                                "magnitude": 14,
+                                "unit": "PT"
+                              },
+                              "baselineOffset": "NONE",
+                              "smallCaps": false,
+                              "strikethrough": false,
+                              "underline": false,
+                              "weightedFontFamily": {
+                                "fontFamily": "Consolas",
+                                "weight": 700
+                              }
+                            }
+                          }
+                        }
+                      ]
+                    },
+                    "tableCellProperties": {
+                      "tableCellBackgroundFill": {
+                        "propertyState": "NOT_RENDERED",
+                        "solidFill": {
+                          "color": {
+                            "rgbColor": {
+                              "red": 1,
+                              "green": 1,
+                              "blue": 1
+                            }
+                          },
+                          "alpha": 1
+                        }
+                      },
+                      "contentAlignment": "TOP"
+                    }
+                  },
+                  {
+                    "location": {
+                      "columnIndex": 1
+                    },
+                    "rowSpan": 1,
+                    "columnSpan": 1,
+                    "text": {
+                      "textElements": [
+                        {
+                          "endIndex": 4,
+                          "paragraphMarker": {
+                            "style": {
+                              "lineSpacing": 100,
+                              "alignment": "START",
+                              "indentStart": {
+                                "unit": "PT"
+                              },
+                              "indentEnd": {
+                                "unit": "PT"
+                              },
+                              "spaceAbove": {
+                                "unit": "PT"
+                              },
+                              "spaceBelow": {
+                                "unit": "PT"
+                              },
+                              "indentFirstLine": {
+                                "unit": "PT"
+                              },
+                              "direction": "LEFT_TO_RIGHT",
+                              "spacingMode": "COLLAPSE_LISTS"
+                            }
+                          }
+                        },
+                        {
+                          "endIndex": 4,
+                          "textRun": {
+                            "content": "bar\n",
+                            "style": {
+                              "backgroundColor": {},
+                              "foregroundColor": {
+                                "opaqueColor": {
+                                  "themeColor": "ACCENT1"
+                                }
+                              },
+                              "bold": true,
+                              "italic": false,
+                              "fontFamily": "Arial",
+                              "fontSize": {
+                                "magnitude": 14,
+                                "unit": "PT"
+                              },
+                              "baselineOffset": "NONE",
+                              "smallCaps": false,
+                              "strikethrough": false,
+                              "underline": false,
+                              "weightedFontFamily": {
+                                "fontFamily": "Arial",
+                                "weight": 700
+                              }
+                            }
+                          }
+                        }
+                      ]
+                    },
+                    "tableCellProperties": {
+                      "tableCellBackgroundFill": {
+                        "propertyState": "NOT_RENDERED",
+                        "solidFill": {
+                          "color": {
+                            "rgbColor": {
+                              "red": 1,
+                              "green": 1,
+                              "blue": 1
+                            }
+                          },
+                          "alpha": 1
+                        }
+                      },
+                      "contentAlignment": "TOP"
+                    }
+                  }
+                ],
+                "tableRowProperties": {
+                  "minRowHeight": {
+                    "magnitude": 381000,
+                    "unit": "EMU"
+                  }
+                }
+              },
+              {
+                "rowHeight": {
+                  "magnitude": 381000,
+                  "unit": "EMU"
+                },
+                "tableCells": [
+                  {
+                    "location": {
+                      "rowIndex": 1
+                    },
+                    "rowSpan": 1,
+                    "columnSpan": 1,
+                    "text": {
+                      "textElements": [
+                        {
+                          "endIndex": 4,
+                          "paragraphMarker": {
+                            "style": {
+                              "lineSpacing": 100,
+                              "alignment": "START",
+                              "indentStart": {
+                                "unit": "PT"
+                              },
+                              "indentEnd": {
+                                "unit": "PT"
+                              },
+                              "spaceAbove": {
+                                "unit": "PT"
+                              },
+                              "spaceBelow": {
+                                "unit": "PT"
+                              },
+                              "indentFirstLine": {
+                                "unit": "PT"
+                              },
+                              "direction": "LEFT_TO_RIGHT",
+                              "spacingMode": "COLLAPSE_LISTS"
+                            }
+                          }
+                        },
+                        {
+                          "endIndex": 4,
+                          "textRun": {
+                            "content": "123\n",
+                            "style": {
+                              "backgroundColor": {},
+                              "foregroundColor": {
+                                "opaqueColor": {
+                                  "rgbColor": {}
+                                }
+                              },
+                              "bold": false,
+                              "italic": false,
+                              "fontFamily": "Arial",
+                              "fontSize": {
+                                "magnitude": 14,
+                                "unit": "PT"
+                              },
+                              "baselineOffset": "NONE",
+                              "smallCaps": false,
+                              "strikethrough": false,
+                              "underline": false,
+                              "weightedFontFamily": {
+                                "fontFamily": "Arial",
+                                "weight": 400
+                              }
+                            }
+                          }
+                        }
+                      ]
+                    },
+                    "tableCellProperties": {
+                      "tableCellBackgroundFill": {
+                        "propertyState": "NOT_RENDERED",
+                        "solidFill": {
+                          "color": {
+                            "rgbColor": {
+                              "red": 1,
+                              "green": 1,
+                              "blue": 1
+                            }
+                          },
+                          "alpha": 1
+                        }
+                      },
+                      "contentAlignment": "TOP"
+                    }
+                  },
+                  {
+                    "location": {
+                      "rowIndex": 1,
+                      "columnIndex": 1
+                    },
+                    "rowSpan": 1,
+                    "columnSpan": 1,
+                    "text": {
+                      "textElements": [
+                        {
+                          "endIndex": 4,
+                          "paragraphMarker": {
+                            "style": {
+                              "lineSpacing": 100,
+                              "alignment": "START",
+                              "indentStart": {
+                                "unit": "PT"
+                              },
+                              "indentEnd": {
+                                "unit": "PT"
+                              },
+                              "spaceAbove": {
+                                "unit": "PT"
+                              },
+                              "spaceBelow": {
+                                "unit": "PT"
+                              },
+                              "indentFirstLine": {
+                                "unit": "PT"
+                              },
+                              "direction": "LEFT_TO_RIGHT",
+                              "spacingMode": "COLLAPSE_LISTS"
+                            }
+                          }
+                        },
+                        {
+                          "endIndex": 4,
+                          "textRun": {
+                            "content": "456\n",
+                            "style": {
+                              "backgroundColor": {},
+                              "foregroundColor": {
+                                "opaqueColor": {
+                                  "rgbColor": {}
+                                }
+                              },
+                              "bold": false,
+                              "italic": false,
+                              "fontFamily": "Arial",
+                              "fontSize": {
+                                "magnitude": 14,
+                                "unit": "PT"
+                              },
+                              "baselineOffset": "NONE",
+                              "smallCaps": false,
+                              "strikethrough": false,
+                              "underline": false,
+                              "weightedFontFamily": {
+                                "fontFamily": "Arial",
+                                "weight": 400
+                              }
+                            }
+                          }
+                        }
+                      ]
+                    },
+                    "tableCellProperties": {
+                      "tableCellBackgroundFill": {
+                        "propertyState": "NOT_RENDERED",
+                        "solidFill": {
+                          "color": {
+                            "rgbColor": {
+                              "red": 1,
+                              "green": 1,
+                              "blue": 1
+                            }
+                          },
+                          "alpha": 1
+                        }
+                      },
+                      "contentAlignment": "TOP"
+                    }
+                  }
+                ],
+                "tableRowProperties": {
+                  "minRowHeight": {
+                    "magnitude": 381000,
+                    "unit": "EMU"
+                  }
+                }
+              }
+            ],
+            "tableColumns": [
+              {
+                "columnWidth": {
+                  "magnitude": 3619500,
+                  "unit": "EMU"
+                }
+              },
+              {
+                "columnWidth": {
+                  "magnitude": 3619500,
+                  "unit": "EMU"
+                }
+              }
+            ],
+            "horizontalBorderRows": [
+              {
+                "tableBorderCells": [
+                  {
+                    "location": {},
+                    "tableBorderProperties": {
+                      "tableBorderFill": {
+                        "solidFill": {
+                          "color": {
+                            "rgbColor": {
+                              "red": 0.61960787,
+                              "green": 0.61960787,
+                              "blue": 0.61960787
+                            }
+                          },
+                          "alpha": 1
+                        }
+                      },
+                      "weight": {
+                        "magnitude": 9525,
+                        "unit": "EMU"
+                      },
+                      "dashStyle": "SOLID"
+                    }
+                  },
+                  {
+                    "location": {
+                      "columnIndex": 1
+                    },
+                    "tableBorderProperties": {
+                      "tableBorderFill": {
+                        "solidFill": {
+                          "color": {
+                            "rgbColor": {
+                              "red": 0.61960787,
+                              "green": 0.61960787,
+                              "blue": 0.61960787
+                            }
+                          },
+                          "alpha": 1
+                        }
+                      },
+                      "weight": {
+                        "magnitude": 9525,
+                        "unit": "EMU"
+                      },
+                      "dashStyle": "SOLID"
+                    }
+                  }
+                ]
+              },
+              {
+                "tableBorderCells": [
+                  {
+                    "location": {
+                      "rowIndex": 1
+                    },
+                    "tableBorderProperties": {
+                      "tableBorderFill": {
+                        "solidFill": {
+                          "color": {
+                            "rgbColor": {
+                              "red": 0.61960787,
+                              "green": 0.61960787,
+                              "blue": 0.61960787
+                            }
+                          },
+                          "alpha": 1
+                        }
+                      },
+                      "weight": {
+                        "magnitude": 9525,
+                        "unit": "EMU"
+                      },
+                      "dashStyle": "SOLID"
+                    }
+                  },
+                  {
+                    "location": {
+                      "rowIndex": 1,
+                      "columnIndex": 1
+                    },
+                    "tableBorderProperties": {
+                      "tableBorderFill": {
+                        "solidFill": {
+                          "color": {
+                            "rgbColor": {
+                              "red": 0.61960787,
+                              "green": 0.61960787,
+                              "blue": 0.61960787
+                            }
+                          },
+                          "alpha": 1
+                        }
+                      },
+                      "weight": {
+                        "magnitude": 9525,
+                        "unit": "EMU"
+                      },
+                      "dashStyle": "SOLID"
+                    }
+                  }
+                ]
+              },
+              {
+                "tableBorderCells": [
+                  {
+                    "location": {
+                      "rowIndex": 2
+                    },
+                    "tableBorderProperties": {
+                      "tableBorderFill": {
+                        "solidFill": {
+                          "color": {
+                            "rgbColor": {
+                              "red": 0.61960787,
+                              "green": 0.61960787,
+                              "blue": 0.61960787
+                            }
+                          },
+                          "alpha": 1
+                        }
+                      },
+                      "weight": {
+                        "magnitude": 9525,
+                        "unit": "EMU"
+                      },
+                      "dashStyle": "SOLID"
+                    }
+                  },
+                  {
+                    "location": {
+                      "rowIndex": 2,
+                      "columnIndex": 1
+                    },
+                    "tableBorderProperties": {
+                      "tableBorderFill": {
+                        "solidFill": {
+                          "color": {
+                            "rgbColor": {
+                              "red": 0.61960787,
+                              "green": 0.61960787,
+                              "blue": 0.61960787
+                            }
+                          },
+                          "alpha": 1
+                        }
+                      },
+                      "weight": {
+                        "magnitude": 9525,
+                        "unit": "EMU"
+                      },
+                      "dashStyle": "SOLID"
+                    }
+                  }
+                ]
+              }
+            ],
+            "verticalBorderRows": [
+              {
+                "tableBorderCells": [
+                  {
+                    "location": {},
+                    "tableBorderProperties": {
+                      "tableBorderFill": {
+                        "solidFill": {
+                          "color": {
+                            "rgbColor": {
+                              "red": 0.61960787,
+                              "green": 0.61960787,
+                              "blue": 0.61960787
+                            }
+                          },
+                          "alpha": 1
+                        }
+                      },
+                      "weight": {
+                        "magnitude": 9525,
+                        "unit": "EMU"
+                      },
+                      "dashStyle": "SOLID"
+                    }
+                  },
+                  {
+                    "location": {
+                      "columnIndex": 1
+                    },
+                    "tableBorderProperties": {
+                      "tableBorderFill": {
+                        "solidFill": {
+                          "color": {
+                            "rgbColor": {
+                              "red": 0.61960787,
+                              "green": 0.61960787,
+                              "blue": 0.61960787
+                            }
+                          },
+                          "alpha": 1
+                        }
+                      },
+                      "weight": {
+                        "magnitude": 9525,
+                        "unit": "EMU"
+                      },
+                      "dashStyle": "SOLID"
+                    }
+                  },
+                  {
+                    "location": {
+                      "columnIndex": 2
+                    },
+                    "tableBorderProperties": {
+                      "tableBorderFill": {
+                        "solidFill": {
+                          "color": {
+                            "rgbColor": {
+                              "red": 0.61960787,
+                              "green": 0.61960787,
+                              "blue": 0.61960787
+                            }
+                          },
+                          "alpha": 1
+                        }
+                      },
+                      "weight": {
+                        "magnitude": 9525,
+                        "unit": "EMU"
+                      },
+                      "dashStyle": "SOLID"
+                    }
+                  }
+                ]
+              },
+              {
+                "tableBorderCells": [
+                  {
+                    "location": {
+                      "rowIndex": 1
+                    },
+                    "tableBorderProperties": {
+                      "tableBorderFill": {
+                        "solidFill": {
+                          "color": {
+                            "rgbColor": {
+                              "red": 0.61960787,
+                              "green": 0.61960787,
+                              "blue": 0.61960787
+                            }
+                          },
+                          "alpha": 1
+                        }
+                      },
+                      "weight": {
+                        "magnitude": 9525,
+                        "unit": "EMU"
+                      },
+                      "dashStyle": "SOLID"
+                    }
+                  },
+                  {
+                    "location": {
+                      "rowIndex": 1,
+                      "columnIndex": 1
+                    },
+                    "tableBorderProperties": {
+                      "tableBorderFill": {
+                        "solidFill": {
+                          "color": {
+                            "rgbColor": {
+                              "red": 0.61960787,
+                              "green": 0.61960787,
+                              "blue": 0.61960787
+                            }
+                          },
+                          "alpha": 1
+                        }
+                      },
+                      "weight": {
+                        "magnitude": 9525,
+                        "unit": "EMU"
+                      },
+                      "dashStyle": "SOLID"
+                    }
+                  },
+                  {
+                    "location": {
+                      "rowIndex": 1,
+                      "columnIndex": 2
+                    },
+                    "tableBorderProperties": {
+                      "tableBorderFill": {
+                        "solidFill": {
+                          "color": {
+                            "rgbColor": {
+                              "red": 0.61960787,
+                              "green": 0.61960787,
+                              "blue": 0.61960787
+                            }
+                          },
+                          "alpha": 1
+                        }
+                      },
+                      "weight": {
+                        "magnitude": 9525,
+                        "unit": "EMU"
+                      },
+                      "dashStyle": "SOLID"
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "slideProperties": {
+        "layoutObjectId": "p12",
+        "masterObjectId": "simple-light-2",
+        "notesPage": {
+          "objectId": "g351625ec973_0_0:notes",
+          "pageType": "NOTES",
+          "pageElements": [
+            {
+              "objectId": "g351625ec973_0_3",
+              "size": {
+                "width": {
+                  "magnitude": 3000000,
+                  "unit": "EMU"
+                },
+                "height": {
+                  "magnitude": 3000000,
+                  "unit": "EMU"
+                }
+              },
+              "transform": {
+                "scaleX": 2.032,
+                "scaleY": 1.143,
+                "translateX": 381300,
+                "translateY": 685800,
+                "unit": "EMU"
+              },
+              "shape": {
+                "shapeProperties": {
+                  "outline": {
+                    "propertyState": "INHERIT"
+                  }
+                },
+                "placeholder": {
+                  "type": "SLIDE_IMAGE",
+                  "parentObjectId": "n:slide"
+                }
+              }
+            },
+            {
+              "objectId": "g351625ec973_0_4",
+              "size": {
+                "width": {
+                  "magnitude": 3000000,
+                  "unit": "EMU"
+                },
+                "height": {
+                  "magnitude": 3000000,
+                  "unit": "EMU"
+                }
+              },
+              "transform": {
+                "scaleX": 1.8288,
+                "scaleY": 1.3716,
+                "translateX": 685800,
+                "translateY": 4343400,
+                "unit": "EMU"
+              },
+              "shape": {
+                "shapeType": "TEXT_BOX",
+                "shapeProperties": {
+                  "shapeBackgroundFill": {
+                    "propertyState": "INHERIT"
+                  },
+                  "outline": {
+                    "propertyState": "INHERIT"
+                  },
+                  "shadow": {
+                    "propertyState": "INHERIT"
+                  },
+                  "autofit": {
+                    "fontScale": 1
+                  }
+                },
+                "placeholder": {
+                  "type": "BODY",
+                  "index": 1,
+                  "parentObjectId": "n:text"
+                }
+              }
+            }
+          ],
+          "pageProperties": {
+            "pageBackgroundFill": {
+              "propertyState": "INHERIT"
+            }
+          },
+          "notesProperties": {
+            "speakerNotesObjectId": "g351625ec973_0_4"
+          }
+        }
+      },
+      "pageProperties": {
+        "pageBackgroundFill": {
+          "propertyState": "INHERIT"
+        }
+      }
     }
   ],
   "title": "test-parser-v2",
@@ -9473,7 +10283,7 @@
     }
   ],
   "locale": "en",
-  "revisionId": "2n7EKtHp4nRmmg",
+  "revisionId": "Sd8u28QtdvsrTA",
   "notesMaster": {
     "objectId": "n",
     "pageType": "NOTES_MASTER",

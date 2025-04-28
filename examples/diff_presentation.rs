@@ -50,6 +50,7 @@ fn main() -> Result<(), DiffError> {
     if structured_diff.is_empty() {
         println!("No differences found.");
     } else {
+        println!("structured_diff {:#?}:", structured_diff);
         println!("Found {} differences:", structured_diff.len());
         for change in structured_diff {
             println!(" - Path: {}, Type: {:?}", change.path, change.change_type);

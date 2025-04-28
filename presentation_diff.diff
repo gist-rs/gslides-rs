@@ -1,13 +1,13 @@
 ## Summary of Changes (Text Content)
 
-- Lines Added: 4
+- Lines Added: 13
 - Lines Removed: 3
 
 ---
 
 --- base_presentation.json
 +++ changed_presentation.json
-@@ -1,7 +1,8 @@
+@@ -1,7 +1,17 @@
  # Presentation
 -test-parser
 +test-parser-v2
@@ -19,3 +19,12 @@
 +こんにちは
 +世界
 +123
++
++
++---
++
++## Slide 2
++
++| foo | bar |
++|---|---|
++| 123 | 456 |

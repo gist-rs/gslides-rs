@@ -5,8 +5,8 @@
 
 ---
 
---- a/presentation.md
-+++ b/presentation.md
+--- base_presentation.json
++++ changed_presentation.json
 @@ -1,7 +1,8 @@
  # Presentation
 -test-parser

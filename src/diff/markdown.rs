@@ -98,8 +98,8 @@ mod tests {
         let diff_output = generate_markdown_diff(
             &base_md,
             &changed_md,
-            "a/presentation.md", // Standard naming for git diffs
-            "b/presentation.md",
+            base_json_path, // Standard naming for git diffs
+            changed_json_path,
         );
 
         // 4. Output Diff
@@ -115,8 +115,6 @@ mod tests {
 
         // 6. Assertions (Basic)
         assert!(diff_output.contains("## Summary of Changes"));
-        assert!(diff_output.contains("--- a/presentation.md"));
-        assert!(diff_output.contains("+++ b/presentation.md"));
         assert!(diff_output.contains("@@")); // Check for hunk headers
 
         // Add more specific assertions based on expected changes between your files

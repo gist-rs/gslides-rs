@@ -15,7 +15,7 @@ use std::fmt::Write; // Import Write trait for formatting
 // (get_translate_y and compare_elements_by_y remain the same)
 /// Extracts the translateY value from a PageElement's transform.
 /// Returns f64::MAX if transform or translateY is None, placing such elements last.
-fn get_translate_y(element: &PageElement) -> f64 {
+pub fn get_translate_y(element: &PageElement) -> f64 {
     element
         .transform
         .as_ref()
@@ -24,7 +24,7 @@ fn get_translate_y(element: &PageElement) -> f64 {
 }
 
 /// Compares two PageElements based on their vertical position (translateY).
-fn compare_elements_by_y(a: &PageElement, b: &PageElement) -> Ordering {
+pub fn compare_elements_by_y(a: &PageElement, b: &PageElement) -> Ordering {
     get_translate_y(a)
         .partial_cmp(&get_translate_y(b))
         .unwrap_or(Ordering::Equal) // Fallback if comparison fails (e.g., NaN)
@@ -35,7 +35,7 @@ fn compare_elements_by_y(a: &PageElement, b: &PageElement) -> Ordering {
 //  extract_text_from_shape, extract_text_from_table,
 //  extract_text_from_page_element remain the same)
 /// Extracts text content from a single TextElement (specifically TextRun).
-fn extract_text_from_text_run(text_element: &ModelTextElement) -> Option<String> {
+pub fn extract_text_from_text_run(text_element: &ModelTextElement) -> Option<String> {
     if let Some(ModelTextElementKind::TextRun(text_run)) = &text_element.kind {
         text_run.content.clone() // Clone the content string if it exists
     } else {
@@ -44,7 +44,7 @@ fn extract_text_from_text_run(text_element: &ModelTextElement) -> Option<String>
 }
 
 /// Extracts text content from a TextContent block (iterates through TextElements).
-fn extract_text_from_text_content(text_content: &TextContent) -> String {
+pub fn extract_text_from_text_content(text_content: &TextContent) -> String {
     let mut combined_text = String::new();
     if let Some(elements) = &text_content.text_elements {
         for element in elements {
@@ -59,7 +59,7 @@ fn extract_text_from_text_content(text_content: &TextContent) -> String {
 }
 
 /// Extracts text from a Shape element, specifically if it's a TEXT_BOX.
-fn extract_text_from_shape(shape: &Shape) -> Option<String> {
+pub fn extract_text_from_shape(shape: &Shape) -> Option<String> {
     // Only extract from shapes explicitly marked as TEXT_BOX
     if shape.shape_type == Some(ShapeType::TextBox) {
         if let Some(text_content) = &shape.text {
@@ -80,7 +80,7 @@ fn extract_text_from_shape(shape: &Shape) -> Option<String> {
 
 /// Extracts text from a Table element.
 /// Formats as a simple concatenation of cell text, row by row, left to right.
-fn extract_text_from_table(table: &Table) -> Option<String> {
+pub fn extract_text_from_table(table: &Table) -> Option<String> {
     let mut table_text = String::new();
     if let Some(rows) = &table.table_rows {
         for row in rows {
@@ -117,7 +117,7 @@ fn extract_text_from_table(table: &Table) -> Option<String> {
 }
 
 /// Extracts text from a single PageElement by dispatching to specific element type handlers.
-fn extract_text_from_page_element(element: &PageElement) -> Option<String> {
+pub fn extract_text_from_page_element(element: &PageElement) -> Option<String> {
     match &element.element_kind {
         PageElementKind::Shape(shape) => extract_text_from_shape(shape),
         PageElementKind::Table(table) => extract_text_from_table(table),
@@ -128,7 +128,7 @@ fn extract_text_from_page_element(element: &PageElement) -> Option<String> {
 }
 
 /// Extracts and concatenates text from all relevant elements on a single slide, sorted vertically.
-fn extract_text_from_slide(slide: &Page) -> Option<String> {
+pub fn extract_text_from_slide(slide: &Page) -> Option<String> {
     let mut slide_parts: Vec<String> = Vec::new();
 
     if let Some(elements) = &slide.page_elements {

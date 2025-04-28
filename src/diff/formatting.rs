@@ -1,6 +1,6 @@
 use super::error::DiffError;
 use crate::{
-    diff::structured::{Change, ChangeType, ValueRepr},
+    diff::structured::{Change, ChangeType},
     models::colors::RgbColor,
     // models::text_element::TextElementKind, // No longer needed for lookup
     Presentation,
@@ -163,7 +163,7 @@ fn describe_change_target(remaining_path: &str) -> String {
         || remaining_path.ends_with(".backgroundColor.opaqueColor.rgbColor")
         || remaining_path.ends_with(".solidFill.color.opaqueColor.rgbColor")
     {
-        return "Color Object Components Changed".to_string();
+        "Color Object Components Changed".to_string()
     }
     // Removed style consolidation hook
 
@@ -216,25 +216,22 @@ fn describe_change_target(remaining_path: &str) -> String {
         return "Item".to_string();
     } else {
         // Final fallback based on last path segment
-        remaining_path
-            .rsplit(|c| c == '.' || c == '[')
-            .next()
-            .map_or_else(
-                || "Property".to_string(),
-                |segment| {
-                    if segment.is_empty() || segment == "]" {
-                        "Property".to_string()
-                    } else {
-                        let mut chars = segment.chars();
-                        match chars.next() {
-                            None => "Property".to_string(),
-                            Some(first_char) => {
-                                first_char.to_uppercase().collect::<String>() + chars.as_str()
-                            }
+        remaining_path.rsplit(['.', '[']).next().map_or_else(
+            || "Property".to_string(),
+            |segment| {
+                if segment.is_empty() || segment == "]" {
+                    "Property".to_string()
+                } else {
+                    let mut chars = segment.chars();
+                    match chars.next() {
+                        None => "Property".to_string(),
+                        Some(first_char) => {
+                            first_char.to_uppercase().collect::<String>() + chars.as_str()
                         }
                     }
-                },
-            )
+                }
+            },
+        )
     }
 }
 
@@ -245,7 +242,7 @@ fn get_value_at_path<'a>(root: &'a JsonValue, path_str: &str) -> Option<&'a Json
 
     // Handle initial segment (if path doesn't start with . or [)
     let initial_split = remaining_path
-        .find(|c| c == '.' || c == '[')
+        .find(['.', '['])
         .unwrap_or(remaining_path.len());
     if initial_split > 0 {
         let (segment, rest) = remaining_path.split_at(initial_split);
@@ -258,7 +255,7 @@ fn get_value_at_path<'a>(root: &'a JsonValue, path_str: &str) -> Option<&'a Json
         if remaining_path.starts_with('.') {
             remaining_path = &remaining_path[1..]; // Skip '.'
             let next_split = remaining_path
-                .find(|c| c == '.' || c == '[')
+                .find(['.', '['])
                 .unwrap_or(remaining_path.len());
             let (key, rest) = remaining_path.split_at(next_split);
             if key.is_empty() {
@@ -300,6 +297,7 @@ fn format_rgb_to_hex(rgb: &RgbColor) -> String {
 /// Attempts to consolidate Add/Remove pairs for color components into a single "Modified Color" change.
 /// Returns Some((line, description)) if consolidation occurs, None otherwise.
 /// Updates processed_indices if consolidation is successful.
+#[allow(clippy::too_many_arguments)]
 fn try_consolidate_color_change(
     current_index: usize,
     current_change: &Change,
@@ -329,6 +327,7 @@ fn try_consolidate_color_change(
     }
 
     // Look ahead for the opposite change type *at the exact same full path*
+    #[allow(clippy::needless_range_loop)]
     for next_index in (current_index + 1)..changes.len() {
         if processed_indices.contains(&next_index) {
             continue;
@@ -654,8 +653,8 @@ pub(crate) fn generate_readable_summary(
         } else if !handled_by_consolidation {
             // This indicates no line was generated for a change that wasn't consolidated.
             // Should be rare now, potentially if describe_change_target returned something unexpected?
-            let original_desc = describe_change_target(&remaining_path); // Re-calculate for logging
-                                                                         // println!("--- WARNING: Index {}: No line generated and not consolidated. Original Desc was '{}', Path: '{}'", i, original_desc, change.path);
+            let _original_desc = describe_change_target(&remaining_path); // Re-calculate for logging
+                                                                          // println!("--- WARNING: Index {}: No line generated and not consolidated. Original Desc was '{}', Path: '{}'", i, original_desc, change.path);
         } else {
             // Line generation skipped because it was handled by consolidation but no new line was needed (already consolidated)
             // println!("--- DEBUG: Index {}: Consolidation handled, no new line needed.", i);

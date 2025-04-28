@@ -6,7 +6,7 @@ use gslides_rs::{
 };
 
 use dotenvy::dotenv;
-use std::{env, fs::File, io::Write};
+use std::env;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {

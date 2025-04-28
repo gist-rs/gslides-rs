@@ -95,7 +95,7 @@ pub async fn get_presentation_sa(
         match serde_json::from_slice::<Presentation>(&bytes) {
             Ok(presentation) => {
                 let filename = "changed_presentation.json";
-                fs::write(filename, &bytes);
+                fs::write(filename, &bytes).expect("Error write file");
                 Ok(presentation)
             }
             Err(e) => {

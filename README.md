@@ -186,6 +186,15 @@ The diff functions return `Result<T, gslides_rs::diff::error::DiffError>`. Check
 
 Contributions are welcome! Please feel free to submit issues or pull requests.
 
+## TODO
+
+1. try html approach.
+1. get_md(json_str) // accpet string with json format and convert to md then return as md string.
+1. get_md_diff(base_json_str, compared_json_str) // like 1 but input 2 string and return md diff.
+1. get_structured_diff(base_json_str, compared_json_str) // like 2 but return structured diff.
+1. get_md_diff_summary(base_json_str, compared_json_str) // readable
+1. get_structured_diff_summary(base_json_str, compared_json_str) // readable
+
 ## License
 
 MIT License

@@ -1250,16 +1250,16 @@ mod tests {
                     if i == 0 {
                         // Assuming the first slide has the "Hello" text box
                         assert!(
-                             svg_content.contains(r#"font-size:52pt;"#), // Check for 52pt font size
+                            svg_content.contains(r#"font-size:52pt;"#), // Inherited from p2_i0 placeholder
                             "Expected font-size:52pt for 'Hello' text was not found in slide 1 SVG."
                         );
                         assert!(
-                            svg_content.contains(r#"fill:#0000ff;"#), // Check for blue color override
-                            "Expected fill:#0000ff for 'Hello' text was not found in slide 1 SVG."
+                            svg_content.contains(r#"fill:#ff0000;"#), // Red (r=1) specified in textRun
+                            "Expected fill:#ff0000 for 'こんにちは' text was not found in slide 1 SVG."
                         );
                         assert!(
-                              svg_content.contains(r#"font-family:'Arial';"#), // Check for default/inherited font family
-                             "Expected font-family:'Arial' for 'Hello' text was not found in slide 1 SVG."
+                             svg_content.contains(r#"font-family:'Oswald';"#), // Specified in textRun
+                             "Expected font-family:'Oswald' for 'こんにちは' text was not found in slide 1 SVG."
                          );
                     }
                     // Check if the specific text "world" has its own styles applied correctly
@@ -1267,20 +1267,20 @@ mod tests {
                         // Assuming the first slide has the "world" text box
                         assert!(
                               svg_content.contains(r#"font-size:28pt;"#), // Inherited from its placeholder? Check p2_i1
-                             "Expected font-size:28pt for 'world' text was not found in slide 1 SVG."
+                             "Expected font-size:28pt for '世界' text was not found in slide 1 SVG."
                          );
                         assert!(
-                            svg_content.contains(r#"fill:#ff0000;"#), // Check for red color override
-                            "Expected fill:#ff0000 for 'world' text was not found in slide 1 SVG."
+                            svg_content.contains(r#"fill:#00ff00;"#), // Green (g=1) specified in textRun
+                            "Expected fill:#00ff00 for '世界' text was not found in slide 1 SVG."
                         );
                         assert!(
-                               svg_content.contains(r#"font-family:'Consolas';"#), // Check for specific font family
-                              "Expected font-family:'Consolas' for 'world' text was not found in slide 1 SVG."
+                               svg_content.contains(r#"font-family:'Roboto Mono';"#), // Specified in textRun
+                              "Expected font-family:'Roboto Mono' for '世界' text was not found in slide 1 SVG."
                           );
                         // Check that bold is NOT applied (explicitly false in JSON)
                         assert!(
                                svg_content.contains(r#"font-weight:normal;"#) && !svg_content.contains(r#"font-weight:bold;"#),
-                               "Expected font-weight:normal for 'world' text was not found in slide 1 SVG."
+                               "Expected font-weight:normal for '世界' text was not found in slide 1 SVG."
                            );
                     }
 

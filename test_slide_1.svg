@@ -1,8 +1,13 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="720pt" height="405pt" viewBox="0 0 720 405">
+<svg xmlns="http://www.w3.org/2000/svg" width="720pt" height="540pt" viewBox="0 0 720 540">
 <rect width="100%" height="100%" fill="#ffffff"/>
-<g data-object-id="i0"><text x="24.54396453617126" y="110.62795275590551" text-anchor="start" style="font-family:'Oswald'; font-size:52pt; fill:#ff0000; fill-opacity:1; font-weight:normal; font-style:normal; text-decoration:none; font-variant:normal; ">こんにちは
+<g data-object-id="p9_i2"><text x="26.5" y="21.86818897637795" text-anchor="start" style="font-family:'Noto Sans JP'; font-size:8pt; fill:#000000; fill-opacity:1; font-weight:normal; font-style:normal; text-decoration:none; font-variant:normal; ">BLOCK TITLE
 </text></g>
-<g data-object-id="i1"><text x="24.543307086614174" y="251.15944881889763" text-anchor="start" style="font-family:'Roboto Mono'; font-size:28pt; fill:#00ff00; fill-opacity:1; font-weight:normal; font-style:normal; text-decoration:none; font-variant:normal; ">世界
-</text><text x="24.543307086614174" y="284.7594488188976" text-anchor="start" style="font-family:'Roboto Mono'; font-size:28pt; fill:#00ff00; fill-opacity:1; font-weight:normal; font-style:normal; text-decoration:none; font-variant:normal; ">123
+<g data-object-id="p9_i3"><text x="25.5" y="48.36787401574803" text-anchor="start" style="font-family:'Noto Sans JP'; font-size:18pt; fill:#000000; fill-opacity:1; font-weight:bold; font-style:normal; text-decoration:none; font-variant:normal; ">メインタイトル
 </text></g>
+<g data-object-id="p9_i4"><text x="167.25" y="44.210157480314955" text-anchor="start" style="font-family:'Noto Sans JP'; font-size:10pt; fill:#000000; fill-opacity:1; font-weight:normal; font-style:normal; text-decoration:none; font-variant:normal; ">サブタイトル
+</text></g>
+<g data-object-id="p9_i8"><text x="34.54385826771654" y="103.72070866141732" text-anchor="start" style="font-family:'Noto Sans JP'; font-size:18pt; fill:#000000; fill-opacity:1; font-weight:normal; font-style:normal; text-decoration:none; font-variant:normal; ">マスター テキストの書式設定 18pt
+</text><text x="34.54385826771654" y="119.32070866141731" text-anchor="start" style="font-family:'Noto Sans JP'; font-size:12pt; fill:#000000; fill-opacity:1; font-weight:normal; font-style:normal; text-decoration:none; font-variant:normal; ">第 2 レベル 12pt
+</text><text x="34.54385826771654" y="129.72070866141732" text-anchor="start" style="font-family:'Noto Sans JP'; font-size:8pt; fill:#000000; fill-opacity:1; font-weight:normal; font-style:normal; text-decoration:none; font-variant:normal; ">第 3 レベル 8pt</text></g>
+<g data-object-id="p9_i5"><text x="915.7914960629921" y="519.8922834645668" text-anchor="end" style="font-family:'Noto Sans JP'; font-size:8pt; fill:#000000; fill-opacity:1; font-weight:normal; font-style:normal; text-decoration:none; font-variant:normal; ">1</text></g>
 </svg>

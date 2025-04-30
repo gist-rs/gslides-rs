@@ -523,8 +523,8 @@ fn get_placeholder_default_text_style(placeholder_element: &PageElement) -> Opti
 #[allow(clippy::too_many_arguments)]
 fn convert_text_content_to_svg(
     text_content: &TextContent,
-    effective_paragraph_style: Option<&ParagraphStyle>,
-    effective_text_style_base: &TextStyle,
+    effective_paragraph_style: Option<&ParagraphStyle>, // Initial paragraph style from placeholder
+    effective_text_style_base: &TextStyle,              // Base text style from placeholder
     transform_x: f64,
     transform_y: f64,
     element_width: f64,
@@ -537,47 +537,46 @@ fn convert_text_content_to_svg(
         None => return Ok(()),
     };
 
-    // Store paragraph-level info (bullets, potentially specific paragraph styles if not pre-merged)
-    let mut para_bullets: HashMap<u32, String> = HashMap::new();
-    // Note: We now assume paragraph style (like alignment) is pre-resolved in effective_paragraph_style
-
-    for element in text_elements {
-        if let Some(TextElementKind::ParagraphMarker(pm)) = &element.kind {
-            if let Some(start_index) = element.start_index {
-                // TODO: Handle bullet glyph lookup/rendering - this needs list context from TextContent.lists
-                if let Some(bullet) = &pm.bullet {
-                    // Lookup list properties based on bullet.list_id and nesting level
-                    // For now, use placeholder glyph
-                    let bullet_text = bullet.glyph.as_deref().unwrap_or("* ").to_string(); // Default bullet
-                    para_bullets.insert(start_index, bullet_text);
-                }
-            }
-        }
-    }
+    // --- Paragraph-Level State ---
+    let mut current_paragraph_style_base = effective_text_style_base.clone(); // Base style for the current paragraph
+    let mut current_para_style = effective_paragraph_style; // Alignment etc. from placeholder or paragraph marker
 
     let mut current_y = transform_y;
-    // Estimate line height based on the base font size.
-    let base_font_size_pt = dimension_to_pt(effective_text_style_base.font_size.as_ref());
-    let line_height_pt = if base_font_size_pt > 0.0 {
-        base_font_size_pt * 1.2
-    } else {
-        DEFAULT_FONT_SIZE_PT * 1.2
-    };
     let mut first_line_in_paragraph = true;
-    // Use the pre-resolved paragraph style for alignment
-    let current_para_style = effective_paragraph_style;
 
     for element in text_elements {
+        // Estimate line height based on the *current paragraph's* base font size.
+        // This allows line height to change based on bullet style font size.
+        let current_base_font_size_pt =
+            dimension_to_pt(current_paragraph_style_base.font_size.as_ref());
+        let line_height_pt = if current_base_font_size_pt > 0.0 {
+            current_base_font_size_pt * 1.2 // Simple line height estimate
+        } else {
+            DEFAULT_FONT_SIZE_PT * 1.2
+        };
+
         let start_index = element.start_index.unwrap_or(0); // Use 0 if missing
 
         match &element.kind {
-            Some(TextElementKind::ParagraphMarker(_)) => {
+            Some(TextElementKind::ParagraphMarker(pm)) => {
                 if !first_line_in_paragraph {
                     current_y += line_height_pt;
                 }
                 first_line_in_paragraph = true;
-                if let Some(_bullet_text) = para_bullets.get(&start_index) {
-                    // Omit bullets for now
+
+                // Update paragraph style (alignment) and base text style (from bullet)
+                if let Some(pm_style) = &pm.style {
+                    current_para_style = Some(pm_style); // Update alignment etc.
+                }
+                if let Some(bullet) = &pm.bullet {
+                    if let Some(bullet_style) = &bullet.bullet_style {
+                        // [+] Modify the paragraph's base text style if bullet has specific style
+                        current_paragraph_style_base =
+                            merge_text_styles(Some(bullet_style), Some(effective_text_style_base));
+                    } else {
+                        // Reset to the original placeholder base if no bullet style
+                        current_paragraph_style_base = effective_text_style_base.clone();
+                    }
                 }
             }
             Some(TextElementKind::TextRun(tr)) => {
@@ -587,8 +586,12 @@ fn convert_text_content_to_svg(
                 }
 
                 let run_specific_style = tr.style.as_ref();
+                // [+] Merge run style onto the potentially bullet-modified paragraph base style
                 let final_run_style =
-                    merge_text_styles(run_specific_style, Some(effective_text_style_base));
+                    merge_text_styles(run_specific_style, Some(&current_paragraph_style_base));
+
+                // Estimate Y position adjustment based on the *final* font size for this run
+                let final_font_size_pt = dimension_to_pt(final_run_style.font_size.as_ref());
 
                 let mut text_style_attr = String::new();
                 apply_text_style(Some(&final_run_style), &mut text_style_attr, color_scheme)?; // Pass scheme
@@ -602,12 +605,12 @@ fn convert_text_content_to_svg(
                         element_width,
                     )?;
 
-                    let run_font_size_pt = dimension_to_pt(final_run_style.font_size.as_ref());
+                    // Adjust y based on final font size for better baseline alignment
                     let y_pos = current_y
-                        + if run_font_size_pt > 0.0 {
-                            run_font_size_pt
+                        + if final_font_size_pt > 0.0 {
+                            final_font_size_pt
                         } else {
-                            line_height_pt / 1.2
+                            line_height_pt / 1.2 // Fallback using estimated line height
                         };
 
                     write!(
@@ -621,6 +624,11 @@ fn convert_text_content_to_svg(
 
                     first_line_in_paragraph = false;
                 } else {
+                    // TODO: Handle subsequent tspans within the same line/paragraph more accurately.
+                    // This might involve calculating x offsets based on previous tspans,
+                    // handling kerning, etc. For now, subsequent runs might overprint or skip.
+                    // A simple approach might be to just append the tspan without x/y.
+                    // write!(svg_output, r#"<tspan style="{}">{}</tspan>"#, text_style_attr, escape_svg_text(content))?;
                     eprintln!("Warning: Subsequent TextRuns in the same paragraph are currently skipped in SVG conversion.");
                 }
 
@@ -637,8 +645,13 @@ fn convert_text_content_to_svg(
                 }
 
                 let autotext_specific_style = at.style.as_ref();
+                // [+] Merge AutoText style onto the potentially bullet-modified paragraph base style
                 let final_autotext_style =
-                    merge_text_styles(autotext_specific_style, Some(effective_text_style_base));
+                    merge_text_styles(autotext_specific_style, Some(&current_paragraph_style_base));
+
+                // Estimate Y position adjustment based on the final font size for this autotext
+                let final_autotext_font_size_pt =
+                    dimension_to_pt(final_autotext_style.font_size.as_ref());
 
                 let mut text_style_attr = String::new();
                 apply_text_style(
@@ -655,10 +668,10 @@ fn convert_text_content_to_svg(
                         transform_x,
                         element_width,
                     )?;
-                    let run_font_size_pt = dimension_to_pt(final_autotext_style.font_size.as_ref());
+                    // Adjust y based on final font size
                     let y_pos = current_y
-                        + if run_font_size_pt > 0.0 {
-                            run_font_size_pt
+                        + if final_autotext_font_size_pt > 0.0 {
+                            final_autotext_font_size_pt // Use run_font_size_pt alias here?
                         } else {
                             line_height_pt / 1.2
                         };
@@ -879,6 +892,7 @@ fn convert_shape_to_svg(
 
     // Resolve effective styles
     let mut effective_text_style_base = TextStyle::default();
+    // Separate paragraph style (for alignment, etc.) from text style (font, color, etc.)
     let mut effective_paragraph_style: Option<ParagraphStyle> = None;
 
     if let Some(placeholder) = &shape.placeholder {
@@ -890,16 +904,19 @@ fn convert_shape_to_svg(
                 masters_map,
                 elements_map,
             ) {
+                // [+] Get the *default text style* from the placeholder shape
                 if let Some(placeholder_base_style) =
                     get_placeholder_default_text_style(placeholder_element)
                 {
                     effective_text_style_base = placeholder_base_style;
                 }
 
+                // [+] Get the *default paragraph style* (alignment, etc.) from the placeholder
                 if let Some(placeholder_shape) = placeholder_element.element_kind.as_shape() {
                     if let Some(text) = &placeholder_shape.text {
                         if let Some(elements) = &text.text_elements {
                             for element in elements {
+                                // Find the first paragraph marker to get default para style
                                 if let Some(TextElementKind::ParagraphMarker(pm)) = &element.kind {
                                     if let Some(style) = &pm.style {
                                         effective_paragraph_style = Some(style.clone());
@@ -914,19 +931,22 @@ fn convert_shape_to_svg(
         }
     }
 
-    // Render text content if present, passing the resolved styles AND color scheme
+    // Render text content if present
+    // Pass the resolved base text style, the initial paragraph style, AND color scheme
     if let Some(text) = &shape.text {
+        // Check if the shape itself defines a paragraph style (overriding placeholder)
         if let Some(elements) = &text.text_elements {
             for element in elements {
                 if let Some(TextElementKind::ParagraphMarker(pm)) = &element.kind {
                     if let Some(style) = &pm.style {
                         effective_paragraph_style = Some(style.clone());
-                        break;
+                        break; // Use the first one found in the shape itself
                     }
                 }
             }
         }
 
+        // Pass the resolved base text style and the (potentially overridden) paragraph style
         convert_text_content_to_svg(
             text,
             effective_paragraph_style.as_ref(),

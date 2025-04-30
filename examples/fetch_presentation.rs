@@ -1,4 +1,3 @@
-#[cfg(not(target_arch = "wasm32"))]
 #[cfg(feature = "yup-oauth2")]
 use gslides_rs::{
     client,
@@ -7,17 +6,14 @@ use gslides_rs::{
     // models::elements::{PageElement, PageElementKind},
 };
 
-#[cfg(not(target_arch = "wasm32"))]
 #[cfg(feature = "yup-oauth2")]
 use dotenvy::dotenv;
 
-#[cfg(not(target_arch = "wasm32"))]
 #[cfg(feature = "yup-oauth2")]
 use std::env;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    #[cfg(not(target_arch = "wasm32"))]
     #[cfg(feature = "yup-oauth2")]
     {
         dotenv()

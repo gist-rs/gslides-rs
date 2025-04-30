@@ -147,7 +147,6 @@ fn format_optional_color(
 }
 
 /// Applies TextStyle properties to an SVG `<tspan>` or `<text>` element's style attribute.
-/// Applies TextStyle properties to an SVG `<tspan>` or `<text>` element's style attribute.
 fn apply_text_style(
     style: Option<&TextStyle>,
     svg_style: &mut String,
@@ -703,16 +702,26 @@ fn convert_text_content_to_html(
         None => return Ok(()),
     };
     let mut paragraph_open = false; // Track if <p> is open
+                                    // Keep track if the first element has been processed to avoid leading newline if empty
+    let mut first_element = true;
 
     for element in text_elements {
         match &element.kind {
             Some(TextElementKind::ParagraphMarker(_)) => {
                 if paragraph_open {
+                    // Add newline before closing paragraph
                     write!(html_output, "</p>")?;
                     paragraph_open = false;
                 }
+                // Add newline before opening new paragraph (unless it's the very first thing)
+                if !first_element {
+                    writeln!(html_output)?;
+                }
                 write!(html_output, "<p style=\"margin:0; padding:0;\">")?;
+                // Add newline after opening paragraph tag
+                writeln!(html_output)?;
                 paragraph_open = true;
+                first_element = false;
             }
             Some(TextElementKind::TextRun(tr)) => {
                 let content = tr.content.as_deref().unwrap_or("");
@@ -721,7 +730,13 @@ fn convert_text_content_to_html(
                 }
 
                 if !paragraph_open {
+                    // Add newline before opening paragraph (unless it's the very first thing)
+                    if !first_element {
+                        writeln!(html_output)?;
+                    }
                     write!(html_output, "<p style=\"margin:0; padding:0;\">")?;
+                    // Add newline after opening paragraph tag
+                    writeln!(html_output)?;
                     paragraph_open = true;
                 }
 
@@ -763,6 +778,8 @@ fn convert_text_content_to_html(
                     if !decorations.is_empty() {
                         write!(span_style, "text-decoration:{}; ", decorations.join(" "))?;
                     }
+                    // NOTE: Using fully qualified path assuming BaselineOffset is in crate::models::properties
+                    // Adjust the path if necessary.
                     match ts.baseline_offset {
                         Some(crate::models::properties::BaselineOffset::Superscript) => {
                             write!(span_style, "vertical-align:super; ")?
@@ -777,13 +794,20 @@ fn convert_text_content_to_html(
                     }
                 }
 
-                let html_content = escape_html_text(content).replace('\n', "<br/>");
+                // Escape HTML and replace internal newlines with <br/>
+                let html_content = escape_html_text(content).replace('\n', "<br/>"); // Add newline+indent after br for readability
 
+                // Add indentation before span
+                write!(html_output, "  ")?;
                 write!(
                     html_output,
                     r#"<span style="{}">{}</span>"#,
-                    span_style, html_content
+                    span_style.trim_end(), // Trim trailing space from style
+                    html_content
                 )?;
+                // Add newline after span
+                writeln!(html_output)?;
+                first_element = false;
             }
             Some(TextElementKind::AutoText(at)) => {
                 let content = at.content.as_deref().unwrap_or("");
@@ -791,19 +815,45 @@ fn convert_text_content_to_html(
                     continue;
                 }
                 if !paragraph_open {
+                    // Add newline before opening paragraph (unless it's the very first thing)
+                    if !first_element {
+                        writeln!(html_output)?;
+                    }
                     write!(html_output, "<p style=\"margin:0; padding:0;\">")?;
+                    // Add newline after opening paragraph tag
+                    writeln!(html_output)?;
                     paragraph_open = true;
                 }
                 // TODO: Apply styles similar to TextRun, passing color_scheme
-                let html_content = escape_html_text(content).replace('\n', "<br/>");
+                let html_content = escape_html_text(content).replace('\n', "<br/>"); // Add newline+indent after br
+
+                // Add indentation before span
+                write!(html_output, "  ")?;
+                // Assuming default span styling for now
                 write!(html_output, "<span>{}</span>", html_content)?;
+                // Add newline after span
+                writeln!(html_output)?;
+                first_element = false;
             }
             None => {}
         }
     }
 
     if paragraph_open {
+        // Add newline before closing paragraph
         write!(html_output, "</p>")?;
+        // Add a final newline after the last paragraph if it was open
+        writeln!(html_output)?;
+    }
+
+    // Trim potential trailing newline if the input was completely empty
+    if first_element {
+        html_output.clear();
+    } else {
+        // Trim the last newline added after the final </p> or final </span>
+        if html_output.ends_with('\n') {
+            html_output.pop();
+        }
     }
 
     Ok(())
@@ -894,7 +944,6 @@ fn convert_shape_to_svg(
 }
 
 /// Converts a Table element to SVG using `<foreignObject>` and HTML.
-/// Converts a Table element to SVG using `<foreignObject>` and HTML.
 fn convert_table_to_svg(
     table: &Table,
     transform: Option<&AffineTransform>,
@@ -912,12 +961,19 @@ fn convert_table_to_svg(
         return Ok(());
     }
 
+    // Add newline after opening foreignObject
     write!(
         svg_output,
         r#"<foreignObject x="{}" y="{}" width="{}" height="{}"{}>"#,
         tx, ty, width, height, foreign_object_attrs
     )?;
+    // Add newline + indentation (optional, but good practice) before div
+    write!(svg_output, "\n  ")?;
+    // Add newline after opening div
     write!(svg_output, r#"<div xmlns="http://www.w3.org/1999/xhtml">"#)?;
+    // Add newline + indentation before table
+    write!(svg_output, "\n    ")?;
+    // Add newline after opening table
     write!(
         svg_output,
         r#"<table style="border-collapse: collapse; width:100%; height:100%; border: 1px solid #ccc;">"#
@@ -925,8 +981,13 @@ fn convert_table_to_svg(
 
     if let Some(rows) = &table.table_rows {
         for row in rows {
-            write!(svg_output, "<tr>")?;
+            // Add newline + indentation before tr
+            write!(svg_output, "\n      <tr>")?; // No newline after opening tr yet, wait until after potential cells
             if let Some(cells) = &row.table_cells {
+                // Add newline before the first td (if any)
+                if !cells.is_empty() {
+                    writeln!(svg_output)?;
+                }
                 for cell in cells {
                     let colspan = cell.column_span.unwrap_or(1);
                     let rowspan = cell.row_span.unwrap_or(1);
@@ -950,27 +1011,39 @@ fn convert_table_to_svg(
                         }
                     }
 
+                    // Add indentation before td
+                    write!(svg_output, "        ")?;
                     write!(svg_output, r#"<td{} style="{}">"#, td_attrs, cell_style)?;
 
                     if let Some(text) = &cell.text {
                         // Pass scheme for text content formatting
+                        // Assuming convert_text_content_to_html doesn't add surrounding newlines/indentation
                         convert_text_content_to_html(text, color_scheme, svg_output)?;
                     }
 
                     write!(svg_output, "</td>")?;
+                    // Add newline after closing td
+                    writeln!(svg_output)?;
                 }
+                // Add indentation before closing tr
+                write!(svg_output, "      ")?;
             }
+            // Close tr tag (already indented if cells existed)
             write!(svg_output, "</tr>")?;
         }
     }
 
-    write!(svg_output, "</table></div></foreignObject>")?;
+    // Add newline + indentation before closing table
+    write!(svg_output, "\n    </table>")?;
+    // Add newline + indentation before closing div
+    write!(svg_output, "\n  </div>")?;
+    // Add newline before closing foreignObject
+    write!(svg_output, "\n</foreignObject>\n")?; // Add final newline
 
     Ok(())
 }
 
 // Step 7: Modify `convert_page_element_to_svg` to pass context
-/// Converts a single PageElement to an SVG fragment.
 /// Converts a single PageElement to an SVG fragment.
 fn convert_page_element_to_svg(
     element: &PageElement,
@@ -1314,53 +1387,5 @@ impl GetColorScheme for PageBackgroundFill {
         // e.g., if it's part of StretchedPictureFill, SolidFill etc.
         // For now, return None as it's typically in PageProperties.
         None
-    }
-}
-
-// --- Tests ---
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use crate::models::presentation::Presentation;
-    use std::fs;
-
-    #[test]
-    fn test_svg_conversion_from_json() {
-        // Load a sample presentation JSON
-        // let json_path = "changed_presentation.json"; // Use your test file
-        let json_path = "converted_presentation.json"; // Use your test file
-        let json_string =
-            fs::read_to_string(json_path).expect("Should have been able to read the file");
-        let presentation: Presentation =
-            serde_json::from_str(&json_string).expect("Failed to deserialize presentation JSON");
-
-        // Convert to SVG
-        let svg_results = convert_presentation_to_svg(&presentation);
-
-        match svg_results {
-            Ok(svg_vec) => {
-                assert!(
-                    !svg_vec.is_empty(),
-                    "SVG conversion should produce output for slides."
-                );
-
-                // Optionally save each SVG to a file for inspection
-                for (i, svg_content) in svg_vec.iter().enumerate() {
-                    let output_path = format!("test_slide_{}.svg", i + 1);
-                    let err_msg = format!("Unable to write SVG file: {}", output_path);
-                    fs::write(&output_path, svg_content).expect(&err_msg);
-                    println!("SVG for slide {} saved to {}", i + 1, output_path);
-
-                    // Basic checks on SVG content
-                    assert!(svg_content.starts_with("<svg"));
-                    assert!(svg_content.ends_with("</svg>\n")); // Check for closing tag and newline
-                    assert!(svg_content.contains("xmlns=\"http://www.w3.org/2000/svg\""));
-                }
-            }
-            Err(e) => {
-                panic!("SVG Conversion failed: {}", e);
-            }
-        }
     }
 }

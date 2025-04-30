@@ -347,10 +347,7 @@ type MastersMap<'a> = HashMap<String, &'a Page>;
 type ElementsMap<'a> = HashMap<String, &'a PageElement>;
 
 // Step 3: Create a function to build lookup maps for efficient access
-// Step 3: Create a function to build lookup maps for efficient access
-fn build_lookup_maps<'a>(
-    presentation: &'a Presentation,
-) -> (LayoutsMap<'a>, MastersMap<'a>, ElementsMap<'a>) {
+fn build_lookup_maps(presentation: &Presentation) -> (LayoutsMap, MastersMap, ElementsMap) {
     let mut layouts_map: LayoutsMap = HashMap::new();
     if let Some(layouts) = &presentation.layouts {
         for layout in layouts {
@@ -524,6 +521,7 @@ fn get_placeholder_default_text_style(placeholder_element: &PageElement) -> Opti
 // --- Conversion Functions ---
 
 /// Converts the text content of a shape or cell into SVG `<text>` and `<tspan>` elements.
+#[allow(clippy::too_many_arguments)]
 fn convert_text_content_to_svg(
     text_content: &TextContent,
     effective_paragraph_style: Option<&ParagraphStyle>,
@@ -694,6 +692,7 @@ fn convert_text_content_to_svg(
 }
 
 /// Converts the text content of a table cell into basic HTML for `<foreignObject>`.
+#[allow(unused_assignments)]
 fn convert_text_content_to_html(
     text_content: &TextContent,
     color_scheme: Option<&ColorScheme>, // <-- Added color_scheme argument
@@ -811,6 +810,7 @@ fn convert_text_content_to_html(
 }
 
 /// Converts a Shape element (especially TextBox) to SVG.
+#[allow(clippy::too_many_arguments)]
 fn convert_shape_to_svg(
     shape: &Shape,
     transform: Option<&AffineTransform>,
@@ -1136,6 +1136,7 @@ fn convert_slide_to_svg(
     let mut active_color_scheme: Option<&ColorScheme> = None;
 
     // 1. Check Slide properties
+    #[allow(unused_assignments)]
     if let Some(props) = &slide.page_properties {
         if let Some(scheme) = &props
             .page_background_fill
@@ -1144,6 +1145,7 @@ fn convert_slide_to_svg(
         {
             // Assuming get_color_scheme() is a helper or direct access
             // Need modification if scheme is elsewhere in PageProperties
+
             active_color_scheme = Some(scheme);
             // This part needs adjustment based on where ColorScheme actually lives in PageProperties
             // For now, let's assume it's directly accessible or None.

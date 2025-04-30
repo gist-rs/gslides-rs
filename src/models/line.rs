@@ -67,29 +67,30 @@ pub struct LineFill {
 
 /// The type of the line. Corresponds to ECMA-376 ST_ShapeType connector types.
 /// Derived from: https://developers.google.com/slides/api/reference/rest/v1/presentations.pages/lines#Type_3
+#[allow(non_camel_case_types)]
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 pub enum LineType {
     /// Unspecified line type.
     TypeUnspecified,
     /// Straight connector 1 form.
-    StraightConnector1,
+    StraightConnector_1,
     /// Bent connector 2 form.
-    BentConnector2,
+    BentConnector_2,
     /// Bent connector 3 form.
-    BentConnector3,
+    BentConnector_3,
     /// Bent connector 4 form.
-    BentConnector4,
+    BentConnector_4,
     /// Bent connector 5 form.
-    BentConnector5,
+    BentConnector_5,
     /// Curved connector 2 form.
-    CurvedConnector2,
+    CurvedConnector_2,
     /// Curved connector 3 form.
-    CurvedConnector3,
+    CurvedConnector_3,
     /// Curved connector 4 form.
-    CurvedConnector4,
+    CurvedConnector_4,
     /// Curved connector 5 form.
-    CurvedConnector5,
+    CurvedConnector_5,
     /// Straight line (not a connector).
     StraightLine,
 }

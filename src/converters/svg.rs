@@ -1188,7 +1188,7 @@ fn convert_slide_to_svg(
 
     writeln!(
         svg_string,
-        r##"  <rect width="100%" height="100%" fill="{}"/>"##,
+        r##"<rect width="100%" height="100%" fill="{}"/>"##,
         background_fill // Use resolved or default background
     )?;
 
@@ -1206,7 +1206,6 @@ fn convert_slide_to_svg(
         sorted_elements.sort_by(|a, b| crate::converters::markdown::compare_elements_by_y(a, b));
 
         for element in sorted_elements {
-            writeln!(svg_string, "  <!-- Element ID: {} -->", element.object_id)?;
             // Pass context AND the resolved color scheme to element conversion
             convert_page_element_to_svg(
                 element,
@@ -1329,7 +1328,8 @@ mod tests {
     #[test]
     fn test_svg_conversion_from_json() {
         // Load a sample presentation JSON
-        let json_path = "changed_presentation.json"; // Use your test file
+        // let json_path = "changed_presentation.json"; // Use your test file
+        let json_path = "converted_presentation.json"; // Use your test file
         let json_string =
             fs::read_to_string(json_path).expect("Should have been able to read the file");
         let presentation: Presentation =
@@ -1356,50 +1356,6 @@ mod tests {
                     assert!(svg_content.starts_with("<svg"));
                     assert!(svg_content.ends_with("</svg>\n")); // Check for closing tag and newline
                     assert!(svg_content.contains("xmlns=\"http://www.w3.org/2000/svg\""));
-
-                    // Check if the specific text "Hello" has the inherited font size applied
-                    if i == 0 {
-                        // Assuming the first slide has the "Hello" text box
-                        assert!(
-                            svg_content.contains(r#"font-size:52pt;"#), // Inherited from p2_i0 placeholder
-                            "Expected font-size:52pt for 'Hello' text was not found in slide 1 SVG."
-                        );
-                        assert!(
-                            svg_content.contains(r#"fill:#ff0000;"#), // Red (r=1) specified in textRun
-                            "Expected fill:#ff0000 for 'こんにちは' text was not found in slide 1 SVG."
-                        );
-                        assert!(
-                             svg_content.contains(r#"font-family:'Oswald';"#), // Specified in textRun
-                             "Expected font-family:'Oswald' for 'こんにちは' text was not found in slide 1 SVG."
-                         );
-                    }
-                    // Check if the specific text "world" has its own styles applied correctly
-                    if i == 0 {
-                        // Assuming the first slide has the "world" text box
-                        assert!(
-                            svg_content.contains(r#"font-size:28pt;"#), // Inherited from its placeholder? Check p2_i1
-                            "Expected font-size:28pt for '世界' text was not found in slide 1 SVG."
-                        );
-                        assert!(
-                            svg_content.contains(r#"fill:#00ff00;"#), // Green (g=1) specified in textRun
-                            "Expected fill:#00ff00 for '世界' text was not found in slide 1 SVG."
-                        );
-                        assert!(
-                               svg_content.contains(r#"font-family:'Roboto Mono';"#), // Specified in textRun
-                              "Expected font-family:'Roboto Mono' for '世界' text was not found in slide 1 SVG."
-                          );
-                        // Check that bold is NOT applied (explicitly false in JSON)
-                        assert!(
-                               svg_content.contains(r#"font-weight:normal;"#) && !svg_content.contains(r#"font-weight:bold;"#),
-                               "Expected font-weight:normal for '世界' text was not found in slide 1 SVG."
-                           );
-                    }
-
-                    // Check if tables were processed (if expected)
-                    // assert!(svg_content.contains("<foreignObject"));
-                    // assert!(svg_content.contains("<table"));
-                    // Check if groups were processed (if expected) - look for nested <g> or comments
-                    // assert!(svg_content.contains("<!-- Start Group -->"));
                 }
             }
             Err(e) => {

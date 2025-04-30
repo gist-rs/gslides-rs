@@ -1,0 +1,70 @@
+--- ./src/converters/svg.rs
++++ ./src/converters/svg.rs
+@@ -669,14 +669,24 @@
+         None => return Ok(()),
+     };
+
++    let mut paragraph_open = false; // Track if <p> is open
++
+     for element in text_elements {
+         match &element.kind {
+             Some(TextElementKind::ParagraphMarker(_)) => {
++                // If a paragraph is already open, close it before starting a new one.
++                if paragraph_open {
++                    write!(html_output, "</p>")?;
++                    paragraph_open = false; // Mark as closed
++                }
+                 // Start a new paragraph in HTML
+                 write!(html_output, "<p style=\"margin:0; padding:0;\">")?; // Basic paragraph styling
++                paragraph_open = true; // Mark as open
+             }
+             Some(TextElementKind::TextRun(tr)) => {
+                 let content = tr.content.as_deref().unwrap_or("");
++                // Skip completely empty runs. Runs with only newline will be handled by replace below.
+                 if content.is_empty() {
+                     continue;
+                 }
+@@ -684,6 +694,13 @@
+                 let mut span_style = String::new();
+                 // Convert TextStyle to inline CSS
+                 if let Some(ts) = &tr.style {
++                    // If no paragraph is open (e.g., text starts without a leading marker), open one.
++                    // This ensures the span is always inside a <p>.
++                    if !paragraph_open {
++                         write!(html_output, "<p style=\"margin:0; padding:0;\">")?;
++                         paragraph_open = true;
++                    }
++
+                     write!(
+                         span_style,
+                         "font-family:'{}'; ",
+@@ -748,6 +765,12 @@
+                 // Apply styles similar to TextRun
+                 // ... (style conversion logic omitted for brevity, similar to TextRun above) ...
+                 let html_content = escape_html_text(content).replace('\n', "<br/>");
++                // If no paragraph is open, open one.
++                if !paragraph_open {
++                     write!(html_output, "<p style=\"margin:0; padding:0;\">")?;
++                     paragraph_open = true;
++                }
++
+                 // write!(html_output, r#"<span style="{}">{}</span>"#, span_style, html_content)?;
+                 write!(html_output, "<span>{}</span>", html_content)?; // Simplified without full style conversion for brevity
+             }
+@@ -757,12 +780,10 @@
+         // A simpler approach: wrap each text run/autotext in span, and handle <p> only at ParagraphMarker.
+         // The current logic might produce invalid HTML nesting.
+     }
+-    // Ensure any open paragraph tag is closed at the end
+-    if html_output.ends_with("<p style=\"margin:0; padding:0;\">") {
+-        // If the last element was a para marker without content, maybe remove it or add &nbsp;?
+-    } else if html_output.contains("<p") && !html_output.ends_with("</p>") {
+-        // This check is weak. Correct paragraph handling is needed.
+-        // write!(html_output, "</p>")?;
++
++    // Ensure any remaining open paragraph tag is closed at the very end
++    if paragraph_open {
++        write!(html_output, "</p>")?;
+     }
+
+     Ok(())

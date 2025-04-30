@@ -697,17 +697,32 @@ fn convert_text_content_to_html(
         Some(elements) => elements,
         None => return Ok(()),
     };
+    let mut paragraph_open = false; // Track if <p> is open
 
     for element in text_elements {
         match &element.kind {
             Some(TextElementKind::ParagraphMarker(_)) => {
+                // If a paragraph is already open, close it before starting a new one.
+                if paragraph_open {
+                    write!(html_output, "</p>")?;
+                    paragraph_open = false; // Mark as closed
+                }
                 // Start a new paragraph in HTML
                 write!(html_output, "<p style=\"margin:0; padding:0;\">")?; // Basic paragraph styling
+                paragraph_open = true; // Mark as open
             }
             Some(TextElementKind::TextRun(tr)) => {
                 let content = tr.content.as_deref().unwrap_or("");
+                // Skip completely empty runs. Runs with only newline will be handled by replace below.
                 if content.is_empty() {
                     continue;
+                }
+
+                // If no paragraph is open (e.g., text starts without a leading marker), open one.
+                // This ensures the span is always inside a <p>.
+                if !paragraph_open {
+                    write!(html_output, "<p style=\"margin:0; padding:0;\">")?;
+                    paragraph_open = true;
                 }
 
                 let mut span_style = String::new();
@@ -776,25 +791,28 @@ fn convert_text_content_to_html(
                 if content.is_empty() {
                     continue;
                 }
+
+                // If no paragraph is open, open one.
+                if !paragraph_open {
+                    write!(html_output, "<p style=\"margin:0; padding:0;\">")?;
+                    paragraph_open = true;
+                }
+
                 // Apply styles similar to TextRun
                 // ... (style conversion logic omitted for brevity, similar to TextRun above) ...
                 let html_content = escape_html_text(content).replace('\n', "<br/>");
+
                 // write!(html_output, r#"<span style="{}">{}</span>"#, span_style, html_content)?;
                 write!(html_output, "<span>{}</span>", html_content)?; // Simplified without full style conversion for brevity
             }
             None => {} // Skip elements with no kind
         }
-        // Close paragraph if the next element is a ParagraphMarker or end of elements
-        // This logic needs refinement to correctly close </p> tags.
-        // A simpler approach: wrap each text run/autotext in span, and handle <p> only at ParagraphMarker.
-        // The current logic might produce invalid HTML nesting.
+        // Previous complex closing logic removed, handled by flag now.
     }
-    // Ensure any open paragraph tag is closed at the end
-    if html_output.ends_with("<p style=\"margin:0; padding:0;\">") {
-        // If the last element was a para marker without content, maybe remove it or add &nbsp;?
-    } else if html_output.contains("<p") && !html_output.ends_with("</p>") {
-        // This check is weak. Correct paragraph handling is needed.
-        // write!(html_output, "</p>")?;
+
+    // Ensure any remaining open paragraph tag is closed at the very end
+    if paragraph_open {
+        write!(html_output, "</p>")?;
     }
 
     Ok(())
@@ -1266,9 +1284,9 @@ mod tests {
                     if i == 0 {
                         // Assuming the first slide has the "world" text box
                         assert!(
-                              svg_content.contains(r#"font-size:28pt;"#), // Inherited from its placeholder? Check p2_i1
-                             "Expected font-size:28pt for '世界' text was not found in slide 1 SVG."
-                         );
+                            svg_content.contains(r#"font-size:28pt;"#), // Inherited from its placeholder? Check p2_i1
+                            "Expected font-size:28pt for '世界' text was not found in slide 1 SVG."
+                        );
                         assert!(
                             svg_content.contains(r#"fill:#00ff00;"#), // Green (g=1) specified in textRun
                             "Expected fill:#00ff00 for '世界' text was not found in slide 1 SVG."

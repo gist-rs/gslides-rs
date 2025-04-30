@@ -31,7 +31,7 @@ pub enum BaselineOffset {
 /// Represents the styling that can be applied to a TextRun.
 /// If properties are unset, they may be inherited from a parent placeholder or the underlying paragraph style.
 /// Derived from: https://developers.google.com/slides/api/reference/rest/v1/presentations.pages/text#TextStyle
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Default)]
 #[serde(rename_all = "camelCase")]
 pub struct TextStyle {
     /// The background color of the text. If set, the color is either opaque or

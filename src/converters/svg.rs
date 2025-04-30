@@ -1,0 +1,1313 @@
+use crate::models::{
+    colors::{OpaqueColor, OpaqueColorContent},
+    common::{AffineTransform, Dimension, Size, Unit},
+    elements::{PageElement, PageElementKind},
+    page::Page,
+    placeholder::Placeholder,
+    presentation::Presentation,
+    properties::{Alignment, ParagraphStyle, TextStyle},
+    shape::Shape,
+    table::Table,
+    text::TextContent,
+    text_element::TextElementKind,
+};
+use std::{collections::HashMap, fmt::Write};
+use thiserror::Error;
+
+// --- Error Type ---
+
+#[derive(Error, Debug)]
+pub enum SvgConversionError {
+    #[error("Formatting error: {0}")]
+    FormatError(#[from] std::fmt::Error),
+    #[error("Missing expected data: {0}")]
+    MissingData(String),
+    #[error("Unsupported feature: {0}")]
+    Unsupported(String),
+    #[error("Internal error: {0}")]
+    Internal(String),
+}
+
+type Result<T> = std::result::Result<T, SvgConversionError>;
+
+// --- Constants & Defaults ---
+
+// Conversion factors (assuming 96 DPI for px equivalence, but mainly using pt)
+const PT_PER_INCH: f64 = 72.0;
+const EMU_PER_INCH: f64 = 914400.0;
+const EMU_PER_PT: f64 = EMU_PER_INCH / PT_PER_INCH; // Approx 12700
+
+const DEFAULT_FONT_SIZE_PT: f64 = 11.0; // Default fallback font size
+const DEFAULT_FONT_FAMILY: &str = "Arial"; // Default fallback font
+const DEFAULT_TEXT_COLOR: &str = "#000000"; // Black
+
+// --- Helper Functions ---
+
+/// Escapes special XML characters for SVG text content.
+fn escape_svg_text(text: &str) -> String {
+    text.replace('&', "&amp;")
+        .replace('<', "&lt;")
+        .replace('>', "&gt;")
+}
+
+/// Escapes special XML characters for HTML text content (within foreignObject).
+fn escape_html_text(text: &str) -> String {
+    text.replace('&', "&amp;")
+        .replace('<', "&lt;")
+        .replace('>', "&gt;")
+    // HTML also needs quotes escaped in attributes, but less critical for content here.
+    // .replace('"', "&quot;")
+    // .replace('\'', "&apos;")
+}
+
+/// Converts a Dimension to points (pt), returning 0.0 if None or invalid.
+fn dimension_to_pt(dim: Option<&Dimension>) -> f64 {
+    match dim {
+        Some(d) => {
+            let magnitude = d.magnitude.unwrap_or(0.0);
+            match d.unit.as_ref() {
+                Some(Unit::Pt) => magnitude,
+                Some(Unit::Emu) => magnitude / EMU_PER_PT,
+                _ => 0.0, // Treat unspecified or unknown as 0
+            }
+        }
+        None => 0.0,
+    }
+}
+
+/// Converts an OpaqueColor to an SVG color string (e.g., #RRGGBB).
+/// TODO: Handle ThemeColor resolution. Currently only supports RGB.
+fn format_color(color_opt: Option<&OpaqueColor>) -> String {
+    match color_opt {
+        Some(opaque_color) => match &opaque_color.color_kind {
+            OpaqueColorContent::RgbColor(rgb) => {
+                let r = (rgb.red.unwrap_or(0.0) * 255.0).round() as u8;
+                let g = (rgb.green.unwrap_or(0.0) * 255.0).round() as u8;
+                let b = (rgb.blue.unwrap_or(0.0) * 255.0).round() as u8;
+                format!("#{:02x}{:02x}{:02x}", r, g, b)
+            }
+            OpaqueColorContent::ThemeColor(_) => {
+                // Placeholder for theme color resolution
+                DEFAULT_TEXT_COLOR.to_string() // Fallback to default
+            }
+        },
+        None => DEFAULT_TEXT_COLOR.to_string(), // Fallback to default
+    }
+}
+
+/// Converts an OptionalColor (often used for background/foreground) to SVG fill/opacity attributes.
+/// Returns a tuple: (fill_color, fill_opacity).
+/// Uses DEFAULT_TEXT_COLOR if color is None, returns "none" if color is transparent (opaque_color is None).
+fn format_optional_color(
+    optional_color: Option<&crate::models::colors::OptionalColor>,
+) -> (String, String) {
+    match optional_color {
+        Some(opt_color) => {
+            match &opt_color.opaque_color {
+                Some(opaque_color) => match &opaque_color.color_kind {
+                    OpaqueColorContent::RgbColor(_rgb) => {
+                        let color_hex = format_color(Some(opaque_color));
+                        // Assuming alpha comes from SolidFill if available, else 1.0
+                        // TODO: How to get alpha here reliably? TextStyle doesn't have alpha directly.
+                        // Let's assume OptionalColor implies full opacity if present.
+                        (color_hex, "1".to_string())
+                    }
+                    OpaqueColorContent::ThemeColor(_) => {
+                        // Placeholder for theme color resolution
+                        (DEFAULT_TEXT_COLOR.to_string(), "1".to_string()) // Fallback
+                    }
+                },
+                None => ("none".to_string(), "0".to_string()), // Transparent
+            }
+        }
+        None => (DEFAULT_TEXT_COLOR.to_string(), "1".to_string()), // Default opaque black if OptionalColor itself is missing
+    }
+}
+
+/// Applies TextStyle properties to an SVG `<tspan>` or `<text>` element's style attribute.
+fn apply_text_style(style: Option<&TextStyle>, svg_style: &mut String) -> Result<()> {
+    if let Some(ts) = style {
+        // Font Family
+        write!(
+            svg_style,
+            "font-family:'{}'; ",
+            ts.font_family.as_deref().unwrap_or(DEFAULT_FONT_FAMILY)
+        )?;
+
+        // Font Size
+        let font_size_pt = dimension_to_pt(ts.font_size.as_ref());
+        write!(
+            svg_style,
+            "font-size:{}pt; ",
+            if font_size_pt > 0.0 {
+                font_size_pt
+            } else {
+                DEFAULT_FONT_SIZE_PT
+            }
+        )?;
+
+        // Foreground Color
+        let (fg_color, fg_opacity) = format_optional_color(ts.foreground_color.as_ref());
+        write!(
+            svg_style,
+            "fill:{}; fill-opacity:{}; ",
+            fg_color, fg_opacity
+        )?;
+
+        // Background Color (Difficult to represent reliably for tspans, maybe ignore for now?)
+        // let (bg_color, bg_opacity) = format_optional_color(ts.background_color.as_ref());
+        // if bg_color != "none" { ... }
+
+        // Bold
+        if ts.bold.unwrap_or(false) {
+            write!(svg_style, "font-weight:bold; ")?;
+        } else {
+            write!(svg_style, "font-weight:normal; ")?; // Explicitly normal needed?
+        }
+
+        // Italic
+        if ts.italic.unwrap_or(false) {
+            write!(svg_style, "font-style:italic; ")?;
+        } else {
+            write!(svg_style, "font-style:normal; ")?; // Explicitly normal needed?
+        }
+
+        // Underline / Strikethrough
+        let mut decorations = Vec::new();
+        if ts.underline.unwrap_or(false) {
+            decorations.push("underline");
+        }
+        if ts.strikethrough.unwrap_or(false) {
+            decorations.push("line-through");
+        }
+        if !decorations.is_empty() {
+            write!(svg_style, "text-decoration:{}; ", decorations.join(" "))?;
+        } else {
+            // How to ensure no decoration if parent had one?
+            write!(svg_style, "text-decoration:none; ")?;
+        }
+
+        // Baseline Offset (Superscript/Subscript)
+        // SVG baseline-shift is the standard way
+        match ts.baseline_offset {
+            Some(crate::models::properties::BaselineOffset::Superscript) => {
+                write!(svg_style, "baseline-shift:super; ")?;
+            }
+            Some(crate::models::properties::BaselineOffset::Subscript) => {
+                write!(svg_style, "baseline-shift:sub; ")?;
+            }
+            _ => { /* Use default baseline */ }
+        }
+
+        // Small Caps (SVG: font-variant)
+        if ts.small_caps.unwrap_or(false) {
+            write!(svg_style, "font-variant:small-caps; ")?;
+        } else {
+            write!(svg_style, "font-variant:normal; ")?;
+        }
+
+        // Link (Not directly styleable, maybe wrap in <a>?)
+        // if let Some(link) = &ts.link { ... }
+    } else {
+        // Apply default styles if no style is provided? Or assume inherited?
+        // Let's assume inheritance is handled by SVG structure for now.
+    }
+    Ok(())
+}
+
+/// Applies ParagraphStyle properties (mainly alignment) to an SVG `<text>` element.
+fn apply_paragraph_style(
+    style: Option<&ParagraphStyle>,
+    svg_attrs: &mut String,
+    x: f64,
+    width: f64,
+) -> Result<f64> {
+    let mut adjusted_x = x;
+    let mut text_anchor = "start"; // SVG default
+
+    if let Some(ps) = style {
+        match ps.alignment {
+            Some(Alignment::Center) => {
+                text_anchor = "middle";
+                adjusted_x = x + width / 2.0;
+            }
+            Some(Alignment::End) => {
+                text_anchor = "end";
+                adjusted_x = x + width;
+            }
+            Some(Alignment::Justified) => {
+                // Justification is complex in SVG. text-align="justify" exists but support varies.
+                // text-anchor="start" is a fallback.
+                // Maybe add 'text-align:justify;' to style?
+                // style.push_str("text-align:justify; ");
+                text_anchor = "start"; // Stick with start for broader compatibility
+            }
+            _ => {
+                // Start or Unspecified
+                text_anchor = "start";
+                adjusted_x = x;
+            }
+        }
+        // Indentation and Spacing (line_spacing, space_above/below) are hard to map directly to SVG text attributes.
+        // Might need manual y/dy adjustments or just ignore for basic conversion.
+        // Let's ignore these for now.
+    }
+
+    write!(svg_attrs, r#" text-anchor="{}""#, text_anchor)?;
+    Ok(adjusted_x) // Return the potentially adjusted x based on anchor
+}
+
+// Helper for recursive group element collection
+fn collect_elements_recursive<'a>(elements: &'a [PageElement], map: &mut ElementsMap<'a>) {
+    for element in elements {
+        map.insert(element.object_id.clone(), element);
+        if let PageElementKind::ElementGroup(group) = &element.element_kind {
+            collect_elements_recursive(&group.children, map);
+        }
+    }
+}
+
+// Directly iterate over pages instead of using a closure
+fn collect_page_elements<'a>(pages: Option<&'a Vec<Page>>, elements_map: &mut ElementsMap<'a>) {
+    if let Some(page_list) = pages {
+        for page in page_list {
+            if let Some(elements) = &page.page_elements {
+                for element in elements {
+                    elements_map.insert(element.object_id.clone(), element);
+                    if let PageElementKind::ElementGroup(group) = &element.element_kind {
+                        collect_elements_recursive(&group.children, elements_map);
+                    }
+                }
+            }
+        }
+    }
+}
+
+/// Applies AffineTransform to an SVG element's `transform` attribute.
+/// Converts EMU translation to points.
+fn apply_transform(
+    transform: Option<&AffineTransform>,
+    svg_attrs: &mut String,
+) -> Result<(f64, f64, f64)> {
+    let mut tx_pt = 0.0;
+    let mut ty_pt = 0.0;
+    let width_pt = 0.0; // Placeholder width, actual size needed separately
+
+    if let Some(tf) = transform {
+        let scale_x = tf.scale_x.unwrap_or(1.0);
+        let scale_y = tf.scale_y.unwrap_or(1.0);
+        let shear_x = tf.shear_x.unwrap_or(0.0);
+        let shear_y = tf.shear_y.unwrap_or(0.0);
+        // Translations need unit conversion
+        tx_pt = dimension_to_pt(Some(&Dimension {
+            magnitude: tf.translate_x,
+            unit: tf.unit.clone(), // Use the transform's unit
+        }));
+        ty_pt = dimension_to_pt(Some(&Dimension {
+            magnitude: tf.translate_y,
+            unit: tf.unit.clone(),
+        }));
+
+        // Construct the SVG transform matrix: matrix(a, b, c, d, e, f)
+        // a = scaleX, b = shearY, c = shearX, d = scaleY, e = translateX, f = translateY
+        write!(
+            svg_attrs,
+            r#" transform="matrix({} {} {} {} {} {})""#,
+            scale_x, shear_y, shear_x, scale_y, tx_pt, ty_pt
+        )?;
+    } else {
+        // No transform attribute if none provided
+    }
+    Ok((tx_pt, ty_pt, width_pt)) // Return position for potential use
+}
+
+// Step 2: Define lookup maps type alias for clarity
+type LayoutsMap<'a> = HashMap<String, &'a Page>;
+type MastersMap<'a> = HashMap<String, &'a Page>;
+type ElementsMap<'a> = HashMap<String, &'a PageElement>;
+
+// Step 3: Create a function to build lookup maps for efficient access
+// Step 3: Create a function to build lookup maps for efficient access
+fn build_lookup_maps<'a>(
+    presentation: &'a Presentation,
+) -> (LayoutsMap<'a>, MastersMap<'a>, ElementsMap<'a>) {
+    let mut layouts_map: LayoutsMap = HashMap::new();
+    if let Some(layouts) = &presentation.layouts {
+        for layout in layouts {
+            layouts_map.insert(layout.object_id.clone(), layout);
+        }
+    }
+
+    let mut masters_map: MastersMap = HashMap::new();
+    if let Some(masters) = &presentation.masters {
+        for master in masters {
+            masters_map.insert(master.object_id.clone(), master);
+        }
+    }
+
+    // Build a map of all page elements for quick placeholder lookup
+    let mut elements_map: ElementsMap = HashMap::new();
+
+    // Use the helper functions (defined outside this function) to populate the map
+    collect_page_elements(presentation.slides.as_ref(), &mut elements_map);
+    collect_page_elements(presentation.layouts.as_ref(), &mut elements_map);
+    collect_page_elements(presentation.masters.as_ref(), &mut elements_map);
+
+    (layouts_map, masters_map, elements_map)
+}
+
+// Step 4: Create a helper to find the corresponding placeholder element on the layout/master
+fn find_placeholder_element<'a>(
+    shape_placeholder: &Placeholder,
+    slide_layout_id: &str,
+    layouts_map: &LayoutsMap<'a>,
+    masters_map: &MastersMap<'a>,
+    elements_map: &ElementsMap<'a>,
+) -> Option<&'a PageElement> {
+    let shape_placeholder_parent_object_id = shape_placeholder
+        .parent_object_id
+        .as_ref()
+        .expect("Invalid id")
+        .clone();
+    // 1. Find the direct parent placeholder on the layout
+    if let Some(layout_placeholder_element) = elements_map.get(&shape_placeholder_parent_object_id)
+    {
+        // Check if this layout placeholder itself inherits from a master placeholder
+        if let Some(_placeholder_info) = layout_placeholder_element
+            .element_kind
+            .as_shape()
+            .and_then(|s| s.placeholder.as_ref())
+        {
+            if let Some(master_placeholder_element) =
+                elements_map.get(&shape_placeholder_parent_object_id)
+            {
+                // Found master placeholder element - this is often where default styles live
+                return Some(master_placeholder_element);
+            }
+        }
+        // Return the layout placeholder if no master link or master not found
+        return Some(layout_placeholder_element);
+    }
+
+    // Fallback: Look through the specified layout directly if not found in elements_map quickly (should be rare)
+    if let Some(layout) = layouts_map.get(slide_layout_id) {
+        if let Some(elements) = &layout.page_elements {
+            // TODO: Need recursive search here too for groups on layouts
+            for element in elements {
+                if element.object_id == shape_placeholder_parent_object_id {
+                    return Some(element);
+                }
+            }
+        }
+        // If not found on layout, check the master referenced by the layout
+        if let Some(master_id) = layout
+            .layout_properties
+            .as_ref()
+            .map(|p| &p.master_object_id)
+        {
+            let master_id_2 = master_id.as_ref().expect("Invalid id");
+            if let Some(master) = masters_map.get(master_id_2) {
+                if let Some(elements) = &master.page_elements {
+                    // TODO: Need recursive search here too
+                    for element in elements {
+                        if element.object_id == shape_placeholder_parent_object_id {
+                            return Some(element);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    None // Placeholder parent not found
+}
+
+// Step 5: Create a helper to merge TextStyles (slide style overrides inherited)
+fn merge_text_styles(
+    specific_style: Option<&TextStyle>,
+    inherited_style: Option<&TextStyle>,
+) -> TextStyle {
+    let mut merged = inherited_style.cloned().unwrap_or_default(); // Start with inherited or default
+
+    if let Some(specific) = specific_style {
+        if specific.background_color.is_some() {
+            merged.background_color = specific.background_color.clone();
+        }
+        if specific.baseline_offset.is_some() {
+            merged.baseline_offset = specific.baseline_offset.clone();
+        }
+        if specific.bold.is_some() {
+            merged.bold = specific.bold;
+        }
+        if specific.font_family.is_some() {
+            merged.font_family = specific.font_family.clone();
+        }
+        if specific.font_size.is_some() {
+            merged.font_size = specific.font_size.clone();
+        }
+        if specific.foreground_color.is_some() {
+            merged.foreground_color = specific.foreground_color.clone();
+        }
+        if specific.italic.is_some() {
+            merged.italic = specific.italic;
+        }
+        if specific.link.is_some() {
+            merged.link = specific.link.clone();
+        }
+        if specific.small_caps.is_some() {
+            merged.small_caps = specific.small_caps;
+        }
+        if specific.strikethrough.is_some() {
+            merged.strikethrough = specific.strikethrough;
+        }
+        if specific.underline.is_some() {
+            merged.underline = specific.underline;
+        }
+        if specific.weighted_font_family.is_some() {
+            merged.weighted_font_family = specific.weighted_font_family.clone();
+        }
+        // Language code might not make sense to merge this way, usually set explicitly.
+        // if specific.language_code.is_some() {
+        //     merged.language_code = specific.language_code.clone();
+        // }
+    }
+
+    merged
+}
+
+// Step 6: Create a function to get the *effective* style for a specific text run,
+// considering inheritance. This is complex due to matching text runs.
+// Let's simplify: find the *first* relevant style in the placeholder for now.
+fn get_placeholder_default_text_style(placeholder_element: &PageElement) -> Option<TextStyle> {
+    match &placeholder_element.element_kind {
+        PageElementKind::Shape(shape) => {
+            if let Some(text) = &shape.text {
+                if let Some(text_elements) = &text.text_elements {
+                    // Find the first TextRun with a style defined.
+                    // This is an approximation, as different nesting levels might have different defaults.
+                    for element in text_elements {
+                        if let Some(TextElementKind::TextRun(tr)) = &element.kind {
+                            if let Some(style) = &tr.style {
+                                return Some(style.clone());
+                            }
+                        }
+                        // Maybe also check ParagraphMarker -> Bullet -> TextStyle? Less common for font size.
+                    }
+                }
+            }
+        }
+        _ => { /* Placeholder element is not a shape? Or shape has no text? */ }
+    }
+    None
+}
+
+// --- Conversion Functions ---
+
+/// Converts the text content of a shape or cell into SVG `<text>` and `<tspan>` elements.
+/// Converts the text content of a shape or cell into SVG `<text>` and `<tspan>` elements.
+fn convert_text_content_to_svg(
+    text_content: &TextContent,
+    // Add context needed for style resolution
+    effective_paragraph_style: Option<&ParagraphStyle>, // Pre-resolved paragraph style
+    effective_text_style_base: &TextStyle, // Base style (merged from placeholder/defaults)
+    transform_x: f64,
+    transform_y: f64,
+    element_width: f64,   // Width of the container (shape/cell) in points
+    _element_height: f64, // Height for potential vertical alignment
+    svg_output: &mut String,
+) -> Result<()> {
+    let text_elements = match &text_content.text_elements {
+        Some(elements) => elements,
+        None => return Ok(()), // No text elements to process
+    };
+
+    // Store paragraph-level info (bullets, potentially specific paragraph styles if not pre-merged)
+    let mut para_bullets: HashMap<u32, String> = HashMap::new();
+    // Note: We now assume paragraph style (like alignment) is pre-resolved in effective_paragraph_style
+
+    for element in text_elements {
+        if let Some(TextElementKind::ParagraphMarker(pm)) = &element.kind {
+            if let Some(start_index) = element.start_index {
+                // TODO: Handle bullet glyph lookup/rendering - this needs list context from TextContent.lists
+                if let Some(bullet) = &pm.bullet {
+                    // Lookup list properties based on bullet.list_id and nesting level
+                    // For now, use placeholder glyph
+                    let bullet_text = bullet.glyph.as_deref().unwrap_or("* ").to_string(); // Default bullet
+                    para_bullets.insert(start_index, bullet_text);
+                }
+            }
+        }
+    }
+
+    let mut current_y = transform_y;
+    // Estimate line height based on the base font size.
+    let base_font_size_pt = dimension_to_pt(effective_text_style_base.font_size.as_ref());
+    let line_height_pt = if base_font_size_pt > 0.0 {
+        base_font_size_pt * 1.2
+    } else {
+        DEFAULT_FONT_SIZE_PT * 1.2
+    };
+    let mut first_line_in_paragraph = true;
+    // Use the pre-resolved paragraph style for alignment
+    let current_para_style = effective_paragraph_style;
+
+    for element in text_elements {
+        let start_index = element.start_index.unwrap_or(0); // Use 0 if missing
+
+        match &element.kind {
+            Some(TextElementKind::ParagraphMarker(_)) => {
+                // Start of a new paragraph.
+                // Paragraph style (alignment) is already handled by the effective_paragraph_style passed in.
+
+                if !first_line_in_paragraph {
+                    // Move down for the new paragraph (add space equivalent to line height)
+                    // This is an approximation. True space_before/after is harder.
+                    current_y += line_height_pt; // Increment Y
+                }
+                first_line_in_paragraph = true; // Reset for the new paragraph
+                                                // Handle bullet rendering (if starting a new line)
+                if let Some(_bullet_text) = para_bullets.get(&start_index) {
+                    // TODO: How to render bullets accurately? Prepend a tspan?
+                    // This might mess up alignment. Let's omit bullets for now to focus on text.
+                    // write!(svg_output, "<tspan>{}</tspan>", escape_svg_text(bullet_text))?;
+                }
+            }
+            Some(TextElementKind::TextRun(tr)) => {
+                let content = tr.content.as_deref().unwrap_or("");
+                if content.is_empty() || content == "\n" {
+                    // Skip empty or newline-only runs for now
+                    continue;
+                }
+
+                // Merge the text run's specific style with the base effective style
+                let run_specific_style = tr.style.as_ref();
+                let final_run_style =
+                    merge_text_styles(run_specific_style, Some(effective_text_style_base));
+
+                let mut text_style_attr = String::new();
+                apply_text_style(Some(&final_run_style), &mut text_style_attr)?;
+
+                if first_line_in_paragraph {
+                    // This is the first text element of the line/paragraph. Use <text>.
+                    let mut para_attrs = String::new();
+                    // Apply paragraph alignment to get the correct x and text-anchor
+                    let adjusted_x = apply_paragraph_style(
+                        current_para_style, // Use pre-resolved style
+                        &mut para_attrs,
+                        transform_x,
+                        element_width,
+                    )?;
+
+                    // Use dominant-baseline="hanging" or adjust y. Adjust y by font size from the run's style.
+                    let run_font_size_pt = dimension_to_pt(final_run_style.font_size.as_ref());
+                    let y_pos = current_y
+                        + if run_font_size_pt > 0.0 {
+                            run_font_size_pt
+                        } else {
+                            line_height_pt / 1.2
+                        };
+
+                    write!(
+                        svg_output,
+                        r#"<text x="{}" y="{}"{}"#,
+                        adjusted_x, y_pos, para_attrs
+                    )?;
+                    write!(svg_output, r#" style="{}">"#, text_style_attr)?;
+                    write!(svg_output, "{}", escape_svg_text(content))?;
+                    write!(svg_output, "</text>")?; // Close the <text> tag immediately for this run
+
+                    first_line_in_paragraph = false; // Subsequent runs in this line use tspan relative to this <text>
+                } else {
+                    // --- Sticking to simpler approach: New <text> for first run ---
+                    // The initial approach has limitations. A full implementation would group by paragraph.
+                    // For now, we only render the *first* text run of each paragraph correctly positioned.
+                    eprintln!("Warning: Subsequent TextRuns in the same paragraph are currently skipped in SVG conversion.");
+                }
+
+                if content.contains('\n') {
+                    // Move Y down for the next line within the same paragraph
+                    current_y += line_height_pt;
+                    first_line_in_paragraph = true; // Next content after newline starts a new "line"
+                    eprintln!("Warning: Newlines within TextRuns reset to new line, potentially losing style continuity.");
+                }
+            }
+            Some(TextElementKind::AutoText(at)) => {
+                let content = at.content.as_deref().unwrap_or(""); // Use rendered content
+                if content.is_empty() || content == "\n" {
+                    continue;
+                }
+
+                // Merge the autotext's specific style with the base effective style
+                let autotext_specific_style = at.style.as_ref();
+                let final_autotext_style =
+                    merge_text_styles(autotext_specific_style, Some(effective_text_style_base));
+
+                let mut text_style_attr = String::new();
+                apply_text_style(Some(&final_autotext_style), &mut text_style_attr)?;
+
+                if first_line_in_paragraph {
+                    let mut para_attrs = String::new();
+                    let adjusted_x = apply_paragraph_style(
+                        current_para_style, // Use pre-resolved style
+                        &mut para_attrs,
+                        transform_x,
+                        element_width,
+                    )?;
+                    let run_font_size_pt = dimension_to_pt(final_autotext_style.font_size.as_ref());
+                    let y_pos = current_y
+                        + if run_font_size_pt > 0.0 {
+                            run_font_size_pt
+                        } else {
+                            line_height_pt / 1.2
+                        };
+
+                    write!(
+                        svg_output,
+                        r#"<text x="{}" y="{}"{}"#,
+                        adjusted_x, y_pos, para_attrs
+                    )?;
+                    write!(svg_output, r#" style="{}">"#, text_style_attr)?;
+                    write!(svg_output, "{}", escape_svg_text(content))?;
+                    write!(svg_output, "</text>")?;
+                    first_line_in_paragraph = false;
+                } else {
+                    eprintln!(
+                        "Warning: Subsequent AutoText in the same paragraph are currently skipped."
+                    );
+                }
+                if content.contains('\n') {
+                    current_y += line_height_pt;
+                    first_line_in_paragraph = true;
+                    eprintln!("Warning: Newlines within AutoText reset to new line.");
+                }
+            }
+            None => { /* Element kind is None, skip */ }
+        }
+    }
+
+    Ok(())
+}
+
+/// Converts the text content of a table cell into basic HTML for `<foreignObject>`.
+fn convert_text_content_to_html(
+    text_content: &TextContent,
+    html_output: &mut String,
+) -> Result<()> {
+    let text_elements = match &text_content.text_elements {
+        Some(elements) => elements,
+        None => return Ok(()),
+    };
+
+    for element in text_elements {
+        match &element.kind {
+            Some(TextElementKind::ParagraphMarker(_)) => {
+                // Start a new paragraph in HTML
+                write!(html_output, "<p style=\"margin:0; padding:0;\">")?; // Basic paragraph styling
+            }
+            Some(TextElementKind::TextRun(tr)) => {
+                let content = tr.content.as_deref().unwrap_or("");
+                if content.is_empty() {
+                    continue;
+                }
+
+                let mut span_style = String::new();
+                // Convert TextStyle to inline CSS
+                if let Some(ts) = &tr.style {
+                    write!(
+                        span_style,
+                        "font-family:'{}'; ",
+                        ts.font_family.as_deref().unwrap_or(DEFAULT_FONT_FAMILY)
+                    )?;
+                    let font_size_pt = dimension_to_pt(ts.font_size.as_ref());
+                    write!(
+                        span_style,
+                        "font-size:{}pt; ",
+                        if font_size_pt > 0.0 {
+                            font_size_pt
+                        } else {
+                            DEFAULT_FONT_SIZE_PT
+                        }
+                    )?;
+                    let (fg_color, _) = format_optional_color(ts.foreground_color.as_ref());
+                    write!(span_style, "color:{}; ", fg_color)?;
+                    if ts.bold.unwrap_or(false) {
+                        write!(span_style, "font-weight:bold; ")?;
+                    }
+                    if ts.italic.unwrap_or(false) {
+                        write!(span_style, "font-style:italic; ")?;
+                    }
+                    let mut decorations = Vec::new();
+                    if ts.underline.unwrap_or(false) {
+                        decorations.push("underline");
+                    }
+                    if ts.strikethrough.unwrap_or(false) {
+                        decorations.push("line-through");
+                    }
+                    if !decorations.is_empty() {
+                        write!(span_style, "text-decoration:{}; ", decorations.join(" "))?;
+                    }
+                    // Basic vertical alignment for super/sub
+                    match ts.baseline_offset {
+                        Some(crate::models::properties::BaselineOffset::Superscript) => {
+                            write!(span_style, "vertical-align:super; ")?
+                        }
+                        Some(crate::models::properties::BaselineOffset::Subscript) => {
+                            write!(span_style, "vertical-align:sub; ")?
+                        }
+                        _ => {}
+                    }
+                    if ts.small_caps.unwrap_or(false) {
+                        write!(span_style, "font-variant:small-caps; ")?;
+                    }
+                }
+
+                // Replace newlines with <br> for HTML
+                let html_content = escape_html_text(content).replace('\n', "<br/>");
+
+                write!(
+                    html_output,
+                    r#"<span style="{}">{}</span>"#,
+                    span_style, html_content
+                )?;
+            }
+            Some(TextElementKind::AutoText(at)) => {
+                // Handle AutoText similarly to TextRun
+                let content = at.content.as_deref().unwrap_or("");
+                if content.is_empty() {
+                    continue;
+                }
+                // Apply styles similar to TextRun
+                // ... (style conversion logic omitted for brevity, similar to TextRun above) ...
+                let html_content = escape_html_text(content).replace('\n', "<br/>");
+                // write!(html_output, r#"<span style="{}">{}</span>"#, span_style, html_content)?;
+                write!(html_output, "<span>{}</span>", html_content)?; // Simplified without full style conversion for brevity
+            }
+            None => {} // Skip elements with no kind
+        }
+        // Close paragraph if the next element is a ParagraphMarker or end of elements
+        // This logic needs refinement to correctly close </p> tags.
+        // A simpler approach: wrap each text run/autotext in span, and handle <p> only at ParagraphMarker.
+        // The current logic might produce invalid HTML nesting.
+    }
+    // Ensure any open paragraph tag is closed at the end
+    if html_output.ends_with("<p style=\"margin:0; padding:0;\">") {
+        // If the last element was a para marker without content, maybe remove it or add &nbsp;?
+    } else if html_output.contains("<p") && !html_output.ends_with("</p>") {
+        // This check is weak. Correct paragraph handling is needed.
+        // write!(html_output, "</p>")?;
+    }
+
+    Ok(())
+}
+
+/// Converts a Shape element (especially TextBox) to SVG.
+fn convert_shape_to_svg(
+    shape: &Shape,
+    transform: Option<&AffineTransform>,
+    size: Option<&Size>,
+    // Add context needed for style resolution
+    slide_layout_id: Option<&str>,
+    layouts_map: &LayoutsMap,
+    masters_map: &MastersMap,
+    elements_map: &ElementsMap,
+    svg_output: &mut String,
+) -> Result<()> {
+    let mut shape_attrs = String::new();
+    let (tx, ty, _) = apply_transform(transform, &mut shape_attrs)?;
+    let width = dimension_to_pt(size.and_then(|s| s.width.as_ref()));
+    let height = dimension_to_pt(size.and_then(|s| s.height.as_ref()));
+
+    // Resolve effective styles
+    let mut effective_text_style_base = TextStyle::default(); // Start with default
+    let mut effective_paragraph_style: Option<ParagraphStyle> = None;
+
+    if let Some(placeholder) = &shape.placeholder {
+        if let Some(layout_id) = slide_layout_id {
+            if let Some(placeholder_element) = find_placeholder_element(
+                placeholder,
+                layout_id,
+                layouts_map,
+                masters_map,
+                elements_map,
+            ) {
+                // Attempt to get a base text style from the placeholder
+                if let Some(placeholder_base_style) =
+                    get_placeholder_default_text_style(placeholder_element)
+                {
+                    effective_text_style_base = placeholder_base_style;
+                }
+
+                // Attempt to get paragraph style (like alignment) from placeholder's *first* paragraph marker
+                // This is also an approximation.
+                if let Some(placeholder_shape) = placeholder_element.element_kind.as_shape() {
+                    if let Some(text) = &placeholder_shape.text {
+                        if let Some(elements) = &text.text_elements {
+                            for element in elements {
+                                if let Some(TextElementKind::ParagraphMarker(pm)) = &element.kind {
+                                    if let Some(style) = &pm.style {
+                                        effective_paragraph_style = Some(style.clone());
+                                        break; // Use the first one found
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // Render text content if present, passing the resolved styles
+    if let Some(text) = &shape.text {
+        // Override placeholder paragraph style if the slide shape's text has its own *first* paragraph style defined
+        if let Some(elements) = &text.text_elements {
+            for element in elements {
+                if let Some(TextElementKind::ParagraphMarker(pm)) = &element.kind {
+                    if let Some(style) = &pm.style {
+                        // Merge? Or just override? Let's override for simplicity.
+                        effective_paragraph_style = Some(style.clone());
+                        break;
+                    }
+                }
+            }
+        }
+
+        convert_text_content_to_svg(
+            text,
+            effective_paragraph_style.as_ref(),
+            &effective_text_style_base, // Pass the resolved base style
+            tx,
+            ty,
+            width,
+            height,
+            svg_output,
+        )?;
+    }
+
+    Ok(())
+}
+
+/// Converts a Table element to SVG using `<foreignObject>` and HTML.
+fn convert_table_to_svg(
+    table: &Table,
+    transform: Option<&AffineTransform>,
+    size: Option<&Size>,
+    svg_output: &mut String,
+) -> Result<()> {
+    let mut foreign_object_attrs = String::new();
+    let (tx, ty, _) = apply_transform(transform, &mut foreign_object_attrs)?; // Get transform attributes
+    let width = dimension_to_pt(size.and_then(|s| s.width.as_ref()));
+    let height = dimension_to_pt(size.and_then(|s| s.height.as_ref()));
+
+    if width <= 0.0 || height <= 0.0 {
+        eprintln!("Warning: Skipping table with zero or negative dimensions.");
+        return Ok(());
+    }
+
+    // Start foreignObject
+    write!(
+        svg_output,
+        r#"<foreignObject x="{}" y="{}" width="{}" height="{}"{}>"#,
+        tx, ty, width, height, foreign_object_attrs
+    )?;
+    // Add the necessary XHTML namespace div
+    write!(svg_output, r#"<div xmlns="http://www.w3.org/1999/xhtml">"#)?;
+
+    // Start HTML table
+    // Basic styling to make borders visible for structure checking
+    write!(
+        svg_output,
+        r#"<table style="border-collapse: collapse; width:100%; height:100%; border: 1px solid #ccc;">"#
+    )?;
+
+    // Iterate through rows
+    if let Some(rows) = &table.table_rows {
+        for row in rows {
+            write!(svg_output, "<tr>")?;
+            if let Some(cells) = &row.table_cells {
+                for cell in cells {
+                    let colspan = cell.column_span.unwrap_or(1);
+                    let rowspan = cell.row_span.unwrap_or(1);
+                    let mut td_attrs = String::new();
+                    if colspan > 1 {
+                        write!(td_attrs, r#" colspan="{}""#, colspan)?;
+                    }
+                    if rowspan > 1 {
+                        write!(td_attrs, r#" rowspan="{}""#, rowspan)?;
+                    }
+
+                    // Apply cell properties (e.g., background color)
+                    let mut cell_style =
+                        "border: 1px solid #eee; padding: 2pt; vertical-align: top;".to_string(); // Basic cell style
+                    if let Some(props) = &cell.table_cell_properties {
+                        if let Some(bg_fill) = &props.table_cell_background_fill {
+                            if let Some(solid) = &bg_fill.solid_fill {
+                                let bg_color = format_color(solid.color.as_ref());
+                                // TODO: Handle alpha for background?
+                                write!(cell_style, " background-color:{};", bg_color)?;
+                            }
+                        }
+                        // TODO: Map ContentAlignment to vertical-align (top, middle, bottom)
+                    }
+
+                    write!(svg_output, r#"<td{} style="{}">"#, td_attrs, cell_style)?;
+
+                    // Convert cell text content to HTML
+                    if let Some(text) = &cell.text {
+                        convert_text_content_to_html(text, svg_output)?;
+                    }
+
+                    write!(svg_output, "</td>")?;
+                }
+            }
+            write!(svg_output, "</tr>")?;
+        }
+    }
+
+    // Close HTML table and foreignObject
+    write!(svg_output, "</table></div></foreignObject>")?;
+
+    Ok(())
+}
+
+// Step 7: Modify `convert_page_element_to_svg` to pass context
+/// Converts a single PageElement to an SVG fragment.
+fn convert_page_element_to_svg(
+    element: &PageElement,
+    // Add context
+    slide_layout_id: Option<&str>,
+    layouts_map: &LayoutsMap,
+    masters_map: &MastersMap,
+    elements_map: &ElementsMap,
+    svg_output: &mut String,
+) -> Result<()> {
+    // Add data-object-id for traceability
+    write!(svg_output, r#"<g data-object-id="{}">"#, element.object_id)?;
+
+    match &element.element_kind {
+        PageElementKind::Shape(shape) => {
+            convert_shape_to_svg(
+                shape,
+                element.transform.as_ref(),
+                element.size.as_ref(),
+                // Pass context
+                slide_layout_id,
+                layouts_map,
+                masters_map,
+                elements_map,
+                svg_output,
+            )?;
+        }
+        PageElementKind::Table(table) => {
+            // TODO: Table cells might also need style inheritance, similar logic needed.
+            convert_table_to_svg(
+                table,
+                element.transform.as_ref(),
+                element.size.as_ref(),
+                svg_output,
+            )?;
+        }
+        PageElementKind::ElementGroup(group) => {
+            let mut group_attrs = String::new();
+            apply_transform(element.transform.as_ref(), &mut group_attrs)?;
+            writeln!(svg_output, "{}> <!-- Start Group -->", group_attrs)?;
+
+            for child_element in &group.children {
+                // Pass context down recursively
+                convert_page_element_to_svg(
+                    child_element,
+                    slide_layout_id,
+                    layouts_map,
+                    masters_map,
+                    elements_map,
+                    svg_output,
+                )?;
+            }
+            write!(svg_output, "<!-- End Group Content -->")?;
+        }
+        PageElementKind::Image(_) => {
+            // Placeholder for Image (unchanged)
+            let mut img_attrs = String::new();
+            let (tx, ty, _) = apply_transform(element.transform.as_ref(), &mut img_attrs)?;
+            let width = dimension_to_pt(element.size.as_ref().and_then(|s| s.width.as_ref()));
+            let height = dimension_to_pt(element.size.as_ref().and_then(|s| s.height.as_ref()));
+            write!(
+                svg_output,
+                r#"<rect x="{}" y="{}" width="{}" height="{}" {} style="fill:#e0e0e0; stroke:gray; fill-opacity:0.5;" />"#,
+                tx, ty, width, height, img_attrs
+            )?;
+            write!(
+                svg_output,
+                r#"<text x="{}" y="{}" dy="1em" style="font-size:8pt; fill:gray;">Image Placeholder</text>"#,
+                tx + 2.0,
+                ty + 2.0
+            )?;
+        }
+        PageElementKind::Line(_) => {
+            // Placeholder for Line (unchanged)
+            let mut line_attrs = String::new();
+            let (tx, ty, _) = apply_transform(element.transform.as_ref(), &mut line_attrs)?;
+            let width = dimension_to_pt(element.size.as_ref().and_then(|s| s.width.as_ref()));
+            let height = dimension_to_pt(element.size.as_ref().and_then(|s| s.height.as_ref()));
+            write!(
+                svg_output,
+                r#"<line x1="{}" y1="{}" x2="{}" y2="{}" {} style="stroke:gray; stroke-width:1;" />"#,
+                tx,
+                ty,
+                tx + width,
+                ty + height,
+                line_attrs
+            )?;
+            write!(
+                svg_output,
+                r#"<text x="{}" y="{}" dy="1em" style="font-size:8pt; fill:gray;">Line Placeholder</text>"#,
+                tx + 2.0,
+                ty + 2.0
+            )?;
+        }
+        _ => {
+            // Default placeholder (unchanged)
+            let mut ph_attrs = String::new();
+            let (tx, ty, _) = apply_transform(element.transform.as_ref(), &mut ph_attrs)?;
+            let width = dimension_to_pt(element.size.as_ref().and_then(|s| s.width.as_ref()));
+            let height = dimension_to_pt(element.size.as_ref().and_then(|s| s.height.as_ref()));
+            let type_name = match element.element_kind {
+                PageElementKind::Video(_) => "Video",
+                PageElementKind::WordArt(_) => "WordArt",
+                PageElementKind::SheetsChart(_) => "SheetsChart",
+                PageElementKind::SpeakerSpotlight(_) => "SpeakerSpotlight",
+                _ => "Unknown", // Should include handled types like Shape, Table, Group if logic allows reaching here
+            };
+
+            write!(
+                svg_output,
+                r#"<rect x="{}" y="{}" width="{}" height="{}" {} style="fill:#f0f0f0; stroke:lightgray; stroke-dasharray: 3 3; fill-opacity:0.5;" />"#,
+                tx, ty, width, height, ph_attrs
+            )?;
+            write!(
+                svg_output,
+                r#"<text x="{}" y="{}" dy="1em" style="font-size:8pt; fill:gray;">{} Placeholder</text>"#,
+                tx + 2.0,
+                ty + 2.0,
+                type_name
+            )?;
+        }
+    }
+
+    write!(svg_output, "</g>")?; // Close data-object-id group
+    Ok(())
+}
+
+// Step 8: Modify `convert_slide_to_svg` to use the context
+/// Converts a single slide (Page) to an SVG string.
+fn convert_slide_to_svg(
+    slide: &Page,
+    presentation_page_size: Option<&Size>,
+    // Add context
+    layouts_map: &LayoutsMap,
+    masters_map: &MastersMap,
+    elements_map: &ElementsMap,
+) -> Result<String> {
+    let mut svg_string = String::new();
+
+    let page_width_pt = dimension_to_pt(presentation_page_size.and_then(|s| s.width.as_ref()));
+    let page_height_pt = dimension_to_pt(presentation_page_size.and_then(|s| s.height.as_ref()));
+
+    if page_width_pt <= 0.0 || page_height_pt <= 0.0 {
+        return Err(SvgConversionError::MissingData(
+            "Invalid or missing presentation page size".to_string(),
+        ));
+    }
+
+    writeln!(
+        svg_string,
+        r#"<svg xmlns="http://www.w3.org/2000/svg" width="{0}pt" height="{1}pt" viewBox="0 0 {0} {1}">"#,
+        page_width_pt, page_height_pt
+    )?;
+    writeln!(
+        svg_string,
+        r##"  <rect width="100%" height="100%" fill="#FFFFFF"/>"##
+    )?;
+
+    // Get the layout ID for this slide
+    let slide_layout_id = slide.slide_properties.as_ref().map(|props| {
+        props
+            .layout_object_id
+            .as_ref()
+            .expect("Invalid id")
+            .as_str()
+    });
+
+    if let Some(elements) = &slide.page_elements {
+        let mut sorted_elements: Vec<&PageElement> = elements.iter().collect();
+        sorted_elements.sort_by(|a, b| crate::converters::markdown::compare_elements_by_y(a, b));
+
+        for element in sorted_elements {
+            writeln!(svg_string, "  <!-- Element ID: {} -->", element.object_id)?;
+            // Pass context to element conversion
+            convert_page_element_to_svg(
+                element,
+                slide_layout_id,
+                layouts_map,
+                masters_map,
+                elements_map,
+                &mut svg_string,
+            )?;
+            writeln!(svg_string)?;
+        }
+    }
+
+    writeln!(svg_string, "</svg>")?;
+    Ok(svg_string)
+}
+
+// Step 9: Modify `convert_presentation_to_svg` to build and pass maps
+/// Converts a Google Slides presentation into a vector of SVG strings, one for each slide.
+/// Focuses on converting text elements and tables (using HTML within foreignObject).
+/// Other elements are rendered as placeholders.
+/// Groups are handled recursively.
+/// Handles basic text style inheritance from placeholders.
+///
+/// # Arguments
+/// * `presentation` - A reference to the `Presentation` object.
+///
+/// # Returns
+/// A `Result` containing a `Vec<String>` where each string is the SVG representation of a slide,
+/// or an `SvgConversionError` on failure.
+pub fn convert_presentation_to_svg(presentation: &Presentation) -> Result<Vec<String>> {
+    let mut svg_slides = Vec::new();
+
+    // Build lookup maps once
+    let (layouts_map, masters_map, elements_map) = build_lookup_maps(presentation);
+
+    if let Some(slides) = &presentation.slides {
+        for (index, slide) in slides.iter().enumerate() {
+            match convert_slide_to_svg(
+                slide,
+                presentation.page_size.as_ref(),
+                // Pass maps
+                &layouts_map,
+                &masters_map,
+                &elements_map,
+            ) {
+                Ok(svg_content) => svg_slides.push(svg_content),
+                Err(e) => {
+                    eprintln!(
+                        "Error converting slide {} (ID: {}): {}",
+                        index + 1,
+                        slide.object_id,
+                        e
+                    );
+                    return Err(e);
+                }
+            }
+        }
+    }
+
+    Ok(svg_slides)
+}
+
+// --- Optional: Example Usage / Tests ---
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::models::presentation::Presentation;
+    use std::fs;
+
+    #[test]
+    fn test_svg_conversion_from_json() {
+        // Load a sample presentation JSON
+        let json_path = "changed_presentation.json"; // Use your test file
+        let json_string =
+            fs::read_to_string(json_path).expect("Should have been able to read the file");
+        let presentation: Presentation =
+            serde_json::from_str(&json_string).expect("Failed to deserialize presentation JSON");
+
+        // Convert to SVG
+        let svg_results = convert_presentation_to_svg(&presentation);
+
+        match svg_results {
+            Ok(svg_vec) => {
+                assert!(
+                    !svg_vec.is_empty(),
+                    "SVG conversion should produce output for slides."
+                );
+
+                // Optionally save each SVG to a file for inspection
+                for (i, svg_content) in svg_vec.iter().enumerate() {
+                    let output_path = format!("test_slide_{}.svg", i + 1);
+                    let err_msg = format!("Unable to write SVG file: {}", output_path);
+                    fs::write(&output_path, svg_content).expect(&err_msg);
+                    println!("SVG for slide {} saved to {}", i + 1, output_path);
+
+                    // Basic checks on SVG content
+                    assert!(svg_content.starts_with("<svg"));
+                    assert!(svg_content.ends_with("</svg>\n")); // Check for closing tag and newline
+                    assert!(svg_content.contains("xmlns=\"http://www.w3.org/2000/svg\""));
+
+                    // Check if the specific text "Hello" has the inherited font size applied
+                    if i == 0 {
+                        // Assuming the first slide has the "Hello" text box
+                        assert!(
+                             svg_content.contains(r#"font-size:52pt;"#), // Check for 52pt font size
+                            "Expected font-size:52pt for 'Hello' text was not found in slide 1 SVG."
+                        );
+                        assert!(
+                            svg_content.contains(r#"fill:#0000ff;"#), // Check for blue color override
+                            "Expected fill:#0000ff for 'Hello' text was not found in slide 1 SVG."
+                        );
+                        assert!(
+                              svg_content.contains(r#"font-family:'Arial';"#), // Check for default/inherited font family
+                             "Expected font-family:'Arial' for 'Hello' text was not found in slide 1 SVG."
+                         );
+                    }
+                    // Check if the specific text "world" has its own styles applied correctly
+                    if i == 0 {
+                        // Assuming the first slide has the "world" text box
+                        assert!(
+                              svg_content.contains(r#"font-size:28pt;"#), // Inherited from its placeholder? Check p2_i1
+                             "Expected font-size:28pt for 'world' text was not found in slide 1 SVG."
+                         );
+                        assert!(
+                            svg_content.contains(r#"fill:#ff0000;"#), // Check for red color override
+                            "Expected fill:#ff0000 for 'world' text was not found in slide 1 SVG."
+                        );
+                        assert!(
+                               svg_content.contains(r#"font-family:'Consolas';"#), // Check for specific font family
+                              "Expected font-family:'Consolas' for 'world' text was not found in slide 1 SVG."
+                          );
+                        // Check that bold is NOT applied (explicitly false in JSON)
+                        assert!(
+                               svg_content.contains(r#"font-weight:normal;"#) && !svg_content.contains(r#"font-weight:bold;"#),
+                               "Expected font-weight:normal for 'world' text was not found in slide 1 SVG."
+                           );
+                    }
+
+                    // Check if tables were processed (if expected)
+                    // assert!(svg_content.contains("<foreignObject"));
+                    // assert!(svg_content.contains("<table"));
+                    // Check if groups were processed (if expected) - look for nested <g> or comments
+                    // assert!(svg_content.contains("<!-- Start Group -->"));
+                }
+            }
+            Err(e) => {
+                panic!("SVG Conversion failed: {}", e);
+            }
+        }
+    }
+}
+
+// Need to add helper trait to get shape from element kind easily
+trait AsShape {
+    fn as_shape(&self) -> Option<&Shape>;
+}
+
+impl AsShape for PageElementKind {
+    fn as_shape(&self) -> Option<&Shape> {
+        match self {
+            PageElementKind::Shape(s) => Some(s),
+            _ => None,
+        }
+    }
+}

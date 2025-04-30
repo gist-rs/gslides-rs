@@ -76,7 +76,7 @@ fn dimension_to_pt(dim: Option<&Dimension>) -> f64 {
 }
 
 /// Converts an OpaqueColor to an SVG color string (e.g., #RRGGBB).
-/// TODO: Handle ThemeColor resolution. Currently only supports RGB.
+/// TODO: Implement full ThemeColor resolution. Currently only supports RGB + hardcoded ACCENT1.
 fn format_color(color_opt: Option<&OpaqueColor>) -> String {
     match color_opt {
         Some(opaque_color) => match &opaque_color.color_kind {
@@ -86,9 +86,13 @@ fn format_color(color_opt: Option<&OpaqueColor>) -> String {
                 let b = (rgb.blue.unwrap_or(0.0) * 255.0).round() as u8;
                 format!("#{:02x}{:02x}{:02x}", r, g, b)
             }
-            OpaqueColorContent::ThemeColor(_) => {
-                // Placeholder for theme color resolution
-                DEFAULT_TEXT_COLOR.to_string() // Fallback to default
+            OpaqueColorContent::ThemeColor(theme_color) => {
+                // Placeholder for theme color resolution - TEMPORARY HACK for ACCENT1
+                // Need to pass ColorScheme context here for a real solution.
+                match theme_color {
+                    crate::models::colors::ThemeColorType::Accent1 => "#4285F4".to_string(), // Hardcoded ACCENT1 blue
+                    _ => DEFAULT_TEXT_COLOR.to_string(), // Fallback for other theme colors
+                }
             }
         },
         None => DEFAULT_TEXT_COLOR.to_string(), // Fallback to default
@@ -98,6 +102,7 @@ fn format_color(color_opt: Option<&OpaqueColor>) -> String {
 /// Converts an OptionalColor (often used for background/foreground) to SVG fill/opacity attributes.
 /// Returns a tuple: (fill_color, fill_opacity).
 /// Uses DEFAULT_TEXT_COLOR if color is None, returns "none" if color is transparent (opaque_color is None).
+/// TODO: Implement full ThemeColor resolution. Currently only supports RGB + hardcoded ACCENT1.
 fn format_optional_color(
     optional_color: Option<&crate::models::colors::OptionalColor>,
 ) -> (String, String) {
@@ -112,9 +117,15 @@ fn format_optional_color(
                         // Let's assume OptionalColor implies full opacity if present.
                         (color_hex, "1".to_string())
                     }
-                    OpaqueColorContent::ThemeColor(_) => {
-                        // Placeholder for theme color resolution
-                        (DEFAULT_TEXT_COLOR.to_string(), "1".to_string()) // Fallback
+                    OpaqueColorContent::ThemeColor(theme_color) => {
+                        // Placeholder for theme color resolution - TEMPORARY HACK for ACCENT1
+                        // Need to pass ColorScheme context here for a real solution.
+                        match theme_color {
+                            crate::models::colors::ThemeColorType::Accent1 => {
+                                ("#4285F4".to_string(), "1".to_string())
+                            } // Hardcoded ACCENT1 blue
+                            _ => (DEFAULT_TEXT_COLOR.to_string(), "1".to_string()), // Fallback for other theme colors
+                        }
                     }
                 },
                 None => ("none".to_string(), "0".to_string()), // Transparent

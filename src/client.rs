@@ -6,6 +6,9 @@ use serde::Deserialize;
 use std::env;
 use std::fs; // Import the file system module
 use std::path::Path;
+
+#[cfg(not(target_arch = "wasm32"))]
+#[cfg(feature = "yup-oauth2")]
 use yup_oauth2::{read_service_account_key, ServiceAccountAuthenticator};
 
 /// Helper struct to attempt parsing standard Google API error responses.

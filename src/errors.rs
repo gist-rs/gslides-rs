@@ -23,6 +23,8 @@ pub enum SlidesApiError {
     AuthSetupError(String),
 
     /// An error specifically from the authentication library (yup-oauth2) during token fetching/validation.
+    #[cfg(not(target_arch = "wasm32"))]
+    #[cfg(feature = "yup-oauth2")]
     #[error("Authentication library error: {0}")]
     AuthLibError(#[from] yup_oauth2::Error),
 

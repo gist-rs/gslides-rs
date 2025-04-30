@@ -468,14 +468,8 @@ pub(crate) fn generate_readable_summary(
     let old_val = serde_json::to_value(old_presentation)?;
     let new_val = serde_json::to_value(new_presentation)?;
 
-    const ALLOWED_DESCRIPTIONS: &[&str] = &[
-        "PresentationId",
-        "RevisionId",
-        "Title",
-        "Text Content",
-        "Modified Color",
-        "Font Family",
-        // Add others like "Font Size", "Bold Style" here if needed
+    const NOT_ALLOWED_DESCRIPTIONS: &[&str] = &[
+        "Text Content", // TODO: merged or better use HTML+stylesheet instead
     ];
 
     // --- Debug Setup ---
@@ -625,7 +619,7 @@ pub(crate) fn generate_readable_summary(
         // --- 3. Filter and Add Line ---
         if let (Some(line), Some(desc)) = (generated_line, generated_desc) {
             // println!("--- DEBUG: Index {}: Checking filter for Desc: '{}'", i, desc);
-            if ALLOWED_DESCRIPTIONS.contains(&desc.as_str()) {
+            if !NOT_ALLOWED_DESCRIPTIONS.contains(&desc.as_str()) {
                 // Determine the effective change type for counting
                 let effective_change_type = if desc == "Modified Color" {
                     ChangeType::Modified // Consolidated color counts as Modify

@@ -166,49 +166,65 @@ pub(crate) fn find_placeholder_element<'a>(
 
 /// Extracts the *default* text style from a placeholder element (typically a Shape).
 /// This is used as the base style for text within shapes that inherit from this placeholder.
-/// It approximates the default style by looking for the style of the first `TextRun`
-/// found within the placeholder shape's text content.
+/// It approximates the default style by looking first at the list style for nesting level 0,
+/// and then falling back to the style of the first `TextRun` within the placeholder's text.
 ///
 /// # Arguments
-/// * `placeholder_element` - The `PageElement` representing the placeholder on the layout/master.
+/// * `placeholder_element` - The placeholder `PageElement` (likely a Shape) on the layout/master.
 ///
 /// # Returns
 /// An `Option<TextStyle>` containing the cloned default style, or `None` if no style could be found.
 pub(crate) fn get_placeholder_default_text_style(
     placeholder_element: &PageElement,
 ) -> Option<TextStyle> {
-    // Use the AsShape trait for safer access
+    // Ensure the placeholder is a Shape and has text content
     if let Some(shape) = placeholder_element.element_kind.as_shape() {
         if let Some(text) = &shape.text {
+            // --- Strategy 1: Look for explicit list style for nesting level 0 ---
+            // This is often the most reliable source for placeholder default styles.
+            if let Some(lists) = &text.lists {
+                // Find the listId associated with the first paragraph (nesting level 0)
+                let first_para_list_id = text
+                    .text_elements
+                    .as_ref()
+                    .and_then(|elements| elements.first())
+                    .and_then(|first_element| first_element.kind.as_ref())
+                    .and_then(|kind| match kind {
+                        TextElementKind::ParagraphMarker(pm) => {
+                            pm.bullet.as_ref().map(|b| &b.list_id)
+                        }
+                        _ => None,
+                    });
+
+                if let Some(list_id) = first_para_list_id {
+                    // Use and_then for safer chaining, avoiding expects
+                    if let Some(style) = lists
+                        .get(list_id.clone().expect("Invalid id").as_str()) // Get ListProperties by &String list_id
+                        .and_then(|list_props| list_props.nesting_level.as_ref()) // Get Option<&IndexMap<i32, NestingLevel>>
+                        .and_then(|nesting_map| nesting_map.get(&0)) // Get Option<&NestingLevel> using i32 key 0
+                        .and_then(|level_0_props| level_0_props.bullet_style.as_ref())
+                    // Get Option<&TextStyle>
+                    {
+                        return Some(style.clone()); // Found the style
+                    }
+                }
+            }
+
+            // --- Strategy 2: Fallback to the style of the first TextRun ---
+            // If list styles didn't provide the answer, find the first actual text run.
             if let Some(text_elements) = &text.text_elements {
-                // Iterate through text elements to find the first TextRun with a style.
-                // This is an approximation of the "default" style for the placeholder type.
                 for element in text_elements {
                     if let Some(TextElementKind::TextRun(tr)) = &element.kind {
                         if let Some(style) = &tr.style {
                             // Found a styled TextRun, return its style as the default.
                             return Some(style.clone());
-                        }
-                    }
-                    // Alternative: Check ParagraphMarker -> Bullet -> TextStyle?
-                    // This might capture defaults set at the paragraph level (e.g., list item defaults).
-                    if let Some(TextElementKind::ParagraphMarker(pm)) = &element.kind {
-                        if let Some(bullet_style) =
-                            pm.bullet.as_ref().and_then(|b| b.bullet_style.as_ref())
-                        {
-                            return Some(bullet_style.clone());
-                        }
-                        // If no bullet style, maybe the paragraph style itself contains defaults? (Less common for TextStyle)
+                        } // If the first TextRun has no style, we continue (unlikely for placeholders)
                     }
                 }
-                // If no TextRun/Bullet style found, maybe there's a list-level style? (Complex)
-                // Check text.list_style? (Assuming such a field exists or is relevant)
             }
-            // Fallback: Check the TextContent's overall style_span (if it existed)
-            // Or, check the ShapeProperties' default text style (if available in API)
         }
     }
-    // No shape, no text, or no styled elements found within the placeholder.
+    // No shape, no text, or no styled elements/list styles found within the placeholder.
     None
 }
 

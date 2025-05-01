@@ -2,6 +2,8 @@
 //! including building lookup maps, resolving inheritance (placeholders),
 //! and converting slides.
 
+use log::{debug, warn};
+
 use super::{
     constants::*,
     elements::convert_page_element_to_svg,
@@ -9,6 +11,7 @@ use super::{
     utils::{dimension_to_pt, format_color, AsShape},
 };
 use crate::models::{
+    bullet::Bullet,
     colors::{ColorScheme, OpaqueColor, OpaqueColorContent, ThemeColorType},
     elements::{PageElement, PageElementKind},
     page::Page,
@@ -166,8 +169,9 @@ pub(crate) fn find_placeholder_element<'a>(
 
 /// Extracts the *default* text style from a placeholder element (typically a Shape).
 /// This is used as the base style for text within shapes that inherit from this placeholder.
-/// It approximates the default style by looking first at the list style for nesting level 0,
-/// and then falling back to the style of the first `TextRun` within the placeholder's text.
+/// Prioritizes the style defined in the associated list's nesting level 0 bulletStyle,
+/// as this commonly holds the placeholder's default text attributes (font, size, color).
+/// Falls back to the style of the first `TextRun` if the list style method fails.
 ///
 /// # Arguments
 /// * `placeholder_element` - The placeholder `PageElement` (likely a Shape) on the layout/master.
@@ -177,53 +181,98 @@ pub(crate) fn find_placeholder_element<'a>(
 pub(crate) fn get_placeholder_default_text_style(
     placeholder_element: &PageElement,
 ) -> Option<TextStyle> {
-    // Ensure the placeholder is a Shape and has text content
+    debug!(
+        "[get_placeholder_default_text_style] Attempting for placeholder ID: {}",
+        placeholder_element.object_id
+    );
+
     if let Some(shape) = placeholder_element.element_kind.as_shape() {
         if let Some(text) = &shape.text {
-            // --- Strategy 1: Look for explicit list style for nesting level 0 ---
-            // This is often the most reliable source for placeholder default styles.
-            if let Some(lists) = &text.lists {
-                // Find the listId associated with the first paragraph (nesting level 0)
-                let first_para_list_id = text
-                    .text_elements
-                    .as_ref()
-                    .and_then(|elements| elements.first())
-                    .and_then(|first_element| first_element.kind.as_ref())
-                    .and_then(|kind| match kind {
-                        TextElementKind::ParagraphMarker(pm) => {
-                            pm.bullet.as_ref().and_then(|b| b.list_id.as_ref()) // Use and_then and as_ref
+            // --- Strategy 1 (Original Priority): Use List Style for Nesting Level 0 ---
+            debug!(
+                "[get_placeholder_default_text_style] Placeholder '{}': Trying List/Bullet style lookup.",
+                 placeholder_element.object_id
+             );
+            let list_info: Option<(&String, i32)> =
+                text.text_elements.as_ref().and_then(|elements| {
+                    elements.iter().find_map(|element| {
+                        if let Some(TextElementKind::ParagraphMarker(pm)) = &element.kind {
+                            pm.bullet.as_ref().and_then(|b: &Bullet| {
+                                b.list_id
+                                    .as_ref()
+                                    .map(|id| (id, b.nesting_level.unwrap_or(0)))
+                            })
+                        } else {
+                            None
                         }
-                        _ => None,
-                    });
+                    })
+                });
 
-                // Use the found list_id (which is &String) to look up in the map
-                if let Some(list_id_str) = first_para_list_id {
-                    if let Some(style) = lists
-                        .get(list_id_str) // Use &String as key directly
+            if let Some((list_id, _nesting_level)) = list_info {
+                // nesting_level isn't directly used here, we hardcode lookup for 0
+                debug!(
+                    "[get_placeholder_default_text_style] Placeholder '{}': Found list_id '{}' from ParagraphMarker.",
+                     placeholder_element.object_id, list_id
+                 );
+                if let Some(lists) = &text.lists {
+                    if let Some(level_0_style) = lists
+                        .get(list_id)
                         .and_then(|list_props| list_props.nesting_level.as_ref())
-                        .and_then(|nesting_map| nesting_map.get(&0))
+                        .and_then(|nesting_map| nesting_map.get(&0)) // Specifically level 0
                         .and_then(|level_0_props| level_0_props.bullet_style.as_ref())
                     {
-                        return Some(style.clone()); // Found the style
+                        debug!(
+                            "[get_placeholder_default_text_style] Placeholder '{}': SUCCESS using list '{}', level 0: {:?}",
+                             placeholder_element.object_id, list_id, level_0_style
+                         );
+                        return Some(level_0_style.clone()); // Return this style
+                    } else {
+                        debug!(
+                            "[get_placeholder_default_text_style] Placeholder '{}': List '{}' found, but no style defined for level 0.",
+                              placeholder_element.object_id, list_id
+                         );
                     }
                 }
+            } else {
+                debug!(
+                    "[get_placeholder_default_text_style] Placeholder '{}': No ParagraphMarker with list info found.",
+                      placeholder_element.object_id
+                 );
             }
 
-            // --- Strategy 2: Fallback to the style of the first TextRun ---
-            // If list styles didn't provide the answer, find the first actual text run.
+            // --- Strategy 2 (Fallback): Use the style of the first TextRun ---
+            debug!(
+                "[get_placeholder_default_text_style] Placeholder '{}': Falling back to first TextRun style lookup.",
+                 placeholder_element.object_id
+             );
             if let Some(text_elements) = &text.text_elements {
-                for element in text_elements {
-                    if let Some(TextElementKind::TextRun(tr)) = &element.kind {
-                        if let Some(style) = &tr.style {
-                            // Found a styled TextRun, return its style as the default.
-                            return Some(style.clone());
-                        } // If the first TextRun has no style, we continue (unlikely for placeholders)
-                    }
+                if let Some(first_tr_style) =
+                    text_elements
+                        .iter()
+                        .find_map(|element| match &element.kind {
+                            Some(TextElementKind::TextRun(tr)) => tr.style.as_ref(),
+                            _ => None,
+                        })
+                {
+                    debug!(
+                        "[get_placeholder_default_text_style] Placeholder '{}': SUCCESS using fallback TextRun style: {:?}",
+                         placeholder_element.object_id, first_tr_style
+                     );
+                    return Some(first_tr_style.clone());
+                } else {
+                    debug!(
+                        "[get_placeholder_default_text_style] Placeholder '{}': No styled TextRun found for fallback.",
+                         placeholder_element.object_id
+                     );
                 }
             }
         }
     }
-    // No shape, no text, or no styled elements/list styles found within the placeholder.
+
+    warn!( // Keep as warn if no style is found at all
+        "[get_placeholder_default_text_style] No default text style could be determined for placeholder '{}'.",
+         placeholder_element.object_id
+     );
     None
 }
 

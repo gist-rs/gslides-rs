@@ -1,6 +1,8 @@
 //! Functions for converting text content (TextContent, TextRun, ParagraphMarker)
 //! into SVG <text>/<tspan> elements or HTML for <foreignObject>, applying styles.
 
+use log::{debug, warn};
+
 use super::{
     constants::*,
     error::Result,
@@ -199,51 +201,116 @@ pub(crate) fn merge_text_styles(
     specific_style: Option<&TextStyle>,
     inherited_style: Option<&TextStyle>,
 ) -> TextStyle {
+    debug!(
+        "[merge_text_styles] Merging:\n  Specific: {:?}\n  Inherited: {:?}",
+        specific_style, inherited_style
+    );
+
     // Start with the inherited style or a default TextStyle if none provided.
     let mut merged = inherited_style.cloned().unwrap_or_default();
+    // Store the original inherited font size for logging clarity if needed
+    // let original_inherited_font_size = merged.font_size.clone();
 
     if let Some(specific) = specific_style {
         // Iterate through specific style properties and override if they are Some
+
         if specific.background_color.is_some() {
+            debug!(
+                "[merge_text_styles]   Overwriting background_color with Specific: {:?}",
+                specific.background_color
+            );
             merged.background_color = specific.background_color.clone();
         }
         if specific.baseline_offset.is_some() {
+            debug!(
+                "[merge_text_styles]   Overwriting baseline_offset with Specific: {:?}",
+                specific.baseline_offset
+            );
             merged.baseline_offset = specific.baseline_offset.clone();
         }
         if specific.bold.is_some() {
+            debug!(
+                "[merge_text_styles]   Overwriting bold with Specific: {:?}",
+                specific.bold
+            );
             merged.bold = specific.bold;
         }
         if specific.font_family.is_some() {
+            debug!(
+                "[merge_text_styles]   Overwriting font_family with Specific: {:?}",
+                specific.font_family
+            );
             merged.font_family = specific.font_family.clone();
         }
+        // --- This is the critical part for font size ---
         if specific.font_size.is_some() {
-            merged.font_size = specific.font_size.clone();
+            debug!(
+                "[merge_text_styles]   Overwriting font_size with Specific: {:?}",
+                specific.font_size
+            );
+            merged.font_size = specific.font_size.clone(); // Ensure specific always overwrites if present
+        } else {
+            // Log if we kept the inherited size
+            debug!(
+                "[merge_text_styles]   Keeping font_size from Inherited/PreviousMerge: {:?}",
+                merged.font_size
+            );
         }
         if specific.foreground_color.is_some() {
+            debug!(
+                "[merge_text_styles]   Overwriting foreground_color with Specific: {:?}",
+                specific.foreground_color
+            );
             merged.foreground_color = specific.foreground_color.clone();
         }
         if specific.italic.is_some() {
+            debug!(
+                "[merge_text_styles]   Overwriting italic with Specific: {:?}",
+                specific.italic
+            );
             merged.italic = specific.italic;
         }
         if specific.link.is_some() {
+            debug!(
+                "[merge_text_styles]   Overwriting link with Specific: {:?}",
+                specific.link
+            );
             merged.link = specific.link.clone();
         }
         if specific.small_caps.is_some() {
+            debug!(
+                "[merge_text_styles]   Overwriting small_caps with Specific: {:?}",
+                specific.small_caps
+            );
             merged.small_caps = specific.small_caps;
         }
         if specific.strikethrough.is_some() {
+            debug!(
+                "[merge_text_styles]   Overwriting strikethrough with Specific: {:?}",
+                specific.strikethrough
+            );
             merged.strikethrough = specific.strikethrough;
         }
         if specific.underline.is_some() {
+            debug!(
+                "[merge_text_styles]   Overwriting underline with Specific: {:?}",
+                specific.underline
+            );
             merged.underline = specific.underline;
         }
         if specific.weighted_font_family.is_some() {
+            debug!(
+                "[merge_text_styles]   Overwriting weighted_font_family with Specific: {:?}",
+                specific.weighted_font_family
+            );
             merged.weighted_font_family = specific.weighted_font_family.clone();
         }
-        // language_code is typically set explicitly, merging might not be desired.
-        // if specific.language_code.is_some() { merged.language_code = specific.language_code.clone(); }
+        // language_code merge logic (if needed)
+    } else {
+        debug!("[merge_text_styles] No specific style provided, using inherited directly.");
     }
 
+    debug!("[merge_text_styles] Merged result: {:?}", merged);
     merged
 }
 
@@ -527,174 +594,252 @@ pub(crate) fn convert_text_content_to_html(
         None => return Ok(()),
     };
 
-    // --- State for tracking paragraphs and styles ---
     let mut paragraph_open = false;
-    let mut first_element_processed = false;
-    // Base text style for the *current* paragraph (can be modified by bullets)
+    let mut first_element_in_doc = true; // Track if it's the very first element
     let mut current_paragraph_base_style = effective_text_style_base.clone();
-    // Paragraph style (alignment) for the *current* paragraph
     let mut current_para_style_ref = effective_paragraph_style;
+    let mut list_nesting_level = 0; // Track list level for potential <ul><li> structure later
 
     for element in text_elements {
         match &element.kind {
             Some(TextElementKind::ParagraphMarker(pm)) => {
-                // Close previous paragraph if open
+                // --- Close Previous Paragraph ---
                 if paragraph_open {
-                    write!(html_output, "</p>")?;
+                    write!(html_output, "</p>")?; // Close the previous paragraph
                     paragraph_open = false;
-                }
-                // Start new paragraph. Add newline before unless it's the very first element.
-                if first_element_processed {
-                    writeln!(html_output)?;
+                    writeln!(html_output)?; // Add a newline between paragraphs in HTML source
                 }
 
-                // Update paragraph style (alignment) based on this marker.
+                debug!(
+                    "[convert_text_content_to_html] Processing ParagraphMarker. Bullet: {:?}",
+                    pm.bullet
+                );
+
+                // --- Update Styles for New Paragraph ---
                 current_para_style_ref = pm.style.as_ref().or(effective_paragraph_style);
-                // Update the base text style for this paragraph if the bullet has its own style.
-                if let Some(bullet) = &pm.bullet {
-                    if let Some(bullet_style) = &bullet.bullet_style {
-                        current_paragraph_base_style =
-                            merge_text_styles(Some(bullet_style), Some(effective_text_style_base));
-                    } else {
-                        current_paragraph_base_style = effective_text_style_base.clone();
-                    }
-                } else {
-                    current_paragraph_base_style = effective_text_style_base.clone();
+
+                // Update base style: Start with placeholder base, then merge this paragraph's bullet style onto it
+                let paragraph_bullet_style =
+                    pm.bullet.as_ref().and_then(|b| b.bullet_style.as_ref());
+                debug!(
+                    "[convert_text_content_to_html] Inherited Base Style: {:?}, Para Bullet Style: {:?}",
+                     effective_text_style_base, paragraph_bullet_style
+                 );
+                current_paragraph_base_style =
+                    merge_text_styles(paragraph_bullet_style, Some(effective_text_style_base));
+                debug!(
+                    "[convert_text_content_to_html] New Paragraph Base Style (after bullet merge): {:?}",
+                     current_paragraph_base_style
+                 );
+
+                list_nesting_level = pm
+                    .bullet
+                    .as_ref()
+                    .map_or(0, |b| b.nesting_level.unwrap_or(0));
+
+                // --- Start New Paragraph ---
+                // Add newline before unless it's the very first element processed
+                if !first_element_in_doc {
+                    // This newline is handled by the closing </p>\n above
                 }
 
-                // Build paragraph style string (including alignment)
-                let mut p_style = "margin:0; padding:0;".to_string(); // Base style
+                // Build paragraph style string
+                let mut p_style = "margin:0; padding:0; position:relative;".to_string(); // position:relative for potential bullet absolute positioning
+                let mut indent_start_pt = 0.0;
                 if let Some(ps) = current_para_style_ref {
                     let text_align = match ps.alignment {
                         Some(Alignment::Center) => "center",
-                        Some(Alignment::End) => "end", // or "right" if better browser support needed
+                        Some(Alignment::End) => "end",
                         Some(Alignment::Justified) => "justify",
-                        _ => "start", // Start or None
+                        _ => "start",
                     };
                     write!(p_style, " text-align:{};", text_align)?;
-                    // TODO: Handle indentation, spacingBefore/After etc. from ParagraphStyle
+
+                    // --- Indentation ---
+                    // Use indentStart for overall padding, indentFirstLine for text-indent
+                    indent_start_pt = dimension_to_pt(ps.indent_start.as_ref());
+                    let indent_first_line_pt = dimension_to_pt(ps.indent_first_line.as_ref());
+                    // Apply indentStart as padding-left
+                    if indent_start_pt > 0.0 {
+                        write!(p_style, " padding-left:{}pt;", indent_start_pt)?;
+                    }
+                    // Apply indentFirstLine as text-indent (relative to padding-left)
+                    // Note: text-indent applies to the *first line* only.
+                    if indent_first_line_pt != 0.0 {
+                        // Can be negative for hanging indent
+                        write!(p_style, " text-indent:{}pt;", indent_first_line_pt)?;
+                    }
                 }
 
-                write!(html_output, "<p style=\"{}\">", p_style)?;
-                writeln!(html_output)?; // Newline after opening tag for readability
+                // --- Bullet Rendering (Simple Span Approach) ---
+                let mut bullet_span = String::new();
+                if let Some(bullet) = &pm.bullet {
+                    write!(p_style, " white-space:nowrap;")?;
+                    if let Some(glyph) = &bullet.glyph {
+                        if !glyph.is_empty() && glyph != "\u{000B}" {
+                            // Avoid rendering vertical tab glyph
+                            // Use paragraph base style for the bullet itself
+                            let mut bullet_css = String::new();
+                            // Apply the *merged* paragraph base style to the bullet
+                            apply_html_text_style(
+                                Some(&current_paragraph_base_style),
+                                &mut bullet_css,
+                                color_scheme,
+                            )?;
+
+                            // Position bullet absolutely. Left offset calculation needs care.
+                            // A simple heuristic: place it within the left padding area.
+                            // 'indent_start_pt' is the padding edge. 'indent_first_line_pt' affects text start.
+                            // Let's try placing it slightly before the text's effective start.
+                            // Effective text start = indent_start + indent_first_line
+                            // Place bullet at indent_start - bullet_width_estimate? Or halfway in indent_first_line?
+                            // Simpler: Place it half way into the indent_start padding for now.
+                            let bullet_left_offset = (indent_start_pt * 0.5).max(0.0);
+
+                            write!(
+                                bullet_span,
+                                r#"<span aria-hidden="true" style="position:absolute; left:{}pt; {}">{}</span>"#, // Added aria-hidden
+                                bullet_left_offset,
+                                bullet_css.trim_end(),
+                                escape_html_text(glyph)
+                            )?;
+                            debug!(
+                                "[convert_text_content_to_html] Added bullet span: glyph='{}', style='left:{}pt; {}'",
+                                escape_html_text(glyph), bullet_left_offset, bullet_css.trim_end()
+                             );
+                        }
+                    }
+                }
+
+                // Write the opening <p> tag and the bullet span
+                write!(
+                    html_output,
+                    "<p style=\"{}\">{}",
+                    p_style.trim_end(),
+                    bullet_span
+                )?;
+                // DO NOT add newline here, text run should follow immediately
                 paragraph_open = true;
-                first_element_processed = true;
-            }
+                first_element_in_doc = false; // Mark that we've processed the first element
+            } // End ParagraphMarker handling
+
             Some(TextElementKind::TextRun(tr)) => {
                 let content = tr.content.as_deref().unwrap_or("");
-                if content.is_empty() {
-                    continue;
-                } // Skip empty runs
+                debug!(
+                    "[convert_text_content_to_html] Processing TextRun. Content length: {}, Has Style: {}",
+                     content.len(), tr.style.is_some()
+                 );
 
-                // Ensure we are inside a paragraph tag (start one if needed)
+                // If content is just a newline and often signifies the end of a bullet point without text, skip?
+                // Let's render it for now, it might be intentional spacing.
+                // if content == "\n" && paragraph_open { continue; } // Potential optimization/change
+
+                // --- Ensure Paragraph is Open ---
+                // This *shouldn't* strictly be necessary if the Slides API guarantees a ParagraphMarker
+                // before TextRuns, but as a safeguard:
                 if !paragraph_open {
-                    if first_element_processed {
-                        writeln!(html_output)?;
-                    }
-                    // Apply current paragraph style if starting a new one implicitly
+                    warn!("[convert_text_content_to_html] TextRun found without an open paragraph! Starting one.");
+                    // Apply current paragraph style if starting implicitly
                     let mut p_style = "margin:0; padding:0;".to_string();
-                    if let Some(ps) = current_para_style_ref {
-                        let text_align = match ps.alignment {
-                            Some(Alignment::Center) => "center",
-                            Some(Alignment::End) => "end",
-                            Some(Alignment::Justified) => "justify",
-                            _ => "start",
-                        };
-                        write!(p_style, " text-align:{};", text_align)?;
-                    }
+                    // ... (add alignment/indent based on current_para_style_ref if needed) ...
                     write!(html_output, "<p style=\"{}\">", p_style)?;
-                    writeln!(html_output)?;
                     paragraph_open = true;
+                    // Not setting first_element_in_doc = false here, as this is an edge case.
                 }
 
-                // Determine the final style for this specific run by merging
+                // --- Merge Styles ---
+                // Merge this run's specific style onto the current paragraph's base style
+                debug!(
+                    "[convert_text_content_to_html] Merging Run Style: {:?}\n      onto Para Base: {:?}",
+                    tr.style, current_paragraph_base_style
+                 );
                 let final_run_style =
                     merge_text_styles(tr.style.as_ref(), Some(&current_paragraph_base_style));
+                debug!(
+                    "[convert_text_content_to_html] Final Run Style: {:?}",
+                    final_run_style
+                );
 
-                // Build inline CSS style for the span based on the final run style
+                // --- Apply Style to HTML Span ---
                 let mut span_style = String::new();
-                apply_html_text_style(Some(&final_run_style), &mut span_style, color_scheme)?; // Use helper
+                apply_html_text_style(Some(&final_run_style), &mut span_style, color_scheme)?;
 
-                // Escape HTML content and replace internal newlines with <br> tags
-                let html_content = escape_html_text(content).replace('\n', "<br/>\n        "); // Add newline+indent after <br>
+                // --- Escape Content & Handle Newlines ---
+                // Replace internal newlines with <br/>. Need to be careful not to add extra space.
+                let html_content = escape_html_text(content).replace('\n', "<br/>");
 
-                // Write the span with its style and content
-                write!(html_output, "      ")?; // Indent span within paragraph
-                if !span_style.is_empty() {
-                    write!(
-                        html_output,
-                        r#"<span style="{}">{}</span>"#,
-                        span_style.trim_end(),
-                        html_content
-                    )?;
+                // --- Write Span ---
+                if !html_content.is_empty() {
+                    // Avoid writing empty spans
+                    if !span_style.is_empty() {
+                        write!(
+                            html_output,
+                            r#"<span style="{}">{}</span>"#,
+                            span_style.trim_end(),
+                            html_content
+                        )?;
+                    } else {
+                        // No specific style differences from paragraph base, write content directly
+                        // (though apply_html_text_style should usually produce *something* like font-size)
+                        write!(html_output, "{}", html_content)?;
+                    }
+                    debug!(
+                         "[convert_text_content_to_html] Output TextRun span: style='{}', content='{}'",
+                         span_style.trim_end(), html_content
+                      );
                 } else {
-                    // No specific style, just write content directly
-                    write!(html_output, "{}", html_content)?;
+                    debug!("[convert_text_content_to_html] Skipped empty TextRun content.");
                 }
-                writeln!(html_output)?; // Newline after closing span
-                first_element_processed = true;
-            }
+                first_element_in_doc = false; // Mark that we've processed content
+            } // End TextRun handling
+
             Some(TextElementKind::AutoText(at)) => {
+                debug!("[convert_text_content_to_html] Processing AutoText.");
                 // Treat AutoText similarly to TextRun for HTML conversion
                 let content = at.content.as_deref().unwrap_or("");
                 if content.is_empty() {
                     continue;
                 }
 
-                // Ensure inside paragraph
-                if !paragraph_open {
-                    if first_element_processed {
-                        writeln!(html_output)?;
-                    }
-                    let mut p_style = "margin:0; padding:0;".to_string();
-                    if let Some(ps) = current_para_style_ref {
-                        let text_align = match ps.alignment {
-                            Some(Alignment::Center) => "center",
-                            Some(Alignment::End) => "end",
-                            Some(Alignment::Justified) => "justify",
-                            _ => "start",
-                        };
-                        write!(p_style, " text-align:{};", text_align)?;
-                    }
-                    write!(html_output, "<p style=\"{}\">", p_style)?;
-                    writeln!(html_output)?;
-                    paragraph_open = true;
-                }
+                if !paragraph_open { /* ... handle missing paragraph tag error ... */ }
 
-                // Merge styles and apply
                 let final_autotext_style =
                     merge_text_styles(at.style.as_ref(), Some(&current_paragraph_base_style));
                 let mut span_style = String::new();
                 apply_html_text_style(Some(&final_autotext_style), &mut span_style, color_scheme)?;
 
-                let html_content = escape_html_text(content).replace('\n', "<br/>\n        ");
+                let html_content = escape_html_text(content).replace('\n', "<br/>");
 
-                write!(html_output, "      ")?; // Indent
-                if !span_style.is_empty() {
-                    write!(
-                        html_output,
-                        r#"<span style="{}">{}</span>"#,
-                        span_style.trim_end(),
-                        html_content
-                    )?;
-                } else {
-                    write!(html_output, "{}", html_content)?;
+                if !html_content.is_empty() {
+                    if !span_style.is_empty() {
+                        write!(
+                            html_output,
+                            r#"<span style="{}">{}</span>"#,
+                            span_style.trim_end(),
+                            html_content
+                        )?;
+                    } else {
+                        write!(html_output, "{}", html_content)?;
+                    }
+                    debug!(
+                        "[convert_text_content_to_html] Output AutoText span: style='{}', content='{}'",
+                         span_style.trim_end(), html_content
+                    );
                 }
-                writeln!(html_output)?;
-                first_element_processed = true;
+                first_element_in_doc = false;
             }
-            None => {}
-        }
-    }
+            None => {} // Element kind is None
+        } // End match element.kind
+    } // End loop over text_elements
 
-    // Close the last paragraph tag if it was open
+    // --- Close Final Paragraph ---
     if paragraph_open {
         write!(html_output, "</p>")?;
-        // Do not add a final newline here, let the caller handle overall formatting
+        // No final newline here within the content block
     }
 
-    // Trim potential leading/trailing whitespace that might affect layout in foreignObject
-    // Trim the final string *before* returning using trim().to_string() approach.
+    // --- Final Trim (Optional but recommended) ---
+    // Trim surrounding whitespace from the generated HTML block
     let trimmed_output = html_output.trim().to_string();
     html_output.clear();
     write!(html_output, "{}", trimmed_output)?; // Write back the trimmed version

@@ -166,7 +166,7 @@ fn build_shape_style(
 ///   internally. Text (via `<foreignObject>`) is placed in the translated group and is *not* scaled/sheared.
 /// - **Other Shapes:** Applies the full transform (scale, shear, translate) to the outer group.
 ///   Geometry and `<foreignObject>` (if text exists) inherit the full transform.
-/// Resolves placeholder styles and applies them to the HTML text.
+///   Resolves placeholder styles and applies them to the HTML text.
 ///
 /// # Arguments
 /// * `element_id` - The object ID of the PageElement containing this shape.
@@ -414,12 +414,12 @@ fn convert_shape_to_svg(
             // Create <foreignObject> inside the *outer* group
             writeln!(
                 svg_output,
-                r#"  <foreignObject x="{}" y="{}" width="{}" height="{}">"#,
+                r#"  <foreignObject x="{}" y="{}" width="{}" height="{}" overflow="visible">"#,
                 text_padding_x, text_padding_y, text_box_width, text_box_height
             )?;
             writeln!(
                 svg_output,
-                r#"    <div xmlns="http://www.w3.org/1999/xhtml" style="width:100%; height:100%; overflow:hidden; box-sizing: border-box;">"#
+                r#"    <div xmlns="http://www.w3.org/1999/xhtml" style="width:100%; height:100%; box-sizing: border-box;">"#
             )?;
 
             // Convert TextContent to HTML
@@ -486,7 +486,7 @@ fn convert_table_to_svg(
     write!(
         svg_output,
         // Apply transform attributes to foreignObject
-        r#"<foreignObject x="{}" y="{}" width="{}" height="{}" data-object-id="{}"{}>"#,
+        r#"<foreignObject x="{}" y="{}" width="{}" height="{}"  overflow="visible"  data-object-id="{}"{}>"#,
         tx, ty, width, height, element_id, foreign_object_attrs
     )?;
     writeln!(svg_output)?; // Newline after opening tag
@@ -495,7 +495,7 @@ fn convert_table_to_svg(
     // XHTML namespace is crucial for proper rendering within SVG
     write!(
         svg_output,
-        r#"  <div xmlns="http://www.w3.org/1999/xhtml" style="width:100%; height:100%; overflow:hidden; box-sizing: border-box;">"# // Added box-sizing
+        r#"  <div xmlns="http://www.w3.org/1999/xhtml" style="width:100%; height:100%; box-sizing: border-box;">"# // Added box-sizing
     )?;
     writeln!(svg_output)?; // Newline after opening div
 

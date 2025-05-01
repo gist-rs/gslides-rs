@@ -1,30 +1,19 @@
 ## Summary of Changes (Text Content)
 
-- Lines Added: 13
+- Lines Added: 2
 - Lines Removed: 3
 
 ---
 
 --- base_presentation.json
 +++ changed_presentation.json
-@@ -1,7 +1,17 @@
+@@ -1,7 +1,6 @@
  # Presentation
 -test-parser
-+test-parser-v2
++Copy of test-漢字
  
  ## Slide 1
  
 -Hello
 -world
-+こんにちは
-+世界
-+123
-+
-+
-+---
-+
-+## Slide 2
-+
-+| foo | bar |
-+|---|---|
-+| 123 | 456 |
++あのイーハトーヴォのすきとおった風、夏でも底に冷たさをもつ

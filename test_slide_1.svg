@@ -1,11 +1,9 @@
 <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="720pt" height="540pt" viewBox="0 0 720 540">
   <rect width="100%" height="100%" fill="#ffffff" />
 <g data-object-id="p1_i3" transform="translate(34.54385826771654 244.58519685039371)">
-  <g transform="matrix(2.7522 0 0 0.1628 0 0)">
-    <rect x="0" y="0" width="236.2204724409449" height="236.2204724409449" style="fill:none; stroke:none;" />
-  </g>
-  <foreignObject x="3" y="2" width="230.2204724409449" height="232.2204724409449" overflow="visible">
-    <div xmlns="http://www.w3.org/1999/xhtml" style="width:100%; height:100%; box-sizing: border-box;">
+  <rect x="0" y="0" width="236.2204724409449" height="236.2204724409449" style="fill:none; stroke:none;" transform="matrix(2.7522 0 0 0.1628 0 0)" />
+  <foreignObject x="0" y="0" width="650.1259842519686" height="38.45669291338583" overflow="visible">
+    <div xmlns="http://www.w3.org/1999/xhtml" style="width:100%; height:100%; box-sizing: border-box; padding: 2pt 3pt 2pt 3pt;">
 <p style="margin:0; padding:0; position:relative; text-align:center;"><span style="font-family:'Arial'; font-size:18pt; color:#000000; font-weight:bold;">COVER PAGE FORMAT [ 2 Pattern ]<br/></span></p>
     </div>
   </foreignObject>

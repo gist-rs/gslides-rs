@@ -1,6 +1,8 @@
 //! Handles the conversion of specific `PageElement` types (Shape, Table, Group, Line, Image)
 //! into their corresponding SVG representations.
 
+use log::{debug, warn};
+
 use super::{
     constants::*,
     error::Result, // Keep SvgConversionError if needed for specific errors here
@@ -8,15 +10,12 @@ use super::{
         find_placeholder_element, get_placeholder_default_text_style, ElementsMap, LayoutsMap,
         MastersMap,
     },
-    // Remove unused import 'convert_text_content_to_svg'
-    text::convert_text_content_to_html,
-    // [+] Add import for Dimension and Unit
+    text::convert_text_content_to_html, // Keep this import
     utils::{apply_transform, dimension_to_pt, escape_svg_text, format_color, AsShape},
 };
 use crate::models::{
     colors::ColorScheme,
-    // [+] Add import for Dimension and Unit
-    common::{AffineTransform, Dimension, Size, Unit},
+    common::{AffineTransform, Dimension, Size, Unit}, // Keep Dimension and Unit
     elements::{PageElement, PageElementKind},
     image::Image,
     line::{Line, LineFillContent},
@@ -182,7 +181,7 @@ fn build_shape_style(
 /// `Result<()>`
 #[allow(clippy::too_many_arguments)]
 fn convert_shape_to_svg(
-    element_id: &str, // Added element_id
+    element_id: &str,
     shape: &Shape,
     transform: Option<&AffineTransform>,
     size: Option<&Size>,
@@ -197,21 +196,15 @@ fn convert_shape_to_svg(
     let width_pt = dimension_to_pt(size.and_then(|s| s.width.as_ref()));
     let height_pt = dimension_to_pt(size.and_then(|s| s.height.as_ref()));
 
-    // Determine shape type
-    let shape_type = shape
-        .shape_type
-        .as_ref()
-        .unwrap_or(&crate::models::shape::ShapeType::TypeUnspecified);
-
-    // --- Handle Transform based on Shape Type ---
-    let mut outer_group_attrs = String::new();
-    let mut geometry_transform_attrs = String::new();
-    let tx_pt;
-    let ty_pt;
-    let scale_x;
-    let scale_y;
-    let shear_x;
-    let shear_y;
+    // --- Handle Transform ---
+    let mut outer_group_transform_attr = String::new();
+    let mut geometry_transform_attr = String::new();
+    let mut tx_pt = 0.0;
+    let mut ty_pt = 0.0;
+    let mut scale_x = 1.0;
+    let mut scale_y = 1.0;
+    let mut shear_x = 0.0;
+    let mut shear_y = 0.0;
 
     if let Some(tf) = transform {
         scale_x = tf.scale_x.unwrap_or(1.0);
@@ -229,116 +222,119 @@ fn convert_shape_to_svg(
             unit: Some(translate_unit),
         }));
 
-        if *shape_type == crate::models::shape::ShapeType::TextBox {
-            // TextBox: Outer group only gets translation. Geometry gets scale/shear.
+        // Outer group only gets translation
+        if tx_pt != 0.0 || ty_pt != 0.0 {
             write!(
-                outer_group_attrs,
+                outer_group_transform_attr,
                 r#" transform="translate({} {})""#,
                 tx_pt, ty_pt
             )?;
-            if scale_x != 1.0 || scale_y != 1.0 || shear_x != 0.0 || shear_y != 0.0 {
-                write!(
-                    geometry_transform_attrs,
-                    r#" transform="matrix({} {} {} {} 0 0)""#,
-                    scale_x, shear_y, shear_x, scale_y
-                )?;
-            }
-        } else {
-            // Other shapes: Outer group gets the full transform.
+        }
+
+        // Geometry gets scale/shear matrix (relative to translated origin)
+        if scale_x != 1.0 || scale_y != 1.0 || shear_x != 0.0 || shear_y != 0.0 {
             write!(
-                outer_group_attrs,
-                r#" transform="matrix({} {} {} {} {} {})""#,
-                scale_x, shear_y, shear_x, scale_y, tx_pt, ty_pt
+                geometry_transform_attr,
+                r#" transform="matrix({} {} {} {} 0 0)""#,
+                scale_x, shear_y, shear_x, scale_y
             )?;
-            // Geometry transform is identity (handled by outer group)
         }
     }
 
     // --- Start Outer Group ---
+    // This group only has translation applied (if any).
     writeln!(
         svg_output,
-        "<g data-object-id=\"{}\"{}>", // Add objectId and appropriate transform
-        element_id, outer_group_attrs
+        "<g data-object-id=\"{}\"{}>",
+        element_id,
+        outer_group_transform_attr // Only translate transform here
     )?;
 
     // --- Render Shape Geometry ---
-    // Geometry is rendered at (0,0) relative to its transform context.
+    // Geometry is rendered at (0,0) relative to the translated outer group.
+    // Scale/shear is applied directly to the geometry element itself.
     let default_props = ShapeProperties::default();
     let shape_props_ref = shape.shape_properties.as_ref().unwrap_or(&default_props);
+    let shape_type = shape
+        .shape_type
+        .as_ref()
+        .unwrap_or(&crate::models::shape::ShapeType::TypeUnspecified);
 
     if width_pt > 0.0 && height_pt > 0.0 {
         if shape.shape_properties.is_some() {
             let shape_style = build_shape_style(shape_props_ref, color_scheme)?;
-
-            // Apply geometry-specific transform if needed (only for TextBox currently)
-            if !geometry_transform_attrs.is_empty() {
-                writeln!(svg_output, "  <g{}>", geometry_transform_attrs)?; // Geometry group start
-            }
 
             match shape_type {
                 crate::models::shape::ShapeType::Rectangle
                 | crate::models::shape::ShapeType::TextBox => {
                     writeln!(
                         svg_output,
-                        r#"    <rect x="0" y="0" width="{}" height="{}" style="{}" />"#, // Indent if inside geometry group
-                        width_pt, height_pt, shape_style
+                        // Apply geometry transform here
+                        r#"  <rect x="0" y="0" width="{}" height="{}" style="{}"{} />"#,
+                        width_pt, height_pt, shape_style, geometry_transform_attr
                     )?;
                 }
                 crate::models::shape::ShapeType::RoundRectangle => {
                     let default_rx = (width_pt * 0.08).min(height_pt * 0.08).max(2.0);
+                    // Apply geometry transform here
                     writeln!(
                         svg_output,
-                        r#"    <rect x="0" y="0" width="{}" height="{}" rx="{}" ry="{}" style="{}" />"#, // Indent
-                        width_pt, height_pt, default_rx, default_rx, shape_style
+                        r#"  <rect x="0" y="0" width="{}" height="{}" rx="{}" ry="{}" style="{}"{} />"#,
+                        width_pt,
+                        height_pt,
+                        default_rx,
+                        default_rx,
+                        shape_style,
+                        geometry_transform_attr
                     )?;
                 }
                 crate::models::shape::ShapeType::Ellipse => {
+                    // Apply geometry transform here
                     writeln!(
                         svg_output,
-                        r#"    <ellipse cx="{}" cy="{}" rx="{}" ry="{}" style="{}" />"#, // Indent
-                        width_pt / 2.0,
+                        // Ellipse uses cx/cy, so transform needs careful application.
+                        // Easiest is to wrap ellipse in a <g> with the transform.
+                        "<g{}> <ellipse cx=\"{}\" cy=\"{}\" rx=\"{}\" ry=\"{}\" style=\"{}\" /> </g>",
+                        geometry_transform_attr, // Apply transform to wrapper group
+                        width_pt / 2.0, // cx/cy relative to wrapper group's 0,0
                         height_pt / 2.0,
-                        width_pt / 2.0,
+                        width_pt / 2.0, // rx/ry are base dimensions
                         height_pt / 2.0,
                         shape_style
                     )?;
                 }
                 _ => {
-                    eprintln!("Warning: Unsupported or unspecified shape type '{:?}' for element ID: {}. Rendering placeholder.", shape_type, element_id);
+                    // Placeholder geometry - apply transform to it as well
+                    warn!("Unsupported or unspecified shape type '{:?}' for element ID: {}. Rendering placeholder.", shape_type, element_id);
                     writeln!(
                         svg_output,
-                        r#"    <rect x="0" y="0" width="{}" height="{}" style="fill:#e0e0e0; stroke:gray; stroke-dasharray: 3 3; fill-opacity:0.7;" />"#, // Indent
-                        width_pt, height_pt
+                        r#"  <rect x="0" y="0" width="{}" height="{}" style="fill:#e0e0e0; stroke:gray; stroke-dasharray: 3 3; fill-opacity:0.7;"{} />"#,
+                        width_pt, height_pt, geometry_transform_attr
                     )?;
+                    // Text inside placeholder doesn't need the geometry transform
                     writeln!(
                         svg_output,
-                        r#"    <text x="2" y="10" style="font-family:sans-serif; font-size:8pt; fill:#555;">Unsupported Shape: {}</text>"#, // Indent
+                        r#"  <text x="2" y="10" style="font-family:sans-serif; font-size:8pt; fill:#555;">Unsupported Shape: {}</text>"#,
                         escape_svg_text(&format!("{:?}", shape_type))
                     )?;
                 }
             }
-            // Close geometry-specific transform group if opened
-            if !geometry_transform_attrs.is_empty() {
-                writeln!(svg_output, "  </g>")?; // Geometry group end
-            }
         } else {
-            eprintln!(
-                "Debug: Shape (id: {}) lacks shapeProperties, skipping geometry rendering.",
+            debug!(
+                "Shape (id: {}) lacks shapeProperties, skipping geometry rendering.",
                 element_id
             );
         }
     } else if width_pt > 0.0 || height_pt > 0.0 {
-        eprintln!(
-            "Warning: Shape (id: {}) has zero width or height ({}x{}pt). Geometry skipped.",
+        warn!(
+            "Shape (id: {}) has zero width or height ({}x{}pt). Geometry skipped.",
             element_id, width_pt, height_pt
         );
     }
 
     // --- Resolve Inherited Text Styles ---
-    // (This logic remains the same)
     let mut effective_text_style_base = TextStyle::default();
     let mut effective_paragraph_style: Option<ParagraphStyle> = None;
-
     if let Some(placeholder) = &shape.placeholder {
         if let Some(layout_id) = slide_layout_id {
             if let Some(placeholder_element) = find_placeholder_element(
@@ -348,13 +344,11 @@ fn convert_shape_to_svg(
                 masters_map,
                 elements_map,
             ) {
-                // Get base text style (font, size, color etc.)
                 if let Some(placeholder_base_style) =
                     get_placeholder_default_text_style(placeholder_element)
                 {
                     effective_text_style_base = placeholder_base_style;
                 }
-                // Get base paragraph style (alignment etc.) from the first ParagraphMarker in placeholder
                 if let Some(placeholder_shape) = placeholder_element.element_kind.as_shape() {
                     if let Some(text) = &placeholder_shape.text {
                         if let Some(elements) = &text.text_elements {
@@ -362,7 +356,7 @@ fn convert_shape_to_svg(
                                 if let Some(TextElementKind::ParagraphMarker(pm)) = &element.kind {
                                     if let Some(style) = &pm.style {
                                         effective_paragraph_style = Some(style.clone());
-                                        break; // Found the first paragraph's style
+                                        break;
                                     }
                                 }
                             }
@@ -370,35 +364,30 @@ fn convert_shape_to_svg(
                     }
                 }
             } else {
-                eprintln!(
-                    "Warning: Placeholder parent ID '{}' not found for shape ID: {}",
+                warn!(
+                    "Placeholder parent ID '{}' not found for shape ID: {}",
                     placeholder.parent_object_id.as_deref().unwrap_or("N/A"),
                     element_id
                 );
             }
         } else {
-            eprintln!("Warning: Shape ID '{}' has placeholder but slide_layout_id is missing for style lookup.", element_id);
+            warn!(
+                "Shape ID '{}' has placeholder but slide_layout_id is missing for style lookup.",
+                element_id
+            );
         }
     }
 
     // --- Render Text Content using <foreignObject> ---
-    // Positioned relative to the outer group's origin (0,0) plus padding.
-    // For TextBoxes, the outer group only has translation, so text isn't scaled/sheared.
-    // For other shapes, the outer group has the full transform, so text IS scaled/sheared.
+    // Positioned at (0,0) relative to the outer (translate-only) group.
+    // Uses base dimensions and is NOT scaled/sheared by SVG transforms.
     if let Some(text) = &shape.text {
-        let text_padding_x = 3.0; // Left padding
-        let text_padding_y = 2.0; // Top padding
-        let right_padding = 3.0;
-        let bottom_padding = 2.0;
+        let text_padding_top = 2.0;
+        let text_padding_right = 3.0;
+        let text_padding_bottom = 2.0;
+        let text_padding_left = 3.0;
 
-        // Calculate the available area for the foreignObject based on the *unscaled* shape size.
-        // For non-TextBox shapes, this area will be scaled by the outer group transform.
-        // For TextBoxes, it will not be scaled.
-        let text_box_width = (width_pt - text_padding_x - right_padding).max(0.0);
-        let text_box_height = (height_pt - text_padding_y - bottom_padding).max(0.0);
-
-        if text_box_width > 0.0 && text_box_height > 0.0 {
-            // Resolve final paragraph style (shape overrides placeholder)
+        if width_pt > 0.0 && height_pt > 0.0 {
             let mut final_para_style = effective_paragraph_style.clone();
             if let Some(elements) = &text.text_elements {
                 for element in elements {
@@ -411,18 +400,25 @@ fn convert_shape_to_svg(
                 }
             }
 
-            // Create <foreignObject> inside the *outer* group
+            // Create <foreignObject> inside the outer group. Use base width/height.
             writeln!(
                 svg_output,
-                r#"  <foreignObject x="{}" y="{}" width="{}" height="{}" overflow="visible">"#,
-                text_padding_x, text_padding_y, text_box_width, text_box_height
-            )?;
-            writeln!(
-                svg_output,
-                r#"    <div xmlns="http://www.w3.org/1999/xhtml" style="width:100%; height:100%; box-sizing: border-box;">"#
+                r#"  <foreignObject x="0" y="0" width="{}" height="{}" overflow="visible">"#,
+                scale_x * width_pt,
+                scale_y * height_pt // Use BASE dimensions here
             )?;
 
-            // Convert TextContent to HTML
+            let div_padding_style = format!(
+                "padding: {}pt {}pt {}pt {}pt;",
+                text_padding_top, text_padding_right, text_padding_bottom, text_padding_left
+            );
+
+            writeln!(
+                svg_output,
+                r#"    <div xmlns="http://www.w3.org/1999/xhtml" style="width:100%; height:100%; box-sizing: border-box; {}">"#,
+                div_padding_style
+            )?;
+
             convert_text_content_to_html(
                 text,
                 final_para_style.as_ref(),
@@ -435,7 +431,10 @@ fn convert_shape_to_svg(
             writeln!(svg_output, "    </div>")?;
             writeln!(svg_output, "  </foreignObject>")?;
         } else if !text.text_elements.as_ref().map_or(true, |v| v.is_empty()) {
-            eprintln!("Debug: Skipping text rendering for shape ID {} due to zero-area text box ({}x{}) after padding.", element_id, text_box_width, text_box_height);
+            debug!(
+                "Skipping text rendering for shape ID {} due to zero-area shape ({}x{}pt).",
+                element_id, width_pt, height_pt
+            );
         }
     }
 
@@ -444,6 +443,8 @@ fn convert_shape_to_svg(
 
     Ok(())
 }
+
+// ... (rest of elements.rs remains the same, including convert_table_to_svg, convert_image_to_svg, etc.)
 
 /// Converts a Table element to SVG using `<foreignObject>` to embed styled HTML content.
 /// Handles transform, size, basic cell styling (border, background), and cell text content.
@@ -459,65 +460,63 @@ fn convert_shape_to_svg(
 /// `Result<()>`
 #[allow(clippy::too_many_arguments)]
 fn convert_table_to_svg(
-    element_id: &str, // Added element_id
+    element_id: &str,
     table: &Table,
     transform: Option<&AffineTransform>,
     size: Option<&Size>,
     color_scheme: Option<&ColorScheme>,
     svg_output: &mut String,
 ) -> Result<()> {
-    // The table's transform only affects the position/size of the <foreignObject> container.
-    // The HTML table inside will fill this container.
     let mut foreign_object_attrs = String::new();
-    let (tx, ty) = apply_transform(transform, &mut foreign_object_attrs)?;
-    let width = dimension_to_pt(size.and_then(|s| s.width.as_ref()));
-    let height = dimension_to_pt(size.and_then(|s| s.height.as_ref()));
+    // apply_transform gets the full matrix attribute string
+    let (_, _) = apply_transform(transform, &mut foreign_object_attrs)?; // We only need the attribute string
+    let width_pt = dimension_to_pt(size.and_then(|s| s.width.as_ref()));
+    let height_pt = dimension_to_pt(size.and_then(|s| s.height.as_ref()));
 
-    // Avoid creating empty or invalid foreignObjects
-    if width <= 0.0 || height <= 0.0 {
-        eprintln!(
-            "Warning: Skipping table element {} with zero or negative dimensions ({}x{}pt).",
-            element_id, width, height
+    if width_pt <= 0.0 || height_pt <= 0.0 {
+        warn!(
+            "Skipping table element {} with zero or negative dimensions ({}x{}pt).",
+            element_id, width_pt, height_pt
         );
         return Ok(());
     }
 
     // --- <foreignObject> Setup ---
+    // Position at 0,0; the transform matrix handles the actual placement.
     write!(
         svg_output,
-        // Apply transform attributes to foreignObject
-        r#"<foreignObject x="{}" y="{}" width="{}" height="{}"  overflow="visible"  data-object-id="{}"{}>"#,
-        tx, ty, width, height, element_id, foreign_object_attrs
+        r#"<foreignObject x="0" y="0" width="{}" height="{}" overflow="visible" data-object-id="{}"{}>"#,
+        width_pt,
+        height_pt,
+        element_id,
+        foreign_object_attrs // Apply full transform here
     )?;
-    writeln!(svg_output)?; // Newline after opening tag
+    writeln!(svg_output)?;
 
     // --- HTML Content within <foreignObject> ---
-    // XHTML namespace is crucial for proper rendering within SVG
     write!(
         svg_output,
-        r#"  <div xmlns="http://www.w3.org/1999/xhtml" style="width:100%; height:100%; box-sizing: border-box;">"# // Added box-sizing
+        r#"  <div xmlns="http://www.w3.org/1999/xhtml" style="width:100%; height:100%; box-sizing: border-box;">"#
     )?;
-    writeln!(svg_output)?; // Newline after opening div
+    writeln!(svg_output)?;
 
-    // Basic table styling
     write!(
         svg_output,
         r#"    <table style="border-collapse: collapse; width:100%; height:100%; border: 1px solid #ccc; table-layout: fixed;">"#
-    )?; // fixed layout helps with sizing
+    )?;
 
     // --- Table Rows and Cells ---
     if let Some(rows) = &table.table_rows {
         for row in rows {
-            writeln!(svg_output)?; // Newline before <tr>
-            write!(svg_output, "      <tr>")?; // No newline after opening <tr> yet
+            writeln!(svg_output)?;
+            write!(svg_output, "      <tr>")?;
 
             if let Some(cells) = &row.table_cells {
                 if !cells.is_empty() {
                     writeln!(svg_output)?;
-                } // Newline before first <td> if cells exist
+                }
 
                 for cell in cells {
-                    // Handle colspan and rowspan
                     let colspan = cell.column_span.unwrap_or(1);
                     let rowspan = cell.row_span.unwrap_or(1);
                     let mut td_attrs = String::new();
@@ -528,15 +527,11 @@ fn convert_table_to_svg(
                         write!(td_attrs, r#" rowspan="{}""#, rowspan)?;
                     }
 
-                    // Basic cell styling + background fill
-                    let mut cell_style = "border: 1px solid #eee; padding: 3pt; vertical-align: top; overflow: hidden;".to_string(); // Added overflow:hidden
+                    let mut cell_style = "border: 1px solid #eee; padding: 3pt; vertical-align: top; overflow: hidden;".to_string();
                     if let Some(props) = &cell.table_cell_properties {
                         if let Some(bg_fill) = &props.table_cell_background_fill {
-                            // Only handle solid fill for now
                             if let Some(solid) = &bg_fill.solid_fill {
-                                // Use format_color which handles theme colors
                                 let bg_color_hex = format_color(solid.color.as_ref(), color_scheme);
-                                // TODO: Handle solid_fill.alpha if present (using rgba?)
                                 write!(cell_style, " background-color:{};", bg_color_hex)?;
                             }
                         }
@@ -544,18 +539,13 @@ fn convert_table_to_svg(
                         // match props.content_alignment { ... }
                     }
 
-                    // Write opening <td> tag
                     write!(
                         svg_output,
                         "        <td{} style=\"{}\">",
                         td_attrs, cell_style
-                    )?; // Indent <td>
+                    )?;
 
-                    // Convert and write cell text content using HTML converter
                     if let Some(text) = &cell.text {
-                        // --- Resolve Text Styles for Cell (Simplified: Use default base) ---
-                        // Tables don't typically use placeholder inheritance in the same way shapes do.
-                        // We'll use a default TextStyle as the base and the first paragraph's style for alignment.
                         let cell_text_style_base = TextStyle::default();
                         let mut cell_para_style: Option<ParagraphStyle> = None;
                         if let Some(elements) = &text.text_elements {
@@ -568,46 +558,37 @@ fn convert_table_to_svg(
                                 }
                             }
                         }
-
                         convert_text_content_to_html(
                             text,
-                            cell_para_style.as_ref(), // Pass initial paragraph style (if any)
-                            &cell_text_style_base,    // Pass default text style as base
+                            cell_para_style.as_ref(),
+                            &cell_text_style_base,
                             color_scheme,
                             svg_output,
                         )?;
                     } else {
-                        // Ensure non-breaking space for empty cells to maintain borders/layout
                         write!(svg_output, "&nbsp;")?;
                     }
-
-                    // Write closing </td> tag
                     write!(svg_output, "</td>")?;
-                    writeln!(svg_output)?; // Newline after closing <td>
+                    writeln!(svg_output)?;
                 }
-                // Add indentation before closing </tr> if cells existed
                 if !cells.is_empty() {
                     write!(svg_output, "      ")?;
                 }
             }
-            // Close </tr> tag (already indented if cells existed)
             write!(svg_output, "</tr>")?;
         }
-        // Add newline+indentation before closing </table> if rows existed
         if !rows.is_empty() {
             writeln!(svg_output)?;
             write!(svg_output, "    ")?;
         }
-    } else {
-        // Handle empty table? Maybe add a placeholder row/cell?
     }
 
     // --- Closing Tags ---
     write!(svg_output, "</table>")?;
-    writeln!(svg_output)?; // Newline after closing table
+    writeln!(svg_output)?;
     write!(svg_output, "  </div>")?;
-    writeln!(svg_output)?; // Newline after closing div
-    write!(svg_output, "</foreignObject>")?; // No final newline here, let the caller add it.
+    writeln!(svg_output)?;
+    write!(svg_output, "</foreignObject>")?;
 
     Ok(())
 }
@@ -632,47 +613,44 @@ fn convert_image_to_svg(
     svg_output: &mut String,
 ) -> Result<()> {
     let mut img_attrs = String::new();
-    let (tx, ty) = apply_transform(transform, &mut img_attrs)?; // Transform applied to the <image> tag
-    let width = dimension_to_pt(size.and_then(|s| s.width.as_ref()));
-    let height = dimension_to_pt(size.and_then(|s| s.height.as_ref()));
+    // apply_transform gets the full matrix attribute string
+    let (_, _) = apply_transform(transform, &mut img_attrs)?; // We only need the attribute string
+    let width_pt = dimension_to_pt(size.and_then(|s| s.width.as_ref()));
+    let height_pt = dimension_to_pt(size.and_then(|s| s.height.as_ref()));
 
-    if width <= 0.0 || height <= 0.0 {
-        eprintln!(
-            "Warning: Skipping image element {} with zero dimensions.",
-            element_id
+    if width_pt <= 0.0 || height_pt <= 0.0 {
+        warn!(
+            "Skipping image element {} with zero dimensions ({}x{}pt).",
+            element_id, width_pt, height_pt
         );
         return Ok(());
     }
 
     if let Some(url) = &image_data.content_url {
-        // Ensure URL is properly escaped for XML attribute context if needed (though standard URLs are usually safe)
-        // let safe_url = escape_xml_attribute(url); // You'd need an escape function for ",&,<,> etc.
-        let safe_url = url; // Assuming URL is safe for now
-
-        // Render the actual image using the contentUrl.
-        // `preserveAspectRatio="xMidYMid meet"` scales the image to fit while preserving aspect ratio.
+        let safe_url = url; // Assuming URL is safe enough for XML attribute
+                            // Apply transform directly to the <image> tag. Position at (0,0) relative to the transform.
         write!(
             svg_output,
-            r#"<image x="{}" y="{}" width="{}" height="{}" xlink:href="{}"{} preserveAspectRatio="xMidYMid meet" data-object-id="{}"/>"#, // Use xlink:href for broader compatibility, add ID
-            tx, ty, width, height, safe_url, img_attrs, element_id
+            r#"<image x="0" y="0" width="{}" height="{}" xlink:href="{}"{} preserveAspectRatio="xMidYMid meet" data-object-id="{}"/>"#,
+            width_pt,
+            height_pt,
+            safe_url,
+            img_attrs,
+            element_id // img_attrs contains the transform
         )?;
     } else {
-        // Fallback if no URL is provided - render a placeholder rectangle with text.
-        eprintln!(
-            "Warning: Image element {} is missing contentUrl.",
-            element_id
-        );
+        warn!("Image element {} is missing contentUrl.", element_id);
         // Apply transform to the placeholder group
         write!(
             svg_output,
-            "<g data-object-id=\"{}\"{}>",
+            "<g data-object-id=\"{}\"{}>", // Group gets the transform
             element_id, img_attrs
-        )?; // Add ID to group
+        )?;
+        // Rect and text are positioned at (0,0) within the transformed group
         write!(
             svg_output,
             r#"<rect width="{}" height="{}" style="fill:#e0e0e0; stroke:gray; fill-opacity:0.5;" />"#,
-            width,
-            height // Positioned at (0,0) within the transformed group
+            width_pt, height_pt
         )?;
         write!(
             svg_output,
@@ -720,6 +698,7 @@ fn convert_line_to_svg(
     // Apply the affine transformation matrix [a c e / b d f / 0 0 1]
     // to the start point (local 0, 0) and end point (local W, H).
     if let Some(tf) = transform {
+        // DON'T CHANGE THIS!
         let a = tf.scale_x.unwrap_or(0.0); // Default to 0.0 for scale if missing
         let b = tf.shear_y.unwrap_or(0.0); // b = shearY
         let c = tf.shear_x.unwrap_or(0.0); // c = shearX
@@ -777,50 +756,60 @@ fn convert_line_to_svg(
                     stroke_opacity = solid_fill.alpha.unwrap_or(1.0);
                 }
             }
-            // TODO: Handle other LineFill types (None, Gradient) if needed.
-        }
-        write!(line_style, "stroke:{}; ", stroke_color)?;
-        write!(line_style, "stroke-opacity:{}; ", stroke_opacity)?;
-
-        // Stroke Weight
-        let stroke_width_pt = dimension_to_pt(props.weight.as_ref());
-        let effective_stroke_width = if stroke_width_pt > 0.0 {
-            stroke_width_pt
         } else {
-            1.0
-        }; // Min 1pt width
-        write!(line_style, "stroke-width:{}pt; ", effective_stroke_width)?;
-
-        // Dash Style
-        if let Some(dash_style) = &props.dash_style {
-            let dash_array = match dash_style {
-                DashStyle::Solid => "none",
-                DashStyle::Dash => "4 4", // Example: 4pt dash, 4pt gap
-                DashStyle::Dot => "1 4",  // Example: 1pt dot, 4pt gap
-                DashStyle::DashDot => "4 4 1 4", // Example: Dash, gap, dot, gap
-                DashStyle::LongDash => "8 4", // Example: 8pt dash, 4pt gap
-                DashStyle::LongDashDot => "8 4 1 4",
-                _ => "none", // Default to solid for unsupported/unspecified styles
-            };
-            if dash_array != "none" {
-                write!(line_style, "stroke-dasharray:{}; ", dash_array)?;
-            }
+            // Handle case where line_fill itself is None
+            stroke_color = "none".to_string();
+            stroke_opacity = 0.0;
         }
 
-        // Stroke Cap / Line Join (Defaults are usually fine: butt, miter)
-        // write!(line_style, "stroke-linecap:round; ")?; // E.g. "butt", "round", "square"
-        // write!(line_style, "stroke-linejoin:round; ")?; // E.g. "miter", "round", "bevel"
+        // Only apply stroke styles if color is not "none"
+        if stroke_color != "none" {
+            write!(line_style, "stroke:{}; ", stroke_color)?;
+            write!(line_style, "stroke-opacity:{}; ", stroke_opacity)?;
 
-        // Arrow Heads (Requires SVG <marker> definitions in <defs>)
-        // Example placeholder logic:
-        // let needs_defs = false;
-        // if props.start_arrow.is_some() && props.start_arrow != Some(ArrowStyle::None) {
-        //     write!(line_style, "marker-start:url(#ArrowStart); ")?; needs_defs = true;
-        // }
-        // if props.end_arrow.is_some() && props.end_arrow != Some(ArrowStyle::None) {
-        //     write!(line_style, "marker-end:url(#ArrowEnd); ")?; needs_defs = true;
-        // }
-        // If needs_defs, ensure <defs> section exists and contains marker definitions.
+            // Stroke Weight
+            let stroke_width_pt = dimension_to_pt(props.weight.as_ref());
+            let effective_stroke_width = if stroke_width_pt > 0.0 {
+                stroke_width_pt
+            } else {
+                1.0 // Min 1pt width for visible lines if properties exist but width is 0
+            };
+            write!(line_style, "stroke-width:{}pt; ", effective_stroke_width)?;
+
+            // Dash Style
+            if let Some(dash_style) = &props.dash_style {
+                let dash_array = match dash_style {
+                    DashStyle::Solid => "none",
+                    DashStyle::Dash => "4 4", // Example: 4pt dash, 4pt gap
+                    DashStyle::Dot => "1 4",  // Example: 1pt dot, 4pt gap
+                    DashStyle::DashDot => "4 4 1 4", // Example: Dash, gap, dot, gap
+                    DashStyle::LongDash => "8 4", // Example: 8pt dash, 4pt gap
+                    DashStyle::LongDashDot => "8 4 1 4",
+                    _ => "none", // Default to solid for unsupported/unspecified styles
+                };
+                if dash_array != "none" {
+                    write!(line_style, "stroke-dasharray:{}; ", dash_array)?;
+                }
+            }
+
+            // Stroke Cap / Line Join (Defaults are usually fine: butt, miter)
+            // write!(line_style, "stroke-linecap:round; ")?; // E.g. "butt", "round", "square"
+            // write!(line_style, "stroke-linejoin:round; ")?; // E.g. "miter", "round", "bevel"
+
+            // Arrow Heads (Requires SVG <marker> definitions in <defs>)
+            // Example placeholder logic:
+            // let needs_defs = false;
+            // if props.start_arrow.is_some() && props.start_arrow != Some(ArrowStyle::None) {
+            //     write!(line_style, "marker-start:url(#ArrowStart); ")?; needs_defs = true;
+            // }
+            // if props.end_arrow.is_some() && props.end_arrow != Some(ArrowStyle::None) {
+            //     write!(line_style, "marker-end:url(#ArrowEnd); ")?; needs_defs = true;
+            // }
+            // If needs_defs, ensure <defs> section exists and contains marker definitions.
+        } else {
+            // If stroke color is explicitly "none", don't render the line or set stroke:none
+            write!(line_style, "stroke:none; ")?;
+        }
     } else {
         // Default style if no lineProperties are defined
         write!(
@@ -830,18 +819,26 @@ fn convert_line_to_svg(
         )?;
     }
 
-    // 3. Write the SVG <line> element
-    // Coordinates are already transformed, so no 'transform' attribute needed on the <line> itself.
-    write!(
-        svg_output,
-        r#"<line x1="{}" y1="{}" x2="{}" y2="{}" style="{}" data-object-id="{}"/>"#, // Add ID
-        x1,
-        y1,
-        x2,
-        y2,
-        line_style.trim_end(), // Trim trailing space
-        element_id
-    )?;
+    // 3. Write the SVG <line> element only if style is not stroke:none
+    if !line_style.contains("stroke:none;") {
+        // Coordinates are already transformed, so no 'transform' attribute needed on the <line> itself.
+        write!(
+            svg_output,
+            r#"<line x1="{}" y1="{}" x2="{}" y2="{}" style="{}" data-object-id="{}"/>"#, // Add ID
+            x1,
+            y1,
+            x2,
+            y2,
+            line_style.trim_end(), // Trim trailing space
+            element_id
+        )?;
+    } else {
+        // Line style resolved to stroke:none, skip rendering the line element entirely.
+        eprintln!(
+            "Debug: Skipping line element {} because its effective stroke is 'none'.",
+            element_id
+        );
+    }
 
     Ok(())
 }
@@ -855,27 +852,34 @@ fn render_placeholder(
     svg_output: &mut String,
 ) -> Result<()> {
     let mut ph_attrs = String::new();
-    let (_tx, _ty) = apply_transform(transform, &mut ph_attrs)?;
-    let width = dimension_to_pt(size.and_then(|s| s.width.as_ref())).max(20.0); // Min width
-    let height = dimension_to_pt(size.and_then(|s| s.height.as_ref())).max(10.0); // Min height
+    let (tx_pt, ty_pt) = apply_transform(transform, &mut ph_attrs)?; // Get transform attributes and translation
+    let width_pt = dimension_to_pt(size.and_then(|s| s.width.as_ref())).max(20.0); // Min width
+    let height_pt = dimension_to_pt(size.and_then(|s| s.height.as_ref())).max(10.0); // Min height
 
     // Apply transform to a group containing the placeholder visuals
+    // Use matrix from ph_attrs if present, otherwise use translate for position.
+    let group_transform = if ph_attrs.is_empty() && (tx_pt != 0.0 || ty_pt != 0.0) {
+        format!(r#" transform="translate({} {})""#, tx_pt, ty_pt)
+    } else {
+        ph_attrs // Contains the full matrix or is empty
+    };
+
     write!(
         svg_output,
         "<g data-object-id=\"{}\"{}>",
-        element_id, ph_attrs
-    )?; // Add ID
-        // Dashed rectangle
+        element_id,
+        group_transform // Use consolidated transform
+    )?;
+    // Dashed rectangle at 0,0 within group
     write!(
         svg_output,
         r#"<rect width="{}" height="{}" style="fill:#f0f0f0; stroke:lightgray; stroke-dasharray:3 3; fill-opacity:0.5;" />"#,
-        width,
-        height // Positioned at (0,0) within the transformed group
+        width_pt, height_pt
     )?;
-    // Text label
+    // Text label within group
     write!(
         svg_output,
-        r#"<text x="2" y="2" dy="0.8em" style="font-family:sans-serif; font-size:8pt; fill:gray;">{}</text>"#, // Use dy for better positioning
+        r#"<text x="2" y="2" dy="0.8em" style="font-family:sans-serif; font-size:8pt; fill:gray;">{}</text>"#,
         escape_svg_text(&format!("{} Placeholder", element_type))
     )?;
     write!(svg_output, "</g>")?;
@@ -906,12 +910,8 @@ pub(crate) fn convert_page_element_to_svg(
     // Add a comment for easier debugging in the SVG output
     // writeln!(svg_output, "<!-- Element ID: {} -->", element.object_id)?; // Uncomment if useful
 
-    // Most elements handle their own transform internally (Shape, Table, Image, Line)
-    // or calculate transformed coordinates (Line). Groups apply transform to their own <g>.
-
     match &element.element_kind {
         PageElementKind::Shape(shape) => {
-            // Shape conversion now handles its own transform strategy based on shape type
             convert_shape_to_svg(
                 &element.object_id,
                 shape,
@@ -926,7 +926,6 @@ pub(crate) fn convert_page_element_to_svg(
             )?;
         }
         PageElementKind::Table(table) => {
-            // Table conversion uses foreignObject which handles its own transform attribute
             convert_table_to_svg(
                 &element.object_id,
                 table,
@@ -937,7 +936,6 @@ pub(crate) fn convert_page_element_to_svg(
             )?;
         }
         PageElementKind::Image(image_data) => {
-            // Image conversion applies transform directly to the <image> tag or its wrapper group
             convert_image_to_svg(
                 image_data,
                 &element.object_id,
@@ -947,7 +945,6 @@ pub(crate) fn convert_page_element_to_svg(
             )?;
         }
         PageElementKind::Line(line_data) => {
-            // Line conversion calculates transformed coordinates, doesn't need a separate group transform
             convert_line_to_svg(
                 line_data,
                 &element.object_id,
@@ -960,12 +957,14 @@ pub(crate) fn convert_page_element_to_svg(
         PageElementKind::ElementGroup(group) => {
             let mut group_attrs = String::new();
             // Apply the group's transform to its own <g> tag
-            apply_transform(element.transform.as_ref(), &mut group_attrs)?;
+            // apply_transform returns translation separately, but we just need the attribute string here.
+            let _ = apply_transform(element.transform.as_ref(), &mut group_attrs)?;
             writeln!(
                 svg_output,
                 "<g data-object-id=\"{}_group\" {}>", // Add data-id suffix for clarity
-                element.object_id, group_attrs
-            )?; // Add data-id for clarity
+                element.object_id,
+                group_attrs // Add group transform attributes
+            )?;
 
             for child_element in &group.children {
                 // Recursively convert child elements, passing down the context

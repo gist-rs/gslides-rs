@@ -740,7 +740,7 @@ pub(crate) fn convert_text_content_to_html(
                 if !paragraph_open {
                     warn!("[convert_text_content_to_html] TextRun found without an open paragraph! Starting one.");
                     // Apply current paragraph style if starting implicitly
-                    let mut p_style = "margin:0; padding:0;".to_string();
+                    let p_style = "margin:0; padding:0;".to_string();
                     // ... (add alignment/indent based on current_para_style_ref if needed) ...
                     write!(html_output, "<p style=\"{}\">", p_style)?;
                     paragraph_open = true;

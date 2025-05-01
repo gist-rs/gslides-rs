@@ -8,7 +8,8 @@ use super::{
         find_placeholder_element, get_placeholder_default_text_style, ElementsMap, LayoutsMap,
         MastersMap,
     },
-    text::{convert_text_content_to_html, convert_text_content_to_svg},
+    // Remove unused import 'convert_text_content_to_svg'
+    text::convert_text_content_to_html,
     utils::{apply_transform, dimension_to_pt, escape_svg_text, format_color, AsShape},
 };
 use crate::models::{
@@ -19,16 +20,153 @@ use crate::models::{
     line::{Line, LineFillContent},
     properties::{ParagraphStyle, TextStyle},
     shape::Shape,
-    shape_properties::DashStyle,
+    shape_properties::*,
     table::Table,
     text_element::TextElementKind, // Required for checking ParagraphMarker in shape style override
 };
 use std::fmt::Write;
 
-/// Converts a Shape element (including text boxes) to an SVG fragment.
-/// Handles applying transform, size, resolving placeholder styles, and rendering text content.
+/// Helper function to build the SVG `style` attribute string for shape geometry (fill, stroke).
 ///
 /// # Arguments
+/// * `props` - The `ShapeProperties` of the shape.
+/// * `color_scheme` - The active `ColorScheme` for resolving theme colors.
+///
+/// # Returns
+/// `Result<String>` containing the CSS style string.
+fn build_shape_style(
+    props: &ShapeProperties,
+    color_scheme: Option<&ColorScheme>,
+) -> Result<String> {
+    let mut shape_style = String::new();
+
+    // --- Background Fill ---
+    // Check property state first. If not rendered, treat as transparent.
+    let render_fill =
+        props.shape_background_fill.property_state.as_ref() != Some(&PropertyState::NotRendered);
+
+    let (fill_color, fill_opacity_str) = if render_fill {
+        // Access the fill_kind Option within shape_background_fill
+        match props.shape_background_fill.fill_kind.as_ref() {
+            Some(fill_content) => {
+                // Match on the enum variant inside fill_kind
+                match fill_content {
+                    ShapeBackgroundFillContent::SolidFill(solid) => {
+                        let color = format_color(solid.color.as_ref(), color_scheme);
+                        let opacity = solid.alpha.unwrap_or(1.0);
+                        (color, format!("{:.2}", opacity)) // Format opacity to 2 decimal places
+                    }
+                    ShapeBackgroundFillContent::StretchedPictureFill(_) => {
+                        // TODO: Handle picture fill (e.g., create a pattern in <defs> or skip)
+                        eprintln!("Warning: StretchedPictureFill background not yet supported.");
+                        ("grey".to_string(), "0.5".to_string()) // Placeholder visually
+                    } // Add other fill types here if the enum grows
+                }
+            }
+            None => ("none".to_string(), "0".to_string()), // fill_kind is None means transparent
+        }
+    } else {
+        // property_state is NOT_RENDERED
+        ("none".to_string(), "0".to_string())
+    };
+
+    // Only write fill attributes if fill is not "none"
+    if fill_color != "none" {
+        write!(
+            shape_style,
+            "fill:{}; fill-opacity:{}; ",
+            fill_color, fill_opacity_str
+        )?;
+    } else {
+        write!(shape_style, "fill:none; ")?;
+    }
+
+    // --- Outline ---
+    // Access outline directly since it's not Option in ShapeProperties
+    let outline = &props.outline;
+
+    // Check if outline should be rendered based on propertyState
+    let render_outline = outline.property_state.as_ref() != Some(&PropertyState::NotRendered);
+
+    if render_outline {
+        // Get outline weight (stroke width)
+        let stroke_width_pt = dimension_to_pt(outline.weight.as_ref());
+
+        // Only apply stroke styling if width is visually significant (> 0)
+        if stroke_width_pt > 0.0 {
+            // Outline Fill (Stroke Color/Opacity)
+            // Access outline_fill Option within Outline struct
+            let (stroke_color, stroke_opacity_str) = match outline.outline_fill.as_ref() {
+                Some(outline_fill_container) => {
+                    // Access fill_kind enum within OutlineFill struct
+                    match &outline_fill_container.fill_kind {
+                        OutlineFillContent::SolidFill(solid) => {
+                            let color = format_color(solid.color.as_ref(), color_scheme);
+                            let opacity = solid.alpha.unwrap_or(1.0);
+                            (color, format!("{:.2}", opacity))
+                        } // Add other outline fill types here if the enum grows
+                    }
+                }
+                None => ("none".to_string(), "0".to_string()), // No outline fill defined
+            };
+
+            // Write stroke properties only if color is not "none"
+            if stroke_color != "none" {
+                write!(
+                    shape_style,
+                    "stroke:{}; stroke-opacity:{}; ",
+                    stroke_color, stroke_opacity_str
+                )?;
+                write!(shape_style, "stroke-width:{}pt; ", stroke_width_pt)?;
+
+                // Outline Dash Style
+                // Access dash_style Option within Outline struct
+                if let Some(dash_style) = &outline.dash_style {
+                    let dash_array = match dash_style {
+                        // Use the correct enum variants from DashStyle
+                        DashStyle::Solid => "none",
+                        DashStyle::Dash => "4 4",
+                        DashStyle::Dot => "1 4",
+                        DashStyle::DashDot => "4 4 1 4",
+                        DashStyle::LongDash => "8 4",
+                        DashStyle::LongDashDot => "8 4 1 4",
+                        // Handle potential unknown enum variants defensively
+                        DashStyle::DashStyleUnspecified => "none", // Treat unspecified as solid
+                    };
+                    if dash_array != "none" {
+                        write!(shape_style, "stroke-dasharray:{}; ", dash_array)?;
+                    }
+                    // If dash_array is "none", we don't need to write stroke-dasharray as solid is the default
+                }
+                // If outline.dash_style is None, default is SOLID (DashStyleUnspecified maps to solid), so no dasharray needed.
+            } else {
+                // Stroke color resolved to "none", so treat as no stroke
+                write!(shape_style, "stroke:none; ")?;
+            }
+        } else {
+            // If stroke width is 0 or less, explicitly set stroke to none
+            write!(shape_style, "stroke:none; ")?;
+        }
+    } else {
+        // PropertyState is NOT_RENDERED, treat as no stroke
+        write!(shape_style, "stroke:none; ")?;
+    }
+
+    // TODO: Handle shadow if needed (complex, requires SVG filters defined in <defs>)
+    // if let Some(shadow) = &props.shadow { ... }
+
+    Ok(shape_style.trim_end().to_string()) // Trim trailing space
+}
+
+/// Converts a Shape element (geometry and text content) to an SVG fragment.
+/// Applies full transform (including scale/shear) to a container `<g>` for the shape.
+/// Renders the shape geometry (`<rect>`, `<ellipse>`, etc.) within the group at (0,0).
+/// Renders text content using `<foreignObject>` and HTML, placed inside the group,
+/// ensuring text is *not* scaled/stretched by the shape's transform.
+/// Resolves placeholder styles and applies them to the HTML text.
+///
+/// # Arguments
+/// * `element_id` - The object ID of the PageElement containing this shape.
 /// * `shape` - The `Shape` data.
 /// * `transform` - The element's `AffineTransform`.
 /// * `size` - The element's `Size`.
@@ -41,6 +179,7 @@ use std::fmt::Write;
 /// `Result<()>`
 #[allow(clippy::too_many_arguments)]
 fn convert_shape_to_svg(
+    element_id: &str, // Added element_id
     shape: &Shape,
     transform: Option<&AffineTransform>,
     size: Option<&Size>,
@@ -48,17 +187,96 @@ fn convert_shape_to_svg(
     layouts_map: &LayoutsMap,
     masters_map: &MastersMap,
     elements_map: &ElementsMap,
-    color_scheme: Option<&ColorScheme>, // <-- Added color_scheme argument
+    color_scheme: Option<&ColorScheme>,
     svg_output: &mut String,
 ) -> Result<()> {
-    let mut shape_attrs = String::new();
-    let (tx, ty) = apply_transform(transform, &mut shape_attrs)?;
-    let width = dimension_to_pt(size.and_then(|s| s.width.as_ref()));
-    let height = dimension_to_pt(size.and_then(|s| s.height.as_ref()));
+    // Start a group for the entire shape (geometry + text).
+    // Apply the *full* element transform (including scale/shear) to this group.
+    // This positions and scales the shape geometry correctly.
+    let mut group_attrs = String::new();
+    let (_tx_group, _ty_group) = apply_transform(transform, &mut group_attrs)?;
+    writeln!(
+        svg_output,
+        "<g data-object-id=\"{}\"{}>", // Add objectId and transform attribute to the group
+        element_id, group_attrs
+    )?;
 
-    // Resolve effective styles
+    // Calculate dimensions in points *without* applying transform scaling here.
+    // These dimensions define the size of the shape *within its local coordinate system* (the <g>).
+    let width_pt = dimension_to_pt(size.and_then(|s| s.width.as_ref()));
+    let height_pt = dimension_to_pt(size.and_then(|s| s.height.as_ref()));
+
+    // --- Render Shape Geometry ---
+    // Geometry is rendered at (0,0) relative to the transformed group, using the calculated width/height.
+    let default_props = ShapeProperties::default();
+    let shape_props_ref = shape.shape_properties.as_ref().unwrap_or(&default_props);
+
+    if width_pt > 0.0 && height_pt > 0.0 {
+        if shape.shape_properties.is_some() {
+            let shape_style = build_shape_style(shape_props_ref, color_scheme)?;
+            let shape_type = shape
+                .shape_type
+                .as_ref()
+                .unwrap_or(&crate::models::shape::ShapeType::TypeUnspecified);
+
+            match shape_type {
+                crate::models::shape::ShapeType::Rectangle
+                | crate::models::shape::ShapeType::TextBox => {
+                    writeln!(
+                        svg_output,
+                        r#"  <rect x="0" y="0" width="{}" height="{}" style="{}" />"#,
+                        width_pt, height_pt, shape_style
+                    )?;
+                }
+                crate::models::shape::ShapeType::RoundRectangle => {
+                    let default_rx = (width_pt * 0.08).min(height_pt * 0.08).max(2.0);
+                    writeln!(
+                        svg_output,
+                        r#"  <rect x="0" y="0" width="{}" height="{}" rx="{}" ry="{}" style="{}" />"#,
+                        width_pt, height_pt, default_rx, default_rx, shape_style
+                    )?;
+                }
+                crate::models::shape::ShapeType::Ellipse => {
+                    writeln!(
+                        svg_output,
+                        r#"  <ellipse cx="{}" cy="{}" rx="{}" ry="{}" style="{}" />"#,
+                        width_pt / 2.0,
+                        height_pt / 2.0,
+                        width_pt / 2.0,
+                        height_pt / 2.0,
+                        shape_style
+                    )?;
+                }
+                _ => {
+                    eprintln!("Warning: Unsupported or unspecified shape type '{:?}' for element ID: {}. Rendering placeholder.", shape_type, element_id);
+                    writeln!(
+                        svg_output,
+                        r#"  <rect x="0" y="0" width="{}" height="{}" style="fill:#e0e0e0; stroke:gray; stroke-dasharray: 3 3; fill-opacity:0.7;" />"#,
+                        width_pt, height_pt
+                    )?;
+                    writeln!(
+                        svg_output,
+                        r#"  <text x="2" y="10" style="font-family:sans-serif; font-size:8pt; fill:#555;">Unsupported Shape: {}</text>"#,
+                        escape_svg_text(&format!("{:?}", shape_type))
+                    )?;
+                }
+            }
+        } else {
+            eprintln!(
+                "Debug: Shape (id: {}) lacks shapeProperties, skipping geometry rendering.",
+                element_id
+            );
+        }
+    } else if width_pt > 0.0 || height_pt > 0.0 {
+        eprintln!(
+            "Warning: Shape (id: {}) has zero width or height ({}x{}pt). Geometry skipped.",
+            element_id, width_pt, height_pt
+        );
+    }
+
+    // --- Resolve Inherited Text Styles ---
+    // Find the base styles from the placeholder, if any.
     let mut effective_text_style_base = TextStyle::default();
-    // Separate paragraph style (for alignment, etc.) from text style (font, color, etc.)
     let mut effective_paragraph_style: Option<ParagraphStyle> = None;
 
     if let Some(placeholder) = &shape.placeholder {
@@ -70,61 +288,105 @@ fn convert_shape_to_svg(
                 masters_map,
                 elements_map,
             ) {
-                // [+] Get the *default text style* from the placeholder shape
+                // Get base text style (font, size, color etc.)
                 if let Some(placeholder_base_style) =
                     get_placeholder_default_text_style(placeholder_element)
                 {
                     effective_text_style_base = placeholder_base_style;
                 }
-
-                // [+] Get the *default paragraph style* (alignment, etc.) from the placeholder
+                // Get base paragraph style (alignment etc.) from the first ParagraphMarker in placeholder
                 if let Some(placeholder_shape) = placeholder_element.element_kind.as_shape() {
                     if let Some(text) = &placeholder_shape.text {
                         if let Some(elements) = &text.text_elements {
                             for element in elements {
-                                // Find the first paragraph marker to get default para style
                                 if let Some(TextElementKind::ParagraphMarker(pm)) = &element.kind {
                                     if let Some(style) = &pm.style {
                                         effective_paragraph_style = Some(style.clone());
-                                        break;
+                                        break; // Found the first paragraph's style
                                     }
                                 }
                             }
                         }
                     }
                 }
+            } else {
+                eprintln!(
+                    "Warning: Placeholder parent ID '{}' not found for shape ID: {}",
+                    placeholder.parent_object_id.as_deref().unwrap_or("N/A"),
+                    element_id
+                );
             }
+        } else {
+            eprintln!("Warning: Shape ID '{}' has placeholder but slide_layout_id is missing for style lookup.", element_id);
         }
     }
 
-    // Render text content if present
-    // Pass the resolved base text style, the initial paragraph style, AND color scheme
+    // --- Render Text Content using <foreignObject> ---
+    // This ensures text layout (wrapping, alignment) happens correctly without being
+    // affected by the shape's scale/shear transform.
     if let Some(text) = &shape.text {
-        // Check if the shape itself defines a paragraph style (overriding placeholder)
-        if let Some(elements) = &text.text_elements {
-            for element in elements {
-                if let Some(TextElementKind::ParagraphMarker(pm)) = &element.kind {
-                    if let Some(style) = &pm.style {
-                        effective_paragraph_style = Some(style.clone());
-                        break; // Use the first one found in the shape itself
+        // Using fixed padding values. Consider making these configurable or reading from API if available.
+        let text_padding_x = 3.0; // Left padding
+        let text_padding_y = 2.0; // Top padding
+        let right_padding = 3.0;
+        let bottom_padding = 2.0;
+
+        // Calculate the available area for the foreignObject based on the *unscaled* shape size minus padding.
+        let text_box_width = (width_pt - text_padding_x - right_padding).max(0.0);
+        let text_box_height = (height_pt - text_padding_y - bottom_padding).max(0.0);
+
+        // Only render if the calculated text box area is valid.
+        if text_box_width > 0.0 && text_box_height > 0.0 {
+            // --- Resolve Text Styles (Combine placeholder and shape-specific) ---
+            // The paragraph style from the placeholder is the base.
+            // Check if the shape's *first* ParagraphMarker has a style to override the placeholder's alignment.
+            let mut final_para_style = effective_paragraph_style.clone();
+            if let Some(elements) = &text.text_elements {
+                for element in elements {
+                    if let Some(TextElementKind::ParagraphMarker(pm)) = &element.kind {
+                        if let Some(style) = &pm.style {
+                            final_para_style = Some(style.clone());
+                            break; // Use the first one found in the shape's text
+                        }
                     }
                 }
             }
-        }
 
-        // Pass the resolved base text style and the (potentially overridden) paragraph style
-        convert_text_content_to_svg(
-            text,
-            effective_paragraph_style.as_ref(),
-            &effective_text_style_base,
-            tx,
-            ty,
-            width,
-            height,
-            color_scheme, // Pass scheme
-            svg_output,
-        )?;
+            // --- Create <foreignObject> ---
+            // Positioned relative to the group's origin (0,0) plus padding.
+            // Size is the calculated text box dimensions.
+            writeln!(
+                svg_output,
+                r#"  <foreignObject x="{}" y="{}" width="{}" height="{}">"#,
+                text_padding_x, text_padding_y, text_box_width, text_box_height
+            )?;
+            // Use a div with XHTML namespace for HTML content.
+            writeln!(
+                svg_output,
+                r#"    <div xmlns="http://www.w3.org/1999/xhtml" style="width:100%; height:100%; overflow:hidden; box-sizing: border-box;">"#
+            )?;
+
+            // --- Convert TextContent to HTML ---
+            // Pass the inherited base styles for merging within the HTML conversion.
+            convert_text_content_to_html(
+                text,
+                final_para_style.as_ref(), // Pass the resolved initial paragraph style
+                &effective_text_style_base, // Pass the base text style
+                color_scheme,
+                svg_output,
+            )?;
+
+            // --- Close <foreignObject> Tags ---
+            writeln!(svg_output)?; // Newline before closing div
+            writeln!(svg_output, "    </div>")?;
+            writeln!(svg_output, "  </foreignObject>")?;
+        } else if !text.text_elements.as_ref().map_or(true, |v| v.is_empty()) {
+            eprintln!("Debug: Skipping text rendering for shape ID {} due to zero-area text box ({}x{}) after padding.", element_id, text_box_width, text_box_height);
+        }
     }
+
+    // Close the main group for the shape
+    writeln!(svg_output, "</g>")?;
 
     Ok(())
 }
@@ -133,6 +395,7 @@ fn convert_shape_to_svg(
 /// Handles transform, size, basic cell styling (border, background), and cell text content.
 ///
 /// # Arguments
+/// * `element_id` - The object ID of the PageElement containing this table.
 /// * `table` - The `Table` data.
 /// * `transform`, `size` - Element's transform and size.
 /// * `color_scheme` - Active `ColorScheme`.
@@ -142,12 +405,15 @@ fn convert_shape_to_svg(
 /// `Result<()>`
 #[allow(clippy::too_many_arguments)]
 fn convert_table_to_svg(
+    element_id: &str, // Added element_id
     table: &Table,
     transform: Option<&AffineTransform>,
     size: Option<&Size>,
     color_scheme: Option<&ColorScheme>,
     svg_output: &mut String,
 ) -> Result<()> {
+    // The table's transform only affects the position/size of the <foreignObject> container.
+    // The HTML table inside will fill this container.
     let mut foreign_object_attrs = String::new();
     let (tx, ty) = apply_transform(transform, &mut foreign_object_attrs)?;
     let width = dimension_to_pt(size.and_then(|s| s.width.as_ref()));
@@ -156,8 +422,8 @@ fn convert_table_to_svg(
     // Avoid creating empty or invalid foreignObjects
     if width <= 0.0 || height <= 0.0 {
         eprintln!(
-            "Warning: Skipping table with zero or negative dimensions ({}x{}pt).",
-            width, height
+            "Warning: Skipping table element {} with zero or negative dimensions ({}x{}pt).",
+            element_id, width, height
         );
         return Ok(());
     }
@@ -165,8 +431,9 @@ fn convert_table_to_svg(
     // --- <foreignObject> Setup ---
     write!(
         svg_output,
-        r#"<foreignObject x="{}" y="{}" width="{}" height="{}"{}>"#, // Apply transform to foreignObject
-        tx, ty, width, height, foreign_object_attrs
+        // Apply transform attributes to foreignObject
+        r#"<foreignObject x="{}" y="{}" width="{}" height="{}" data-object-id="{}"{}>"#,
+        tx, ty, width, height, element_id, foreign_object_attrs
     )?;
     writeln!(svg_output)?; // Newline after opening tag
 
@@ -174,7 +441,7 @@ fn convert_table_to_svg(
     // XHTML namespace is crucial for proper rendering within SVG
     write!(
         svg_output,
-        r#"  <div xmlns="http://www.w3.org/1999/xhtml" style="width:100%; height:100%; overflow:hidden;">"#
+        r#"  <div xmlns="http://www.w3.org/1999/xhtml" style="width:100%; height:100%; overflow:hidden; box-sizing: border-box;">"# // Added box-sizing
     )?;
     writeln!(svg_output)?; // Newline after opening div
 
@@ -232,9 +499,29 @@ fn convert_table_to_svg(
 
                     // Convert and write cell text content using HTML converter
                     if let Some(text) = &cell.text {
-                        // Assuming convert_text_content_to_html adds necessary internal structure (<p>, <span>)
-                        // and handles its own indentation/newlines appropriately relative to the <td>.
-                        convert_text_content_to_html(text, color_scheme, svg_output)?;
+                        // --- Resolve Text Styles for Cell (Simplified: Use default base) ---
+                        // Tables don't typically use placeholder inheritance in the same way shapes do.
+                        // We'll use a default TextStyle as the base and the first paragraph's style for alignment.
+                        let cell_text_style_base = TextStyle::default();
+                        let mut cell_para_style: Option<ParagraphStyle> = None;
+                        if let Some(elements) = &text.text_elements {
+                            for element in elements {
+                                if let Some(TextElementKind::ParagraphMarker(pm)) = &element.kind {
+                                    if let Some(style) = &pm.style {
+                                        cell_para_style = Some(style.clone());
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+
+                        convert_text_content_to_html(
+                            text,
+                            cell_para_style.as_ref(), // Pass initial paragraph style (if any)
+                            &cell_text_style_base,    // Pass default text style as base
+                            color_scheme,
+                            svg_output,
+                        )?;
                     } else {
                         // Ensure non-breaking space for empty cells to maintain borders/layout
                         write!(svg_output, "&nbsp;")?;
@@ -312,8 +599,8 @@ fn convert_image_to_svg(
         // `preserveAspectRatio="xMidYMid meet"` scales the image to fit while preserving aspect ratio.
         write!(
             svg_output,
-            r#"<image x="{}" y="{}" width="{}" height="{}" xlink:href="{}"{} preserveAspectRatio="xMidYMid meet" />"#, // Use xlink:href for broader compatibility
-            tx, ty, width, height, safe_url, img_attrs
+            r#"<image x="{}" y="{}" width="{}" height="{}" xlink:href="{}"{} preserveAspectRatio="xMidYMid meet" data-object-id="{}"/>"#, // Use xlink:href for broader compatibility, add ID
+            tx, ty, width, height, safe_url, img_attrs, element_id
         )?;
     } else {
         // Fallback if no URL is provided - render a placeholder rectangle with text.
@@ -322,7 +609,11 @@ fn convert_image_to_svg(
             element_id
         );
         // Apply transform to the placeholder group
-        write!(svg_output, "<g{}>", img_attrs)?;
+        write!(
+            svg_output,
+            "<g data-object-id=\"{}\"{}>",
+            element_id, img_attrs
+        )?; // Add ID to group
         write!(
             svg_output,
             r#"<rect width="{}" height="{}" style="fill:#e0e0e0; stroke:gray; fill-opacity:0.5;" />"#,
@@ -375,10 +666,10 @@ fn convert_line_to_svg(
     // Apply the affine transformation matrix [a c e / b d f / 0 0 1]
     // to the start point (local 0, 0) and end point (local W, H).
     if let Some(tf) = transform {
-        let a = tf.scale_x.unwrap_or(0.0);
+        let a = tf.scale_x.unwrap_or(0.0); // Default to 0.0 for scale if missing
         let b = tf.shear_y.unwrap_or(0.0); // b = shearY
         let c = tf.shear_x.unwrap_or(0.0); // c = shearX
-        let d = tf.scale_y.unwrap_or(0.0);
+        let d = tf.scale_y.unwrap_or(0.0); // Default to 0.0 for scale if missing
         let translate_unit = tf
             .unit
             .as_ref()
@@ -489,12 +780,13 @@ fn convert_line_to_svg(
     // Coordinates are already transformed, so no 'transform' attribute needed on the <line> itself.
     write!(
         svg_output,
-        r#"<line x1="{}" y1="{}" x2="{}" y2="{}" style="{}" />"#,
+        r#"<line x1="{}" y1="{}" x2="{}" y2="{}" style="{}" data-object-id="{}"/>"#, // Add ID
         x1,
         y1,
         x2,
         y2,
-        line_style.trim_end() // Trim trailing space
+        line_style.trim_end(), // Trim trailing space
+        element_id
     )?;
 
     Ok(())
@@ -503,6 +795,7 @@ fn convert_line_to_svg(
 /// Renders a placeholder for unsupported element types.
 fn render_placeholder(
     element_type: &str,
+    element_id: &str, // Added element_id
     transform: Option<&AffineTransform>,
     size: Option<&Size>,
     svg_output: &mut String,
@@ -513,8 +806,12 @@ fn render_placeholder(
     let height = dimension_to_pt(size.and_then(|s| s.height.as_ref())).max(10.0); // Min height
 
     // Apply transform to a group containing the placeholder visuals
-    write!(svg_output, "<g{}>", ph_attrs)?;
-    // Dashed rectangle
+    write!(
+        svg_output,
+        "<g data-object-id=\"{}\"{}>",
+        element_id, ph_attrs
+    )?; // Add ID
+        // Dashed rectangle
     write!(
         svg_output,
         r#"<rect width="{}" height="{}" style="fill:#f0f0f0; stroke:lightgray; stroke-dasharray:3 3; fill-opacity:0.5;" />"#,
@@ -562,7 +859,9 @@ pub(crate) fn convert_page_element_to_svg(
 
     match &element.element_kind {
         PageElementKind::Shape(shape) => {
+            // Shape conversion now handles its own transform group and internal text rendering
             convert_shape_to_svg(
+                &element.object_id,
                 shape,
                 element.transform.as_ref(),
                 element.size.as_ref(),
@@ -575,7 +874,9 @@ pub(crate) fn convert_page_element_to_svg(
             )?;
         }
         PageElementKind::Table(table) => {
+            // Table conversion uses foreignObject which handles its own transform attribute
             convert_table_to_svg(
+                &element.object_id,
                 table,
                 element.transform.as_ref(),
                 element.size.as_ref(),
@@ -584,6 +885,7 @@ pub(crate) fn convert_page_element_to_svg(
             )?;
         }
         PageElementKind::Image(image_data) => {
+            // Image conversion applies transform directly to the <image> tag or its wrapper group
             convert_image_to_svg(
                 image_data,
                 &element.object_id,
@@ -593,6 +895,7 @@ pub(crate) fn convert_page_element_to_svg(
             )?;
         }
         PageElementKind::Line(line_data) => {
+            // Line conversion calculates transformed coordinates, doesn't need a separate group transform
             convert_line_to_svg(
                 line_data,
                 &element.object_id,
@@ -608,7 +911,7 @@ pub(crate) fn convert_page_element_to_svg(
             apply_transform(element.transform.as_ref(), &mut group_attrs)?;
             writeln!(
                 svg_output,
-                "<g data-object-id=\"{}_group\" {}>",
+                "<g data-object-id=\"{}_group\" {}>", // Add data-id suffix for clarity
                 element.object_id, group_attrs
             )?; // Add data-id for clarity
 
@@ -630,24 +933,28 @@ pub(crate) fn convert_page_element_to_svg(
         // --- Unsupported Element Types -> Render Placeholders ---
         PageElementKind::Video(_) => render_placeholder(
             "Video",
+            &element.object_id,
             element.transform.as_ref(),
             element.size.as_ref(),
             svg_output,
         )?,
         PageElementKind::WordArt(_) => render_placeholder(
             "WordArt",
+            &element.object_id,
             element.transform.as_ref(),
             element.size.as_ref(),
             svg_output,
         )?,
         PageElementKind::SheetsChart(_) => render_placeholder(
             "SheetsChart",
+            &element.object_id,
             element.transform.as_ref(),
             element.size.as_ref(),
             svg_output,
         )?,
         PageElementKind::SpeakerSpotlight(_) => render_placeholder(
             "SpeakerSpotlight",
+            &element.object_id,
             element.transform.as_ref(),
             element.size.as_ref(),
             svg_output,

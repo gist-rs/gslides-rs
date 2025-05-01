@@ -15,6 +15,7 @@ use crate::models::{
 use std::fmt::Write;
 
 /// Applies `TextStyle` properties to an SVG element's `style` attribute string.
+/// (Used primarily for native SVG text rendering, may be less used if switching to HTML)
 ///
 /// # Arguments
 /// * `style` - An optional reference to the `TextStyle` to apply.
@@ -131,6 +132,7 @@ pub(crate) fn apply_text_style(
 
 /// Applies `ParagraphStyle` properties (mainly alignment) to an SVG `<text>` element's attributes.
 /// Adjusts the 'x' coordinate based on text alignment and calculates the SVG `text-anchor`.
+/// (Used primarily for native SVG text rendering)
 ///
 /// # Arguments
 /// * `style` - An optional reference to the `ParagraphStyle`.
@@ -245,6 +247,8 @@ pub(crate) fn merge_text_styles(
     merged
 }
 
+// Keep convert_text_content_to_svg for potential future use or other element types
+// that might benefit from native SVG text, but it's no longer called by convert_shape_to_svg.
 /// Converts the `TextContent` of a shape or table cell into SVG `<text>` and `<tspan>` elements.
 /// Handles basic paragraph breaks, text runs with styling, and alignment.
 /// Applies inheritance logic for text styles (placeholder -> paragraph -> text run).
@@ -266,7 +270,7 @@ pub(crate) fn merge_text_styles(
 ///
 /// # Returns
 /// `Result<()>` indicating success or a formatting error.
-#[allow(clippy::too_many_arguments)] // Consider a context struct if args grow further
+#[allow(clippy::too_many_arguments, dead_code)] // Keep but mark as dead code for now
 pub(crate) fn convert_text_content_to_svg(
     text_content: &TextContent,
     effective_paragraph_style: Option<&ParagraphStyle>, // Initial alignment etc.
@@ -472,6 +476,8 @@ pub(crate) fn convert_text_content_to_svg(
 
 /// Helper function to write escaped text, handling internal newlines by creating <tspan> elements.
 /// This is a very basic way to handle newlines within a single TextRun/AutoText.
+/// (Used primarily for native SVG text rendering)
+#[allow(dead_code)] // Keep but mark as dead code for now
 fn write_escaped_text_with_newlines(text: &str, svg_output: &mut String) -> Result<()> {
     let lines: Vec<&str> = text.lines().collect();
     for (i, line) in lines.iter().enumerate() {
@@ -493,13 +499,16 @@ fn write_escaped_text_with_newlines(text: &str, svg_output: &mut String) -> Resu
     Ok(())
 }
 
-/// Converts the `TextContent` of a table cell into basic, styled HTML
+/// Converts the `TextContent` of a shape or table cell into basic, styled HTML
 /// suitable for embedding within an SVG `<foreignObject>`.
 /// Styles TextRuns using inline CSS within `<span>` elements.
-/// Paragraph markers create `<p>` tags.
+/// Paragraph markers create `<p>` tags with alignment.
+/// Handles style inheritance (placeholder/base -> paragraph -> text run).
 ///
 /// # Arguments
 /// * `text_content` - Reference to the `TextContent` containing text elements.
+/// * `effective_paragraph_style` - The initial `ParagraphStyle` (alignment) inherited.
+/// * `effective_text_style_base` - The base `TextStyle` (font, color) inherited.
 /// * `color_scheme` - The active `ColorScheme` for resolving theme colors.
 /// * `html_output` - Mutable string buffer to append the generated HTML markup.
 ///
@@ -508,6 +517,8 @@ fn write_escaped_text_with_newlines(text: &str, svg_output: &mut String) -> Resu
 #[allow(unused_assignments)]
 pub(crate) fn convert_text_content_to_html(
     text_content: &TextContent,
+    effective_paragraph_style: Option<&ParagraphStyle>, // Inherited alignment etc.
+    effective_text_style_base: &TextStyle,              // Inherited base style
     color_scheme: Option<&ColorScheme>,
     html_output: &mut String,
 ) -> Result<()> {
@@ -516,25 +527,55 @@ pub(crate) fn convert_text_content_to_html(
         None => return Ok(()),
     };
 
-    let mut paragraph_open = false; // Track if inside a <p> tag
-    let mut first_element_processed = false; // Avoid leading newline if content starts mid-paragraph
+    // --- State for tracking paragraphs and styles ---
+    let mut paragraph_open = false;
+    let mut first_element_processed = false;
+    // Base text style for the *current* paragraph (can be modified by bullets)
+    let mut current_paragraph_base_style = effective_text_style_base.clone();
+    // Paragraph style (alignment) for the *current* paragraph
+    let mut current_para_style_ref = effective_paragraph_style;
 
     for element in text_elements {
         match &element.kind {
-            Some(TextElementKind::ParagraphMarker(_pm)) => {
+            Some(TextElementKind::ParagraphMarker(pm)) => {
                 // Close previous paragraph if open
                 if paragraph_open {
                     write!(html_output, "</p>")?;
-
                     paragraph_open = false;
                 }
                 // Start new paragraph. Add newline before unless it's the very first element.
                 if first_element_processed {
                     writeln!(html_output)?;
                 }
-                // Use minimal margin/padding to avoid large gaps in tables.
-                // TODO: Potentially use ParagraphStyle for margin/padding/indentation?
-                write!(html_output, "<p style=\"margin:0; padding:0;\">")?;
+
+                // Update paragraph style (alignment) based on this marker.
+                current_para_style_ref = pm.style.as_ref().or(effective_paragraph_style);
+                // Update the base text style for this paragraph if the bullet has its own style.
+                if let Some(bullet) = &pm.bullet {
+                    if let Some(bullet_style) = &bullet.bullet_style {
+                        current_paragraph_base_style =
+                            merge_text_styles(Some(bullet_style), Some(effective_text_style_base));
+                    } else {
+                        current_paragraph_base_style = effective_text_style_base.clone();
+                    }
+                } else {
+                    current_paragraph_base_style = effective_text_style_base.clone();
+                }
+
+                // Build paragraph style string (including alignment)
+                let mut p_style = "margin:0; padding:0;".to_string(); // Base style
+                if let Some(ps) = current_para_style_ref {
+                    let text_align = match ps.alignment {
+                        Some(Alignment::Center) => "center",
+                        Some(Alignment::End) => "end", // or "right" if better browser support needed
+                        Some(Alignment::Justified) => "justify",
+                        _ => "start", // Start or None
+                    };
+                    write!(p_style, " text-align:{};", text_align)?;
+                    // TODO: Handle indentation, spacingBefore/After etc. from ParagraphStyle
+                }
+
+                write!(html_output, "<p style=\"{}\">", p_style)?;
                 writeln!(html_output)?; // Newline after opening tag for readability
                 paragraph_open = true;
                 first_element_processed = true;
@@ -545,95 +586,51 @@ pub(crate) fn convert_text_content_to_html(
                     continue;
                 } // Skip empty runs
 
-                // Ensure we are inside a paragraph tag
+                // Ensure we are inside a paragraph tag (start one if needed)
                 if !paragraph_open {
                     if first_element_processed {
                         writeln!(html_output)?;
                     }
-                    write!(html_output, "<p style=\"margin:0; padding:0;\">")?;
+                    // Apply current paragraph style if starting a new one implicitly
+                    let mut p_style = "margin:0; padding:0;".to_string();
+                    if let Some(ps) = current_para_style_ref {
+                        let text_align = match ps.alignment {
+                            Some(Alignment::Center) => "center",
+                            Some(Alignment::End) => "end",
+                            Some(Alignment::Justified) => "justify",
+                            _ => "start",
+                        };
+                        write!(p_style, " text-align:{};", text_align)?;
+                    }
+                    write!(html_output, "<p style=\"{}\">", p_style)?;
                     writeln!(html_output)?;
                     paragraph_open = true;
                 }
 
-                // Build inline CSS style for the span
+                // Determine the final style for this specific run by merging
+                let final_run_style =
+                    merge_text_styles(tr.style.as_ref(), Some(&current_paragraph_base_style));
+
+                // Build inline CSS style for the span based on the final run style
                 let mut span_style = String::new();
-                if let Some(ts) = &tr.style {
-                    // Font Family
-                    write!(
-                        span_style,
-                        "font-family:'{}'; ",
-                        ts.font_family.as_deref().unwrap_or(DEFAULT_FONT_FAMILY)
-                    )?;
-                    // Font Size
-                    let font_size_pt = dimension_to_pt(ts.font_size.as_ref());
-                    write!(
-                        span_style,
-                        "font-size:{}pt; ",
-                        if font_size_pt > 0.0 {
-                            font_size_pt
-                        } else {
-                            DEFAULT_FONT_SIZE_PT
-                        }
-                    )?;
-                    // Foreground Color
-                    let (fg_color, _) =
-                        format_optional_color(ts.foreground_color.as_ref(), color_scheme);
-                    if fg_color != "none" {
-                        // Avoid writing color:none;
-                        write!(span_style, "color:{}; ", fg_color)?;
-                    }
-                    // Bold
-                    if ts.bold.unwrap_or(false) {
-                        write!(span_style, "font-weight:bold; ")?;
-                    }
-                    // Italic
-                    if ts.italic.unwrap_or(false) {
-                        write!(span_style, "font-style:italic; ")?;
-                    }
-                    // Underline/Strikethrough
-                    let mut decorations = Vec::new();
-                    if ts.underline.unwrap_or(false) {
-                        decorations.push("underline");
-                    }
-                    if ts.strikethrough.unwrap_or(false) {
-                        decorations.push("line-through");
-                    }
-                    if !decorations.is_empty() {
-                        write!(span_style, "text-decoration:{}; ", decorations.join(" "))?;
-                    }
-                    // Baseline Offset (vertical-align)
-                    match ts.baseline_offset {
-                        Some(BaselineOffset::Superscript) => {
-                            write!(span_style, "vertical-align:super; font-size:smaller; ")?
-                        } // smaller size helps visually
-                        Some(BaselineOffset::Subscript) => {
-                            write!(span_style, "vertical-align:sub; font-size:smaller; ")?
-                        }
-                        _ => {}
-                    }
-                    // Small Caps
-                    if ts.small_caps.unwrap_or(false) {
-                        write!(span_style, "font-variant:small-caps; ")?;
-                    }
-                    // Background Color (more feasible in HTML spans)
-                    let (bg_color, _) =
-                        format_optional_color(ts.background_color.as_ref(), color_scheme);
-                    if bg_color != "none" {
-                        write!(span_style, "background-color:{}; ", bg_color)?;
-                    }
-                }
+                apply_html_text_style(Some(&final_run_style), &mut span_style, color_scheme)?; // Use helper
 
                 // Escape HTML content and replace internal newlines with <br> tags
-                let html_content = escape_html_text(content).replace('\n', "<br/>\n    "); // Add newline+indent after <br>
+                let html_content = escape_html_text(content).replace('\n', "<br/>\n        "); // Add newline+indent after <br>
 
                 // Write the span with its style and content
-                write!(html_output, "  ")?; // Indent span within paragraph
-                write!(
-                    html_output,
-                    r#"<span style="{}">{}</span>"#,
-                    span_style.trim_end(),
-                    html_content
-                )?;
+                write!(html_output, "      ")?; // Indent span within paragraph
+                if !span_style.is_empty() {
+                    write!(
+                        html_output,
+                        r#"<span style="{}">{}</span>"#,
+                        span_style.trim_end(),
+                        html_content
+                    )?;
+                } else {
+                    // No specific style, just write content directly
+                    write!(html_output, "{}", html_content)?;
+                }
                 writeln!(html_output)?; // Newline after closing span
                 first_element_processed = true;
             }
@@ -644,54 +641,45 @@ pub(crate) fn convert_text_content_to_html(
                     continue;
                 }
 
+                // Ensure inside paragraph
                 if !paragraph_open {
                     if first_element_processed {
                         writeln!(html_output)?;
                     }
-                    write!(html_output, "<p style=\"margin:0; padding:0;\">")?;
+                    let mut p_style = "margin:0; padding:0;".to_string();
+                    if let Some(ps) = current_para_style_ref {
+                        let text_align = match ps.alignment {
+                            Some(Alignment::Center) => "center",
+                            Some(Alignment::End) => "end",
+                            Some(Alignment::Justified) => "justify",
+                            _ => "start",
+                        };
+                        write!(p_style, " text-align:{};", text_align)?;
+                    }
+                    write!(html_output, "<p style=\"{}\">", p_style)?;
                     writeln!(html_output)?;
                     paragraph_open = true;
                 }
 
-                // Apply styles if present (similar to TextRun)
+                // Merge styles and apply
+                let final_autotext_style =
+                    merge_text_styles(at.style.as_ref(), Some(&current_paragraph_base_style));
                 let mut span_style = String::new();
-                if let Some(ts) = &at.style {
-                    // (Duplicate styling logic from TextRun - consider refactoring into a helper)
+                apply_html_text_style(Some(&final_autotext_style), &mut span_style, color_scheme)?;
+
+                let html_content = escape_html_text(content).replace('\n', "<br/>\n        ");
+
+                write!(html_output, "      ")?; // Indent
+                if !span_style.is_empty() {
                     write!(
-                        span_style,
-                        "font-family:'{}'; ",
-                        ts.font_family.as_deref().unwrap_or(DEFAULT_FONT_FAMILY)
+                        html_output,
+                        r#"<span style="{}">{}</span>"#,
+                        span_style.trim_end(),
+                        html_content
                     )?;
-                    let font_size_pt = dimension_to_pt(ts.font_size.as_ref());
-                    write!(
-                        span_style,
-                        "font-size:{}pt; ",
-                        if font_size_pt > 0.0 {
-                            font_size_pt
-                        } else {
-                            DEFAULT_FONT_SIZE_PT
-                        }
-                    )?;
-                    let (fg_color, _) =
-                        format_optional_color(ts.foreground_color.as_ref(), color_scheme);
-                    if fg_color != "none" {
-                        write!(span_style, "color:{}; ", fg_color)?;
-                    }
-                    if ts.bold.unwrap_or(false) {
-                        write!(span_style, "font-weight:bold; ")?;
-                    }
-                    // ... Add other styles as needed (italic, underline, etc.) ...
+                } else {
+                    write!(html_output, "{}", html_content)?;
                 }
-
-                let html_content = escape_html_text(content).replace('\n', "<br/>\n    ");
-
-                write!(html_output, "  ")?;
-                write!(
-                    html_output,
-                    r#"<span style="{}">{}</span>"#,
-                    span_style.trim_end(),
-                    html_content
-                )?;
                 writeln!(html_output)?;
                 first_element_processed = true;
             }
@@ -702,16 +690,97 @@ pub(crate) fn convert_text_content_to_html(
     // Close the last paragraph tag if it was open
     if paragraph_open {
         write!(html_output, "</p>")?;
-        writeln!(html_output)?; // Final newline after the last paragraph
+        // Do not add a final newline here, let the caller handle overall formatting
     }
 
-    // Trim potential trailing newline if the input was completely empty or only contained empty elements
-    if !first_element_processed {
-        html_output.clear();
-    } else if html_output.ends_with('\n') {
-        // Trim the very last newline for cleaner embedding
-        html_output.pop();
-    }
+    // Trim potential leading/trailing whitespace that might affect layout in foreignObject
+    // Trim the final string *before* returning
+    let html_output_cloned = html_output.clone();
+    let trimmed_output = html_output_cloned.trim();
+    html_output.clear();
+    write!(html_output, "{}", trimmed_output)?; // Write back the trimmed version
 
+    Ok(())
+}
+
+/// Helper to apply TextStyle properties to an HTML element's inline `style` attribute.
+///
+/// # Arguments
+/// * `style` - An optional reference to the `TextStyle` to apply.
+/// * `html_style` - A mutable string buffer to append CSS style properties.
+/// * `color_scheme` - An optional reference to the slide's `ColorScheme`.
+///
+/// # Returns
+/// A `Result<()>` indicating success or a formatting error.
+fn apply_html_text_style(
+    style: Option<&TextStyle>,
+    html_style: &mut String,
+    color_scheme: Option<&ColorScheme>,
+) -> Result<()> {
+    if let Some(ts) = style {
+        // Font Family
+        write!(
+            html_style,
+            "font-family:'{}'; ",
+            ts.font_family.as_deref().unwrap_or(DEFAULT_FONT_FAMILY)
+        )?;
+        // Font Size
+        let font_size_pt = dimension_to_pt(ts.font_size.as_ref());
+        write!(
+            html_style,
+            "font-size:{}pt; ",
+            if font_size_pt > 0.0 {
+                font_size_pt
+            } else {
+                DEFAULT_FONT_SIZE_PT
+            }
+        )?;
+        // Foreground Color (HTML 'color')
+        let (fg_color, _) = format_optional_color(ts.foreground_color.as_ref(), color_scheme);
+        if fg_color != "none" {
+            // Avoid writing color:none;
+            write!(html_style, "color:{}; ", fg_color)?;
+        }
+        // Background Color (HTML 'background-color')
+        let (bg_color, _) = format_optional_color(ts.background_color.as_ref(), color_scheme);
+        if bg_color != "none" {
+            write!(html_style, "background-color:{}; ", bg_color)?;
+        }
+        // Bold
+        if ts.bold.unwrap_or(false) {
+            write!(html_style, "font-weight:bold; ")?;
+        }
+        // Italic
+        if ts.italic.unwrap_or(false) {
+            write!(html_style, "font-style:italic; ")?;
+        }
+        // Underline/Strikethrough
+        let mut decorations = Vec::new();
+        if ts.underline.unwrap_or(false) {
+            decorations.push("underline");
+        }
+        if ts.strikethrough.unwrap_or(false) {
+            decorations.push("line-through");
+        }
+        if !decorations.is_empty() {
+            write!(html_style, "text-decoration:{}; ", decorations.join(" "))?;
+        }
+        // Baseline Offset (HTML 'vertical-align' + font-size adjustment)
+        match ts.baseline_offset {
+            Some(BaselineOffset::Superscript) => {
+                write!(html_style, "vertical-align:super; font-size:smaller; ")?
+            }
+            Some(BaselineOffset::Subscript) => {
+                write!(html_style, "vertical-align:sub; font-size:smaller; ")?
+            }
+            _ => {}
+        }
+        // Small Caps
+        if ts.small_caps.unwrap_or(false) {
+            write!(html_style, "font-variant:small-caps; ")?;
+        }
+        // Link - Add specific handling if links should be rendered as <a> tags
+        // if let Some(link) = &ts.link { ... }
+    }
     Ok(())
 }

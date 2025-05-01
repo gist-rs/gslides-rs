@@ -191,19 +191,18 @@ pub(crate) fn get_placeholder_default_text_style(
                     .and_then(|first_element| first_element.kind.as_ref())
                     .and_then(|kind| match kind {
                         TextElementKind::ParagraphMarker(pm) => {
-                            pm.bullet.as_ref().map(|b| &b.list_id)
+                            pm.bullet.as_ref().and_then(|b| b.list_id.as_ref()) // Use and_then and as_ref
                         }
                         _ => None,
                     });
 
-                if let Some(list_id) = first_para_list_id {
-                    // Use and_then for safer chaining, avoiding expects
+                // Use the found list_id (which is &String) to look up in the map
+                if let Some(list_id_str) = first_para_list_id {
                     if let Some(style) = lists
-                        .get(list_id.clone().expect("Invalid id").as_str()) // Get ListProperties by &String list_id
-                        .and_then(|list_props| list_props.nesting_level.as_ref()) // Get Option<&IndexMap<i32, NestingLevel>>
-                        .and_then(|nesting_map| nesting_map.get(&0)) // Get Option<&NestingLevel> using i32 key 0
+                        .get(list_id_str) // Use &String as key directly
+                        .and_then(|list_props| list_props.nesting_level.as_ref())
+                        .and_then(|nesting_map| nesting_map.get(&0))
                         .and_then(|level_0_props| level_0_props.bullet_style.as_ref())
-                    // Get Option<&TextStyle>
                     {
                         return Some(style.clone()); // Found the style
                     }

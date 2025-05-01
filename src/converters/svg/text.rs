@@ -694,9 +694,8 @@ pub(crate) fn convert_text_content_to_html(
     }
 
     // Trim potential leading/trailing whitespace that might affect layout in foreignObject
-    // Trim the final string *before* returning
-    let html_output_cloned = html_output.clone();
-    let trimmed_output = html_output_cloned.trim();
+    // Trim the final string *before* returning using trim().to_string() approach.
+    let trimmed_output = html_output.trim().to_string();
     html_output.clear();
     write!(html_output, "{}", trimmed_output)?; // Write back the trimmed version
 

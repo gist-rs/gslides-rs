@@ -10,11 +10,13 @@ use super::{
     },
     // Remove unused import 'convert_text_content_to_svg'
     text::convert_text_content_to_html,
+    // [+] Add import for Dimension and Unit
     utils::{apply_transform, dimension_to_pt, escape_svg_text, format_color, AsShape},
 };
 use crate::models::{
     colors::ColorScheme,
-    common::{AffineTransform, Dimension, Size},
+    // [+] Add import for Dimension and Unit
+    common::{AffineTransform, Dimension, Size, Unit},
     elements::{PageElement, PageElementKind},
     image::Image,
     line::{Line, LineFillContent},
@@ -159,10 +161,11 @@ fn build_shape_style(
 }
 
 /// Converts a Shape element (geometry and text content) to an SVG fragment.
-/// Applies full transform (including scale/shear) to a container `<g>` for the shape.
-/// Renders the shape geometry (`<rect>`, `<ellipse>`, etc.) within the group at (0,0).
-/// Renders text content using `<foreignObject>` and HTML, placed inside the group,
-/// ensuring text is *not* scaled/stretched by the shape's transform.
+/// Handles transform differently based on shape type:
+/// - **TextBox:** Applies only translation to the outer group. Geometry is scaled/sheared
+///   internally. Text (via `<foreignObject>`) is placed in the translated group and is *not* scaled/sheared.
+/// - **Other Shapes:** Applies the full transform (scale, shear, translate) to the outer group.
+///   Geometry and `<foreignObject>` (if text exists) inherit the full transform.
 /// Resolves placeholder styles and applies them to the HTML text.
 ///
 /// # Arguments
@@ -190,41 +193,94 @@ fn convert_shape_to_svg(
     color_scheme: Option<&ColorScheme>,
     svg_output: &mut String,
 ) -> Result<()> {
-    // Start a group for the entire shape (geometry + text).
-    // Apply the *full* element transform (including scale/shear) to this group.
-    // This positions and scales the shape geometry correctly.
-    let mut group_attrs = String::new();
-    let (_tx_group, _ty_group) = apply_transform(transform, &mut group_attrs)?;
-    writeln!(
-        svg_output,
-        "<g data-object-id=\"{}\"{}>", // Add objectId and transform attribute to the group
-        element_id, group_attrs
-    )?;
-
-    // Calculate dimensions in points *without* applying transform scaling here.
-    // These dimensions define the size of the shape *within its local coordinate system* (the <g>).
+    // Calculate base dimensions in points
     let width_pt = dimension_to_pt(size.and_then(|s| s.width.as_ref()));
     let height_pt = dimension_to_pt(size.and_then(|s| s.height.as_ref()));
 
+    // Determine shape type
+    let shape_type = shape
+        .shape_type
+        .as_ref()
+        .unwrap_or(&crate::models::shape::ShapeType::TypeUnspecified);
+
+    // --- Handle Transform based on Shape Type ---
+    let mut outer_group_attrs = String::new();
+    let mut geometry_transform_attrs = String::new();
+    let tx_pt;
+    let ty_pt;
+    let scale_x;
+    let scale_y;
+    let shear_x;
+    let shear_y;
+
+    if let Some(tf) = transform {
+        scale_x = tf.scale_x.unwrap_or(1.0);
+        scale_y = tf.scale_y.unwrap_or(1.0);
+        shear_x = tf.shear_x.unwrap_or(0.0);
+        shear_y = tf.shear_y.unwrap_or(0.0);
+
+        let translate_unit = tf.unit.as_ref().cloned().unwrap_or(Unit::Emu);
+        tx_pt = dimension_to_pt(Some(&Dimension {
+            magnitude: Some(tf.translate_x.unwrap_or(0.0)),
+            unit: Some(translate_unit.clone()),
+        }));
+        ty_pt = dimension_to_pt(Some(&Dimension {
+            magnitude: Some(tf.translate_y.unwrap_or(0.0)),
+            unit: Some(translate_unit),
+        }));
+
+        if *shape_type == crate::models::shape::ShapeType::TextBox {
+            // TextBox: Outer group only gets translation. Geometry gets scale/shear.
+            write!(
+                outer_group_attrs,
+                r#" transform="translate({} {})""#,
+                tx_pt, ty_pt
+            )?;
+            if scale_x != 1.0 || scale_y != 1.0 || shear_x != 0.0 || shear_y != 0.0 {
+                write!(
+                    geometry_transform_attrs,
+                    r#" transform="matrix({} {} {} {} 0 0)""#,
+                    scale_x, shear_y, shear_x, scale_y
+                )?;
+            }
+        } else {
+            // Other shapes: Outer group gets the full transform.
+            write!(
+                outer_group_attrs,
+                r#" transform="matrix({} {} {} {} {} {})""#,
+                scale_x, shear_y, shear_x, scale_y, tx_pt, ty_pt
+            )?;
+            // Geometry transform is identity (handled by outer group)
+        }
+    }
+
+    // --- Start Outer Group ---
+    writeln!(
+        svg_output,
+        "<g data-object-id=\"{}\"{}>", // Add objectId and appropriate transform
+        element_id, outer_group_attrs
+    )?;
+
     // --- Render Shape Geometry ---
-    // Geometry is rendered at (0,0) relative to the transformed group, using the calculated width/height.
+    // Geometry is rendered at (0,0) relative to its transform context.
     let default_props = ShapeProperties::default();
     let shape_props_ref = shape.shape_properties.as_ref().unwrap_or(&default_props);
 
     if width_pt > 0.0 && height_pt > 0.0 {
         if shape.shape_properties.is_some() {
             let shape_style = build_shape_style(shape_props_ref, color_scheme)?;
-            let shape_type = shape
-                .shape_type
-                .as_ref()
-                .unwrap_or(&crate::models::shape::ShapeType::TypeUnspecified);
+
+            // Apply geometry-specific transform if needed (only for TextBox currently)
+            if !geometry_transform_attrs.is_empty() {
+                writeln!(svg_output, "  <g{}>", geometry_transform_attrs)?; // Geometry group start
+            }
 
             match shape_type {
                 crate::models::shape::ShapeType::Rectangle
                 | crate::models::shape::ShapeType::TextBox => {
                     writeln!(
                         svg_output,
-                        r#"  <rect x="0" y="0" width="{}" height="{}" style="{}" />"#,
+                        r#"    <rect x="0" y="0" width="{}" height="{}" style="{}" />"#, // Indent if inside geometry group
                         width_pt, height_pt, shape_style
                     )?;
                 }
@@ -232,14 +288,14 @@ fn convert_shape_to_svg(
                     let default_rx = (width_pt * 0.08).min(height_pt * 0.08).max(2.0);
                     writeln!(
                         svg_output,
-                        r#"  <rect x="0" y="0" width="{}" height="{}" rx="{}" ry="{}" style="{}" />"#,
+                        r#"    <rect x="0" y="0" width="{}" height="{}" rx="{}" ry="{}" style="{}" />"#, // Indent
                         width_pt, height_pt, default_rx, default_rx, shape_style
                     )?;
                 }
                 crate::models::shape::ShapeType::Ellipse => {
                     writeln!(
                         svg_output,
-                        r#"  <ellipse cx="{}" cy="{}" rx="{}" ry="{}" style="{}" />"#,
+                        r#"    <ellipse cx="{}" cy="{}" rx="{}" ry="{}" style="{}" />"#, // Indent
                         width_pt / 2.0,
                         height_pt / 2.0,
                         width_pt / 2.0,
@@ -251,15 +307,19 @@ fn convert_shape_to_svg(
                     eprintln!("Warning: Unsupported or unspecified shape type '{:?}' for element ID: {}. Rendering placeholder.", shape_type, element_id);
                     writeln!(
                         svg_output,
-                        r#"  <rect x="0" y="0" width="{}" height="{}" style="fill:#e0e0e0; stroke:gray; stroke-dasharray: 3 3; fill-opacity:0.7;" />"#,
+                        r#"    <rect x="0" y="0" width="{}" height="{}" style="fill:#e0e0e0; stroke:gray; stroke-dasharray: 3 3; fill-opacity:0.7;" />"#, // Indent
                         width_pt, height_pt
                     )?;
                     writeln!(
                         svg_output,
-                        r#"  <text x="2" y="10" style="font-family:sans-serif; font-size:8pt; fill:#555;">Unsupported Shape: {}</text>"#,
+                        r#"    <text x="2" y="10" style="font-family:sans-serif; font-size:8pt; fill:#555;">Unsupported Shape: {}</text>"#, // Indent
                         escape_svg_text(&format!("{:?}", shape_type))
                     )?;
                 }
+            }
+            // Close geometry-specific transform group if opened
+            if !geometry_transform_attrs.is_empty() {
+                writeln!(svg_output, "  </g>")?; // Geometry group end
             }
         } else {
             eprintln!(
@@ -275,7 +335,7 @@ fn convert_shape_to_svg(
     }
 
     // --- Resolve Inherited Text Styles ---
-    // Find the base styles from the placeholder, if any.
+    // (This logic remains the same)
     let mut effective_text_style_base = TextStyle::default();
     let mut effective_paragraph_style: Option<ParagraphStyle> = None;
 
@@ -322,62 +382,56 @@ fn convert_shape_to_svg(
     }
 
     // --- Render Text Content using <foreignObject> ---
-    // This ensures text layout (wrapping, alignment) happens correctly without being
-    // affected by the shape's scale/shear transform.
+    // Positioned relative to the outer group's origin (0,0) plus padding.
+    // For TextBoxes, the outer group only has translation, so text isn't scaled/sheared.
+    // For other shapes, the outer group has the full transform, so text IS scaled/sheared.
     if let Some(text) = &shape.text {
-        // Using fixed padding values. Consider making these configurable or reading from API if available.
         let text_padding_x = 3.0; // Left padding
         let text_padding_y = 2.0; // Top padding
         let right_padding = 3.0;
         let bottom_padding = 2.0;
 
-        // Calculate the available area for the foreignObject based on the *unscaled* shape size minus padding.
+        // Calculate the available area for the foreignObject based on the *unscaled* shape size.
+        // For non-TextBox shapes, this area will be scaled by the outer group transform.
+        // For TextBoxes, it will not be scaled.
         let text_box_width = (width_pt - text_padding_x - right_padding).max(0.0);
         let text_box_height = (height_pt - text_padding_y - bottom_padding).max(0.0);
 
-        // Only render if the calculated text box area is valid.
         if text_box_width > 0.0 && text_box_height > 0.0 {
-            // --- Resolve Text Styles (Combine placeholder and shape-specific) ---
-            // The paragraph style from the placeholder is the base.
-            // Check if the shape's *first* ParagraphMarker has a style to override the placeholder's alignment.
+            // Resolve final paragraph style (shape overrides placeholder)
             let mut final_para_style = effective_paragraph_style.clone();
             if let Some(elements) = &text.text_elements {
                 for element in elements {
                     if let Some(TextElementKind::ParagraphMarker(pm)) = &element.kind {
                         if let Some(style) = &pm.style {
                             final_para_style = Some(style.clone());
-                            break; // Use the first one found in the shape's text
+                            break;
                         }
                     }
                 }
             }
 
-            // --- Create <foreignObject> ---
-            // Positioned relative to the group's origin (0,0) plus padding.
-            // Size is the calculated text box dimensions.
+            // Create <foreignObject> inside the *outer* group
             writeln!(
                 svg_output,
                 r#"  <foreignObject x="{}" y="{}" width="{}" height="{}">"#,
                 text_padding_x, text_padding_y, text_box_width, text_box_height
             )?;
-            // Use a div with XHTML namespace for HTML content.
             writeln!(
                 svg_output,
                 r#"    <div xmlns="http://www.w3.org/1999/xhtml" style="width:100%; height:100%; overflow:hidden; box-sizing: border-box;">"#
             )?;
 
-            // --- Convert TextContent to HTML ---
-            // Pass the inherited base styles for merging within the HTML conversion.
+            // Convert TextContent to HTML
             convert_text_content_to_html(
                 text,
-                final_para_style.as_ref(), // Pass the resolved initial paragraph style
-                &effective_text_style_base, // Pass the base text style
+                final_para_style.as_ref(),
+                &effective_text_style_base,
                 color_scheme,
                 svg_output,
             )?;
 
-            // --- Close <foreignObject> Tags ---
-            writeln!(svg_output)?; // Newline before closing div
+            writeln!(svg_output)?;
             writeln!(svg_output, "    </div>")?;
             writeln!(svg_output, "  </foreignObject>")?;
         } else if !text.text_elements.as_ref().map_or(true, |v| v.is_empty()) {
@@ -385,7 +439,7 @@ fn convert_shape_to_svg(
         }
     }
 
-    // Close the main group for the shape
+    // Close the main outer group for the shape
     writeln!(svg_output, "</g>")?;
 
     Ok(())
@@ -852,14 +906,12 @@ pub(crate) fn convert_page_element_to_svg(
     // Add a comment for easier debugging in the SVG output
     // writeln!(svg_output, "<!-- Element ID: {} -->", element.object_id)?; // Uncomment if useful
 
-    // Use a <g> wrapper *only if* the element itself doesn't handle its transform
-    // (e.g., Shape/Table/Image/Line handle transform internally or apply it directly).
-    // Groups apply transform to their own <g>. Placeholders might need one.
-    // Let's decide based on kind.
+    // Most elements handle their own transform internally (Shape, Table, Image, Line)
+    // or calculate transformed coordinates (Line). Groups apply transform to their own <g>.
 
     match &element.element_kind {
         PageElementKind::Shape(shape) => {
-            // Shape conversion now handles its own transform group and internal text rendering
+            // Shape conversion now handles its own transform strategy based on shape type
             convert_shape_to_svg(
                 &element.object_id,
                 shape,

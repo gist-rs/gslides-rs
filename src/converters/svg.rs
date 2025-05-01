@@ -4,7 +4,7 @@ use crate::models::{
     },
     common::{AffineTransform, Dimension, Size, Unit},
     elements::{PageElement, PageElementKind},
-    line::{LineFill, LineFillContent},
+    line::LineFillContent,
     page::Page,
     page_properties::PageBackgroundFill,
     placeholder::Placeholder,

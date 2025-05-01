@@ -12,74 +12,10 @@
   },
   "slides": [
     {
-      "objectId": "p6",
+      "objectId": "g3531e6d3f2f_1_49",
       "pageElements": [
         {
-          "objectId": "p6_i3",
-          "size": {
-            "width": {
-              "magnitude": 24000,
-              "unit": "EMU"
-            },
-            "height": {
-              "magnitude": 16000,
-              "unit": "EMU"
-            }
-          },
-          "transform": {
-            "scaleX": 372.0042,
-            "scaleY": 428.625,
-            "translateX": 215898,
-            "unit": "EMU"
-          },
-          "description": "A group of people crossing a street\n\nDescription automatically generated",
-          "image": {
-            "contentUrl": "https://lh7-rt.googleusercontent.com/slidesz/AGV_vUeuNdpVOedhU3Cjh3QgIg4YPki-jHMCCTHgt2B28f00WjL4XB8RIogk8vMI4luCZPf4DfvHC87gJNigd9T3Flz21TPZPlEJZK9aP4c364TLlZF7gjQQgYrCrlPo2eKz4U_XPpNKtw=s2048?key=c7mzVOqYhqFW5d4YUy2sKSkZ",
-            "imageProperties": {
-              "cropProperties": {
-                "leftOffset": -0,
-                "rightOffset": 0.1320951,
-                "topOffset": -0
-              },
-              "outline": {
-                "outlineFill": {
-                  "solidFill": {
-                    "color": {
-                      "rgbColor": {}
-                    },
-                    "alpha": 1
-                  }
-                },
-                "weight": {
-                  "magnitude": 9525,
-                  "unit": "EMU"
-                },
-                "dashStyle": "SOLID",
-                "propertyState": "NOT_RENDERED"
-              },
-              "shadow": {
-                "type": "OUTER",
-                "transform": {
-                  "scaleX": 1,
-                  "scaleY": 1,
-                  "unit": "EMU"
-                },
-                "alignment": "BOTTOM_LEFT",
-                "blurRadius": {
-                  "unit": "EMU"
-                },
-                "color": {
-                  "rgbColor": {}
-                },
-                "alpha": 1,
-                "rotateWithShape": false,
-                "propertyState": "NOT_RENDERED"
-              }
-            }
-          }
-        },
-        {
-          "objectId": "p6_i15",
+          "objectId": "g3531e6d3f2f_1_50",
           "size": {
             "width": {
               "magnitude": 3000000,
@@ -91,82 +27,10 @@
             }
           },
           "transform": {
-            "scaleX": 3.0485,
-            "scaleY": 2.2868,
-            "translateX": -1587,
-            "translateY": -1191,
-            "unit": "EMU"
-          },
-          "shape": {
-            "shapeType": "RECTANGLE",
-            "shapeProperties": {
-              "shapeBackgroundFill": {
-                "solidFill": {
-                  "color": {
-                    "themeColor": "DARK1"
-                  },
-                  "alpha": 0.6549
-                }
-              },
-              "outline": {
-                "outlineFill": {
-                  "solidFill": {
-                    "color": {
-                      "rgbColor": {}
-                    },
-                    "alpha": 1
-                  }
-                },
-                "weight": {
-                  "magnitude": 9525,
-                  "unit": "EMU"
-                },
-                "dashStyle": "SOLID",
-                "propertyState": "NOT_RENDERED"
-              },
-              "shadow": {
-                "type": "OUTER",
-                "transform": {
-                  "scaleX": 1,
-                  "scaleY": 1,
-                  "unit": "EMU"
-                },
-                "alignment": "BOTTOM_LEFT",
-                "blurRadius": {
-                  "unit": "EMU"
-                },
-                "color": {
-                  "rgbColor": {}
-                },
-                "alpha": 1,
-                "rotateWithShape": false,
-                "propertyState": "NOT_RENDERED"
-              },
-              "contentAlignment": "MIDDLE",
-              "autofit": {
-                "autofitType": "NONE",
-                "fontScale": 1
-              }
-            }
-          }
-        },
-        {
-          "objectId": "p6_i6",
-          "size": {
-            "width": {
-              "magnitude": 3000000,
-              "unit": "EMU"
-            },
-            "height": {
-              "magnitude": 3000000,
-              "unit": "EMU"
-            }
-          },
-          "transform": {
-            "scaleX": 0.5441,
-            "scaleY": 0.0616,
-            "translateX": 6634400,
-            "translateY": 6519437,
+            "scaleX": 2.6587,
+            "scaleY": 0.1589,
+            "translateX": 520270,
+            "translateY": 3049586,
             "unit": "EMU"
           },
           "shape": {
@@ -174,581 +38,7 @@
             "text": {
               "textElements": [
                 {
-                  "endIndex": 41,
-                  "paragraphMarker": {
-                    "style": {
-                      "lineSpacing": 100,
-                      "alignment": "START",
-                      "indentStart": {
-                        "unit": "PT"
-                      },
-                      "indentEnd": {
-                        "unit": "PT"
-                      },
-                      "spaceAbove": {
-                        "unit": "PT"
-                      },
-                      "spaceBelow": {
-                        "unit": "PT"
-                      },
-                      "indentFirstLine": {
-                        "unit": "PT"
-                      },
-                      "direction": "LEFT_TO_RIGHT",
-                      "spacingMode": "NEVER_COLLAPSE"
-                    }
-                  }
-                },
-                {
-                  "endIndex": 41,
-                  "textRun": {
-                    "content": "©PeopleDot co.,Ltd. All Rights Reserved.\n",
-                    "style": {
-                      "backgroundColor": {},
-                      "foregroundColor": {
-                        "opaqueColor": {
-                          "themeColor": "LIGHT1"
-                        }
-                      },
-                      "bold": false,
-                      "italic": false,
-                      "fontFamily": "Noto Sans JP",
-                      "fontSize": {
-                        "magnitude": 6,
-                        "unit": "PT"
-                      },
-                      "baselineOffset": "NONE",
-                      "smallCaps": false,
-                      "strikethrough": false,
-                      "underline": false,
-                      "weightedFontFamily": {
-                        "fontFamily": "Noto Sans JP",
-                        "weight": 400
-                      }
-                    }
-                  }
-                }
-              ]
-            },
-            "shapeProperties": {
-              "shapeBackgroundFill": {
-                "propertyState": "NOT_RENDERED",
-                "solidFill": {
-                  "color": {
-                    "rgbColor": {
-                      "red": 1,
-                      "green": 1,
-                      "blue": 1
-                    }
-                  },
-                  "alpha": 1
-                }
-              },
-              "outline": {
-                "outlineFill": {
-                  "solidFill": {
-                    "color": {
-                      "rgbColor": {}
-                    },
-                    "alpha": 1
-                  }
-                },
-                "weight": {
-                  "magnitude": 9525,
-                  "unit": "EMU"
-                },
-                "dashStyle": "SOLID",
-                "propertyState": "NOT_RENDERED"
-              },
-              "shadow": {
-                "type": "OUTER",
-                "transform": {
-                  "scaleX": 1,
-                  "scaleY": 1,
-                  "unit": "EMU"
-                },
-                "alignment": "BOTTOM_LEFT",
-                "blurRadius": {
-                  "unit": "EMU"
-                },
-                "color": {
-                  "rgbColor": {}
-                },
-                "alpha": 1,
-                "rotateWithShape": false,
-                "propertyState": "NOT_RENDERED"
-              },
-              "contentAlignment": "TOP",
-              "autofit": {
-                "autofitType": "SHAPE_AUTOFIT",
-                "fontScale": 1
-              }
-            }
-          }
-        },
-        {
-          "objectId": "p6_i7",
-          "size": {
-            "width": {
-              "magnitude": 3000000,
-              "unit": "EMU"
-            },
-            "height": {
-              "magnitude": 3000000,
-              "unit": "EMU"
-            }
-          },
-          "transform": {
-            "scaleX": 0.2174,
-            "scaleY": 0.0544,
-            "translateX": 8117125,
-            "translateY": 6530226,
-            "unit": "EMU"
-          },
-          "shape": {
-            "shapeType": "TEXT_BOX",
-            "text": {
-              "textElements": [
-                {
-                  "endIndex": 13,
-                  "paragraphMarker": {
-                    "style": {
-                      "lineSpacing": 100,
-                      "alignment": "CENTER",
-                      "indentStart": {
-                        "unit": "PT"
-                      },
-                      "indentEnd": {
-                        "unit": "PT"
-                      },
-                      "spaceAbove": {
-                        "unit": "PT"
-                      },
-                      "spaceBelow": {
-                        "unit": "PT"
-                      },
-                      "indentFirstLine": {
-                        "unit": "PT"
-                      },
-                      "direction": "LEFT_TO_RIGHT",
-                      "spacingMode": "NEVER_COLLAPSE"
-                    }
-                  }
-                },
-                {
-                  "endIndex": 13,
-                  "textRun": {
-                    "content": "Confidential\n",
-                    "style": {
-                      "backgroundColor": {},
-                      "foregroundColor": {
-                        "opaqueColor": {
-                          "themeColor": "LIGHT1"
-                        }
-                      },
-                      "bold": false,
-                      "italic": false,
-                      "fontFamily": "Noto Sans JP",
-                      "fontSize": {
-                        "magnitude": 6,
-                        "unit": "PT"
-                      },
-                      "baselineOffset": "NONE",
-                      "smallCaps": false,
-                      "strikethrough": false,
-                      "underline": false,
-                      "weightedFontFamily": {
-                        "fontFamily": "Noto Sans JP",
-                        "weight": 400
-                      }
-                    }
-                  }
-                }
-              ]
-            },
-            "shapeProperties": {
-              "shapeBackgroundFill": {
-                "propertyState": "NOT_RENDERED",
-                "solidFill": {
-                  "color": {
-                    "rgbColor": {
-                      "red": 1,
-                      "green": 1,
-                      "blue": 1
-                    }
-                  },
-                  "alpha": 1
-                }
-              },
-              "outline": {
-                "outlineFill": {
-                  "solidFill": {
-                    "color": {
-                      "rgbColor": {}
-                    },
-                    "alpha": 1
-                  }
-                },
-                "weight": {
-                  "magnitude": 9525,
-                  "unit": "EMU"
-                },
-                "dashStyle": "SOLID",
-                "propertyState": "NOT_RENDERED"
-              },
-              "shadow": {
-                "type": "OUTER",
-                "transform": {
-                  "scaleX": 1,
-                  "scaleY": 1,
-                  "unit": "EMU"
-                },
-                "alignment": "BOTTOM_LEFT",
-                "blurRadius": {
-                  "unit": "EMU"
-                },
-                "color": {
-                  "rgbColor": {}
-                },
-                "alpha": 1,
-                "rotateWithShape": false,
-                "propertyState": "NOT_RENDERED"
-              },
-              "contentAlignment": "MIDDLE",
-              "autofit": {
-                "autofitType": "NONE",
-                "fontScale": 1
-              }
-            }
-          }
-        },
-        {
-          "objectId": "p6_i8",
-          "size": {
-            "width": {
-              "magnitude": 3000000,
-              "unit": "EMU"
-            },
-            "height": {
-              "magnitude": 3000000,
-              "unit": "EMU"
-            }
-          },
-          "transform": {
-            "scaleX": 0.1253,
-            "scaleY": 0.0874,
-            "translateX": 8630552,
-            "translateY": 6501032,
-            "unit": "EMU"
-          },
-          "shape": {
-            "shapeType": "TEXT_BOX",
-            "text": {
-              "textElements": [
-                {
-                  "endIndex": 2,
-                  "paragraphMarker": {
-                    "style": {
-                      "lineSpacing": 100,
-                      "alignment": "END",
-                      "indentStart": {
-                        "unit": "PT"
-                      },
-                      "indentEnd": {
-                        "unit": "PT"
-                      },
-                      "spaceAbove": {
-                        "unit": "PT"
-                      },
-                      "spaceBelow": {
-                        "unit": "PT"
-                      },
-                      "indentFirstLine": {
-                        "unit": "PT"
-                      },
-                      "direction": "LEFT_TO_RIGHT",
-                      "spacingMode": "NEVER_COLLAPSE"
-                    }
-                  }
-                },
-                {
-                  "endIndex": 1,
-                  "autoText": {
-                    "type": "SLIDE_NUMBER",
-                    "content": "1",
-                    "style": {
-                      "backgroundColor": {},
-                      "foregroundColor": {
-                        "opaqueColor": {
-                          "themeColor": "LIGHT1"
-                        }
-                      },
-                      "bold": false,
-                      "italic": false,
-                      "fontFamily": "Noto Sans JP",
-                      "fontSize": {
-                        "magnitude": 8,
-                        "unit": "PT"
-                      },
-                      "baselineOffset": "NONE",
-                      "smallCaps": false,
-                      "strikethrough": false,
-                      "underline": false,
-                      "weightedFontFamily": {
-                        "fontFamily": "Noto Sans JP",
-                        "weight": 400
-                      }
-                    }
-                  }
-                },
-                {
-                  "startIndex": 1,
-                  "endIndex": 2,
-                  "textRun": {
-                    "content": "\n",
-                    "style": {
-                      "backgroundColor": {},
-                      "foregroundColor": {
-                        "opaqueColor": {
-                          "themeColor": "LIGHT1"
-                        }
-                      },
-                      "bold": false,
-                      "italic": false,
-                      "fontFamily": "Noto Sans JP",
-                      "fontSize": {
-                        "magnitude": 8,
-                        "unit": "PT"
-                      },
-                      "baselineOffset": "NONE",
-                      "smallCaps": false,
-                      "strikethrough": false,
-                      "underline": false,
-                      "weightedFontFamily": {
-                        "fontFamily": "Noto Sans JP",
-                        "weight": 400
-                      }
-                    }
-                  }
-                }
-              ]
-            },
-            "shapeProperties": {
-              "shapeBackgroundFill": {
-                "propertyState": "NOT_RENDERED",
-                "solidFill": {
-                  "color": {
-                    "rgbColor": {
-                      "red": 1,
-                      "green": 1,
-                      "blue": 1
-                    }
-                  },
-                  "alpha": 1
-                }
-              },
-              "outline": {
-                "outlineFill": {
-                  "solidFill": {
-                    "color": {
-                      "rgbColor": {}
-                    },
-                    "alpha": 1
-                  }
-                },
-                "weight": {
-                  "magnitude": 9525,
-                  "unit": "EMU"
-                },
-                "dashStyle": "SOLID",
-                "propertyState": "NOT_RENDERED"
-              },
-              "shadow": {
-                "type": "OUTER",
-                "transform": {
-                  "scaleX": 1,
-                  "scaleY": 1,
-                  "unit": "EMU"
-                },
-                "alignment": "BOTTOM_LEFT",
-                "blurRadius": {
-                  "unit": "EMU"
-                },
-                "color": {
-                  "rgbColor": {}
-                },
-                "alpha": 1,
-                "rotateWithShape": false,
-                "propertyState": "NOT_RENDERED"
-              },
-              "contentAlignment": "TOP",
-              "autofit": {
-                "autofitType": "NONE",
-                "fontScale": 1
-              }
-            }
-          }
-        },
-        {
-          "objectId": "p6_i9",
-          "size": {
-            "width": {
-              "magnitude": 3000000,
-              "unit": "EMU"
-            },
-            "height": {
-              "magnitude": 3000000,
-              "unit": "EMU"
-            }
-          },
-          "transform": {
-            "scaleX": 0.1679,
-            "scaleY": 0.0318,
-            "translateX": 8191500,
-            "translateY": 6556375,
-            "unit": "EMU"
-          },
-          "shape": {
-            "shapeType": "RECTANGLE",
-            "shapeProperties": {
-              "shapeBackgroundFill": {
-                "propertyState": "NOT_RENDERED",
-                "solidFill": {
-                  "color": {
-                    "rgbColor": {
-                      "red": 1,
-                      "green": 1,
-                      "blue": 1
-                    }
-                  },
-                  "alpha": 1
-                }
-              },
-              "outline": {
-                "outlineFill": {
-                  "solidFill": {
-                    "color": {
-                      "themeColor": "DARK1"
-                    },
-                    "alpha": 1
-                  }
-                },
-                "weight": {
-                  "magnitude": 9525,
-                  "unit": "EMU"
-                },
-                "dashStyle": "SOLID"
-              },
-              "shadow": {
-                "type": "OUTER",
-                "transform": {
-                  "scaleX": 1,
-                  "scaleY": 1,
-                  "unit": "EMU"
-                },
-                "alignment": "BOTTOM_LEFT",
-                "blurRadius": {
-                  "unit": "EMU"
-                },
-                "color": {
-                  "rgbColor": {}
-                },
-                "alpha": 1,
-                "rotateWithShape": false,
-                "propertyState": "NOT_RENDERED"
-              },
-              "contentAlignment": "MIDDLE",
-              "autofit": {
-                "autofitType": "NONE",
-                "fontScale": 1
-              }
-            }
-          }
-        },
-        {
-          "objectId": "p6_i12",
-          "size": {
-            "width": {
-              "magnitude": 54575,
-              "unit": "EMU"
-            },
-            "height": {
-              "magnitude": 8025,
-              "unit": "EMU"
-            }
-          },
-          "transform": {
-            "scaleX": 33.9171,
-            "scaleY": 33.905,
-            "translateX": 431801,
-            "translateY": 6426308,
-            "unit": "EMU"
-          },
-          "image": {
-            "contentUrl": "https://lh7-rt.googleusercontent.com/slidesz/AGV_vUfWX_uJuZYD_H4WXB-t5vX8niDBiqUWEtwmpJ3HfFcc_-xFFfEevKDj7rzkIlL3BIB8rg7XN8iDFQCKnr_QyQDpPDvfjCKg2LG7jfGBwZDIHSahLVs6HxYH3iHacQHeDxqpcoDiMKA=s2048?key=c7mzVOqYhqFW5d4YUy2sKSkZ",
-            "imageProperties": {
-              "outline": {
-                "outlineFill": {
-                  "solidFill": {
-                    "color": {
-                      "rgbColor": {}
-                    },
-                    "alpha": 1
-                  }
-                },
-                "weight": {
-                  "magnitude": 9525,
-                  "unit": "EMU"
-                },
-                "dashStyle": "SOLID",
-                "propertyState": "NOT_RENDERED"
-              },
-              "shadow": {
-                "type": "OUTER",
-                "transform": {
-                  "scaleX": 1,
-                  "scaleY": 1,
-                  "unit": "EMU"
-                },
-                "alignment": "BOTTOM_LEFT",
-                "blurRadius": {
-                  "unit": "EMU"
-                },
-                "color": {
-                  "rgbColor": {}
-                },
-                "alpha": 1,
-                "rotateWithShape": false,
-                "propertyState": "NOT_RENDERED"
-              }
-            }
-          }
-        },
-        {
-          "objectId": "p6_i13",
-          "size": {
-            "width": {
-              "magnitude": 3000000,
-              "unit": "EMU"
-            },
-            "height": {
-              "magnitude": 3000000,
-              "unit": "EMU"
-            }
-          },
-          "transform": {
-            "scaleX": 0.3492,
-            "scaleY": 0.2401,
-            "translateX": 536641,
-            "translateY": 3088091,
-            "unit": "EMU"
-          },
-          "shape": {
-            "shapeType": "TEXT_BOX",
-            "text": {
-              "textElements": [
-                {
-                  "endIndex": 3,
+                  "endIndex": 23,
                   "paragraphMarker": {
                     "style": {
                       "lineSpacing": 90,
@@ -756,9 +46,6 @@
                       "indentStart": {
                         "unit": "PT"
                       },
-                      "indentEnd": {
-                        "unit": "PT"
-                      },
                       "spaceAbove": {
                         "unit": "PT"
                       },
@@ -774,94 +61,38 @@
                   }
                 },
                 {
-                  "endIndex": 3,
+                  "endIndex": 23,
                   "textRun": {
-                    "content": "02\n",
-                    "style": {
-                      "backgroundColor": {},
-                      "foregroundColor": {
-                        "opaqueColor": {
-                          "themeColor": "LIGHT1"
-                        }
-                      },
-                      "bold": true,
-                      "italic": false,
-                      "fontFamily": "Noto Sans JP",
-                      "fontSize": {
-                        "magnitude": 50,
-                        "unit": "PT"
-                      },
-                      "baselineOffset": "NONE",
-                      "smallCaps": false,
-                      "strikethrough": false,
-                      "underline": false,
-                      "weightedFontFamily": {
-                        "fontFamily": "Noto Sans JP",
-                        "weight": 700
-                      }
-                    }
+                    "content": "PeopleDot Slide format\n",
+                    "style": {}
                   }
                 }
               ]
             },
             "shapeProperties": {
               "shapeBackgroundFill": {
-                "propertyState": "NOT_RENDERED",
-                "solidFill": {
-                  "color": {
-                    "rgbColor": {
-                      "red": 1,
-                      "green": 1,
-                      "blue": 1
-                    }
-                  },
-                  "alpha": 1
-                }
+                "propertyState": "NOT_RENDERED"
               },
               "outline": {
-                "outlineFill": {
-                  "solidFill": {
-                    "color": {
-                      "rgbColor": {}
-                    },
-                    "alpha": 1
-                  }
-                },
-                "weight": {
-                  "magnitude": 9525,
-                  "unit": "EMU"
-                },
-                "dashStyle": "SOLID",
                 "propertyState": "NOT_RENDERED"
               },
               "shadow": {
-                "type": "OUTER",
-                "transform": {
-                  "scaleX": 1,
-                  "scaleY": 1,
-                  "unit": "EMU"
-                },
-                "alignment": "BOTTOM_LEFT",
-                "blurRadius": {
-                  "unit": "EMU"
-                },
-                "color": {
-                  "rgbColor": {}
-                },
-                "alpha": 1,
-                "rotateWithShape": false,
-                "propertyState": "NOT_RENDERED"
+                "propertyState": "INHERIT"
               },
               "contentAlignment": "TOP",
               "autofit": {
                 "autofitType": "NONE",
                 "fontScale": 1
               }
+            },
+            "placeholder": {
+              "type": "TITLE",
+              "parentObjectId": "p20_i12"
             }
           }
         },
         {
-          "objectId": "p6_i16",
+          "objectId": "g3531e6d3f2f_1_51",
           "size": {
             "width": {
               "magnitude": 3000000,
@@ -873,10 +104,10 @@
             }
           },
           "transform": {
-            "scaleX": 1.3213,
-            "scaleY": 0.0697,
-            "translateX": 1716345,
-            "translateY": 3516319.9999999995,
+            "scaleX": 2.6479,
+            "scaleY": 0.0917,
+            "translateX": 552449,
+            "translateY": 3572562.0000000005,
             "unit": "EMU"
           },
           "shape": {
@@ -884,15 +115,12 @@
             "text": {
               "textElements": [
                 {
-                  "endIndex": 11,
+                  "endIndex": 22,
                   "paragraphMarker": {
                     "style": {
                       "lineSpacing": 90,
                       "alignment": "START",
                       "indentStart": {
-                        "unit": "PT"
-                      },
-                      "indentEnd": {
                         "unit": "PT"
                       },
                       "spaceAbove": {
@@ -910,502 +138,46 @@
                   }
                 },
                 {
-                  "endIndex": 11,
+                  "endIndex": 22,
                   "textRun": {
-                    "content": "サブタイトル12pt\n",
-                    "style": {
-                      "backgroundColor": {},
-                      "foregroundColor": {
-                        "opaqueColor": {
-                          "themeColor": "LIGHT1"
-                        }
-                      },
-                      "bold": false,
-                      "italic": false,
-                      "fontFamily": "Noto Sans JP",
-                      "fontSize": {
-                        "magnitude": 12,
-                        "unit": "PT"
-                      },
-                      "baselineOffset": "NONE",
-                      "smallCaps": false,
-                      "strikethrough": false,
-                      "underline": false,
-                      "weightedFontFamily": {
-                        "fontFamily": "Noto Sans JP",
-                        "weight": 400
-                      }
-                    }
+                    "content": "2024.5.31 | ver.1.0.0\n",
+                    "style": {}
                   }
                 }
               ]
             },
             "shapeProperties": {
               "shapeBackgroundFill": {
-                "propertyState": "NOT_RENDERED",
-                "solidFill": {
-                  "color": {
-                    "rgbColor": {
-                      "red": 1,
-                      "green": 1,
-                      "blue": 1
-                    }
-                  },
-                  "alpha": 1
-                }
+                "propertyState": "NOT_RENDERED"
               },
               "outline": {
-                "outlineFill": {
-                  "solidFill": {
-                    "color": {
-                      "rgbColor": {}
-                    },
-                    "alpha": 1
-                  }
-                },
-                "weight": {
-                  "magnitude": 9525,
-                  "unit": "EMU"
-                },
-                "dashStyle": "SOLID",
                 "propertyState": "NOT_RENDERED"
               },
               "shadow": {
-                "type": "OUTER",
-                "transform": {
-                  "scaleX": 1,
-                  "scaleY": 1,
-                  "unit": "EMU"
-                },
-                "alignment": "BOTTOM_LEFT",
-                "blurRadius": {
-                  "unit": "EMU"
-                },
-                "color": {
-                  "rgbColor": {}
-                },
-                "alpha": 1,
-                "rotateWithShape": false,
-                "propertyState": "NOT_RENDERED"
+                "propertyState": "INHERIT"
               },
               "contentAlignment": "TOP",
               "autofit": {
                 "autofitType": "NONE",
                 "fontScale": 1
               }
-            }
-          }
-        },
-        {
-          "objectId": "p6_i17",
-          "size": {
-            "width": {
-              "magnitude": 3000000,
-              "unit": "EMU"
             },
-            "height": {
-              "magnitude": 3000000,
-              "unit": "EMU"
+            "placeholder": {
+              "type": "BODY",
+              "parentObjectId": "p20_i13"
             }
-          },
-          "transform": {
-            "scaleX": 1.3213,
-            "scaleY": 0.1331,
-            "translateX": 1689711,
-            "translateY": 3084427,
-            "unit": "EMU"
-          },
-          "shape": {
-            "shapeType": "TEXT_BOX",
-            "text": {
-              "textElements": [
-                {
-                  "endIndex": 16,
-                  "paragraphMarker": {
-                    "style": {
-                      "lineSpacing": 90,
-                      "alignment": "START",
-                      "indentStart": {
-                        "unit": "PT"
-                      },
-                      "indentEnd": {
-                        "unit": "PT"
-                      },
-                      "spaceAbove": {
-                        "unit": "PT"
-                      },
-                      "spaceBelow": {
-                        "unit": "PT"
-                      },
-                      "indentFirstLine": {
-                        "unit": "PT"
-                      },
-                      "direction": "LEFT_TO_RIGHT",
-                      "spacingMode": "NEVER_COLLAPSE"
-                    }
-                  }
-                },
-                {
-                  "endIndex": 16,
-                  "textRun": {
-                    "content": "MAIN TITLE 28pt\n",
-                    "style": {
-                      "backgroundColor": {},
-                      "foregroundColor": {
-                        "opaqueColor": {
-                          "themeColor": "LIGHT1"
-                        }
-                      },
-                      "bold": true,
-                      "italic": false,
-                      "fontFamily": "Noto Sans JP",
-                      "fontSize": {
-                        "magnitude": 28,
-                        "unit": "PT"
-                      },
-                      "baselineOffset": "NONE",
-                      "smallCaps": false,
-                      "strikethrough": false,
-                      "underline": false,
-                      "weightedFontFamily": {
-                        "fontFamily": "Noto Sans JP",
-                        "weight": 700
-                      }
-                    }
-                  }
-                }
-              ]
-            },
-            "shapeProperties": {
-              "shapeBackgroundFill": {
-                "propertyState": "NOT_RENDERED",
-                "solidFill": {
-                  "color": {
-                    "rgbColor": {
-                      "red": 1,
-                      "green": 1,
-                      "blue": 1
-                    }
-                  },
-                  "alpha": 1
-                }
-              },
-              "outline": {
-                "outlineFill": {
-                  "solidFill": {
-                    "color": {
-                      "rgbColor": {}
-                    },
-                    "alpha": 1
-                  }
-                },
-                "weight": {
-                  "magnitude": 9525,
-                  "unit": "EMU"
-                },
-                "dashStyle": "SOLID",
-                "propertyState": "NOT_RENDERED"
-              },
-              "shadow": {
-                "type": "OUTER",
-                "transform": {
-                  "scaleX": 1,
-                  "scaleY": 1,
-                  "unit": "EMU"
-                },
-                "alignment": "BOTTOM_LEFT",
-                "blurRadius": {
-                  "unit": "EMU"
-                },
-                "color": {
-                  "rgbColor": {}
-                },
-                "alpha": 1,
-                "rotateWithShape": false,
-                "propertyState": "NOT_RENDERED"
-              },
-              "contentAlignment": "TOP",
-              "autofit": {
-                "autofitType": "NONE",
-                "fontScale": 1
-              }
-            }
-          }
-        },
-        {
-          "objectId": "p6_i18",
-          "size": {
-            "width": {
-              "magnitude": 3000000,
-              "unit": "EMU"
-            },
-            "height": {
-              "magnitude": 3000000,
-              "unit": "EMU"
-            }
-          },
-          "transform": {
-            "scaleY": 0.1958,
-            "translateX": 1584325,
-            "translateY": 3140075,
-            "unit": "EMU"
-          },
-          "line": {
-            "lineProperties": {
-              "lineFill": {
-                "solidFill": {
-                  "color": {
-                    "themeColor": "LIGHT1"
-                  },
-                  "alpha": 1
-                }
-              },
-              "weight": {
-                "magnitude": 22225,
-                "unit": "EMU"
-              },
-              "dashStyle": "SOLID",
-              "startArrow": "NONE",
-              "endArrow": "NONE"
-            },
-            "lineType": "STRAIGHT_CONNECTOR_1",
-            "lineCategory": "STRAIGHT"
-          }
-        },
-        {
-          "objectId": "p6_i2",
-          "size": {
-            "width": {
-              "magnitude": 3000000,
-              "unit": "EMU"
-            },
-            "height": {
-              "magnitude": 3000000,
-              "unit": "EMU"
-            }
-          },
-          "transform": {
-            "scaleX": 0.073,
-            "scaleY": 2.0712,
-            "translateX": -3176,
-            "translateY": -1,
-            "unit": "EMU"
-          },
-          "shape": {
-            "shapeType": "RECTANGLE",
-            "shapeProperties": {
-              "shapeBackgroundFill": {
-                "solidFill": {
-                  "color": {
-                    "themeColor": "DARK2"
-                  },
-                  "alpha": 1
-                }
-              },
-              "outline": {
-                "outlineFill": {
-                  "solidFill": {
-                    "color": {
-                      "rgbColor": {}
-                    },
-                    "alpha": 1
-                  }
-                },
-                "weight": {
-                  "magnitude": 9525,
-                  "unit": "EMU"
-                },
-                "dashStyle": "SOLID",
-                "propertyState": "NOT_RENDERED"
-              },
-              "shadow": {
-                "type": "OUTER",
-                "transform": {
-                  "scaleX": 1,
-                  "scaleY": 1,
-                  "unit": "EMU"
-                },
-                "alignment": "BOTTOM_LEFT",
-                "blurRadius": {
-                  "unit": "EMU"
-                },
-                "color": {
-                  "rgbColor": {}
-                },
-                "alpha": 1,
-                "rotateWithShape": false,
-                "propertyState": "NOT_RENDERED"
-              },
-              "contentAlignment": "MIDDLE",
-              "autofit": {
-                "autofitType": "NONE",
-                "fontScale": 1
-              }
-            }
-          }
-        },
-        {
-          "objectId": "p6_g13",
-          "size": {
-            "width": {
-              "magnitude": 3000000,
-              "unit": "EMU"
-            },
-            "height": {
-              "magnitude": 3000000,
-              "unit": "EMU"
-            }
-          },
-          "transform": {
-            "scaleX": 0.073,
-            "scaleY": 0.1453,
-            "translateX": -3175,
-            "translateY": 6426200,
-            "unit": "EMU"
-          },
-          "shape": {
-            "shapeType": "RECTANGLE",
-            "shapeProperties": {
-              "shapeBackgroundFill": {
-                "solidFill": {
-                  "color": {
-                    "themeColor": "DARK1"
-                  },
-                  "alpha": 1
-                }
-              },
-              "outline": {
-                "outlineFill": {
-                  "solidFill": {
-                    "color": {
-                      "rgbColor": {}
-                    },
-                    "alpha": 1
-                  }
-                },
-                "weight": {
-                  "magnitude": 9525,
-                  "unit": "EMU"
-                },
-                "dashStyle": "SOLID",
-                "propertyState": "NOT_RENDERED"
-              },
-              "shadow": {
-                "type": "OUTER",
-                "transform": {
-                  "scaleX": 1,
-                  "scaleY": 1,
-                  "unit": "EMU"
-                },
-                "alignment": "BOTTOM_LEFT",
-                "blurRadius": {
-                  "unit": "EMU"
-                },
-                "color": {
-                  "rgbColor": {}
-                },
-                "alpha": 1,
-                "rotateWithShape": false,
-                "propertyState": "NOT_RENDERED"
-              },
-              "contentAlignment": "MIDDLE",
-              "autofit": {
-                "autofitType": "NONE",
-                "fontScale": 1
-              }
-            }
-          }
-        },
-        {
-          "objectId": "g3531e6d3f2f_1_28",
-          "size": {
-            "width": {
-              "magnitude": 3000000,
-              "unit": "EMU"
-            },
-            "height": {
-              "magnitude": 3000000,
-              "unit": "EMU"
-            }
-          },
-          "transform": {
-            "scaleY": 0.1958,
-            "translateX": 536650,
-            "translateY": 250375,
-            "unit": "EMU"
-          },
-          "line": {
-            "lineProperties": {
-              "lineFill": {
-                "solidFill": {
-                  "color": {
-                    "themeColor": "ACCENT6"
-                  },
-                  "alpha": 1
-                }
-              },
-              "weight": {
-                "magnitude": 22225,
-                "unit": "EMU"
-              },
-              "dashStyle": "SOLID",
-              "startArrow": "NONE",
-              "endArrow": "NONE"
-            },
-            "lineType": "STRAIGHT_CONNECTOR_1",
-            "lineCategory": "STRAIGHT"
-          }
-        },
-        {
-          "objectId": "g3531e6d3f2f_1_29",
-          "size": {
-            "width": {
-              "magnitude": 3000000,
-              "unit": "EMU"
-            },
-            "height": {
-              "magnitude": 3000000,
-              "unit": "EMU"
-            }
-          },
-          "transform": {
-            "scaleX": -0.196,
-            "translateX": 1277150,
-            "translateY": 990175,
-            "unit": "EMU"
-          },
-          "line": {
-            "lineProperties": {
-              "lineFill": {
-                "solidFill": {
-                  "color": {
-                    "themeColor": "ACCENT6"
-                  },
-                  "alpha": 1
-                }
-              },
-              "weight": {
-                "magnitude": 22225,
-                "unit": "EMU"
-              },
-              "dashStyle": "SOLID",
-              "startArrow": "NONE",
-              "endArrow": "NONE"
-            },
-            "lineType": "STRAIGHT_CONNECTOR_1",
-            "lineCategory": "STRAIGHT"
           }
         }
       ],
       "slideProperties": {
-        "layoutObjectId": "p23",
+        "layoutObjectId": "p20",
         "masterObjectId": "p18",
         "notesPage": {
-          "objectId": "p6:notes",
+          "objectId": "g3531e6d3f2f_1_49:notes",
           "pageType": "NOTES",
           "pageElements": [
             {
-              "objectId": "p6_g11",
+              "objectId": "g3531e6d3f2f_1_52",
               "size": {
                 "width": {
                   "magnitude": 3000000,
@@ -1448,7 +220,7 @@
               }
             },
             {
-              "objectId": "p6_g12",
+              "objectId": "g3531e6d3f2f_1_53",
               "size": {
                 "width": {
                   "magnitude": 3000000,
@@ -1497,7 +269,7 @@
             }
           },
           "notesProperties": {
-            "speakerNotesObjectId": "p6_g11"
+            "speakerNotesObjectId": "g3531e6d3f2f_1_52"
           }
         }
       },
@@ -3720,7 +2492,7 @@
             "unit": "EMU"
           },
           "image": {
-            "contentUrl": "https://lh7-rt.googleusercontent.com/slidesz/AGV_vUexqteiOGeb0qROWcFcBjyYXZkDPS_R8wKjwLJ4sUDli_zkCglC7og_5jhYQmu9OduiIhmDcmMxkP5nl5GPNiVaJ_kHJKkLUPEHn5s8K3B7Ci6H4oHEuYj7tMLD18VN49oNGs5q55E=s2048?key=c7mzVOqYhqFW5d4YUy2sKSkZ",
+            "contentUrl": "https://lh7-rt.googleusercontent.com/slidesz/AGV_vUf-ZDuPAA5wmM19OlA-rqWMJSRPkGy0lb62mgpoozPphHhXm2PyQRGQPvzELjLoFAGnsasacDHJq16YvH_mBYCsN42rWPuFdRYLMjy4Wj9lrd5nGO2zq7ngn1EPhbBEnPMndYgfpTw=s2048?key=c7mzVOqYhqFW5d4YUy2sKSkZ",
             "imageProperties": {
               "outline": {
                 "outlineFill": {
@@ -5548,7 +4320,7 @@
             "unit": "EMU"
           },
           "image": {
-            "contentUrl": "https://lh7-rt.googleusercontent.com/slidesz/AGV_vUdFEkTK8g68Rhl4jx_zccs9jVk88Wldx89PYRs92QWenTxnmM-9PVujYfe36ODzq4iJle5eLGJoRZa2XuC9REQYNz_MlF24M1KVGfsph1ppALCJbRtcWH4AoT7N6MmucKp7Y48ZABg=s2048?key=c7mzVOqYhqFW5d4YUy2sKSkZ",
+            "contentUrl": "https://lh7-rt.googleusercontent.com/slidesz/AGV_vUcJw-dd6oLbIQ0hWNnZMwBM4YJJNiJwtXDYgt7BUxF-Dmp20ejUddLP5CpAC8Lp-2uIEhaX_vduZZlR78Q47-D4q3A_X-168qI1_wcdIcLCEimZaeBNPaCyUuq7XoMHMLsuI7J4Gq8=s2048?key=c7mzVOqYhqFW5d4YUy2sKSkZ",
             "imageProperties": {
               "outline": {
                 "outlineFill": {
@@ -5839,7 +4611,7 @@
             "unit": "EMU"
           },
           "image": {
-            "contentUrl": "https://lh7-rt.googleusercontent.com/slidesz/AGV_vUfpF4xbFDyF1uY8BMIwLZompky-07Qnh0g4zys_V332smbzF1qtiPH8fTcZZf9BGywHmH7Qf_YHq7JBgYY04NnLPn4RhqS25NGpVGhOVQdz0xDp0rF-br2MeyrYA97D3QLZ5B8-NFo=s2048?key=c7mzVOqYhqFW5d4YUy2sKSkZ",
+            "contentUrl": "https://lh7-rt.googleusercontent.com/slidesz/AGV_vUc2dzornvK9rsA2zIsLwoJDm1DXvKSd7ZFzxYG_ckGAgJHKzMTSJL34zcE8TY0so6kuYlSvzqoo3WYKez-KrTokd0FqT-4ht1nHrEmUYbcl1zUiAoMqs0uoD1NKxjcyYWJeocISIHw=s2048?key=c7mzVOqYhqFW5d4YUy2sKSkZ",
             "imageProperties": {
               "outline": {
                 "outlineFill": {
@@ -11572,7 +10344,7 @@
             "unit": "EMU"
           },
           "image": {
-            "contentUrl": "https://lh7-rt.googleusercontent.com/slidesz/AGV_vUfpF4xbFDyF1uY8BMIwLZompky-07Qnh0g4zys_V332smbzF1qtiPH8fTcZZf9BGywHmH7Qf_YHq7JBgYY04NnLPn4RhqS25NGpVGhOVQdz0xDp0rF-br2MeyrYA97D3QLZ5B8-NFo=s2048?key=c7mzVOqYhqFW5d4YUy2sKSkZ",
+            "contentUrl": "https://lh7-rt.googleusercontent.com/slidesz/AGV_vUc2dzornvK9rsA2zIsLwoJDm1DXvKSd7ZFzxYG_ckGAgJHKzMTSJL34zcE8TY0so6kuYlSvzqoo3WYKez-KrTokd0FqT-4ht1nHrEmUYbcl1zUiAoMqs0uoD1NKxjcyYWJeocISIHw=s2048?key=c7mzVOqYhqFW5d4YUy2sKSkZ",
             "imageProperties": {
               "outline": {
                 "outlineFill": {
@@ -13753,7 +12525,7 @@
             "unit": "EMU"
           },
           "image": {
-            "contentUrl": "https://lh7-rt.googleusercontent.com/slidesz/AGV_vUfpF4xbFDyF1uY8BMIwLZompky-07Qnh0g4zys_V332smbzF1qtiPH8fTcZZf9BGywHmH7Qf_YHq7JBgYY04NnLPn4RhqS25NGpVGhOVQdz0xDp0rF-br2MeyrYA97D3QLZ5B8-NFo=s2048?key=c7mzVOqYhqFW5d4YUy2sKSkZ",
+            "contentUrl": "https://lh7-rt.googleusercontent.com/slidesz/AGV_vUc2dzornvK9rsA2zIsLwoJDm1DXvKSd7ZFzxYG_ckGAgJHKzMTSJL34zcE8TY0so6kuYlSvzqoo3WYKez-KrTokd0FqT-4ht1nHrEmUYbcl1zUiAoMqs0uoD1NKxjcyYWJeocISIHw=s2048?key=c7mzVOqYhqFW5d4YUy2sKSkZ",
             "imageProperties": {
               "outline": {
                 "outlineFill": {
@@ -25127,7 +23899,7 @@
     }
   ],
   "locale": "ja-JP",
-  "revisionId": "x__wFrGj4X3P4w",
+  "revisionId": "L2I2J1fGLWdfYQ",
   "notesMaster": {
     "objectId": "n",
     "pageType": "NOTES_MASTER",

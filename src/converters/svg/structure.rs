@@ -314,8 +314,16 @@ pub(crate) fn convert_slide_to_svg(
         r#"<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="{0}pt" height="{1}pt" viewBox="0 0 {0} {1}">"#,
         page_width_pt, page_height_pt
     )?;
-    // Optional: Add a <defs> section if needed later (e.g., for markers, patterns, filters)
-    // writeln!(svg_string, "  <defs></defs>")?;
+
+    // Font
+    writeln!(
+        svg_string,
+        r#"<defs>
+          <style type="text/css">
+            @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@100..900');
+         </style>
+        </defs>"#
+    )?;
 
     // --- Determine the Active Color Scheme ---
     // Hierarchy: Slide -> Layout -> Master -> Default (if none found)

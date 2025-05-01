@@ -555,8 +555,6 @@ fn convert_text_content_to_svg(
             DEFAULT_FONT_SIZE_PT * 1.2
         };
 
-        let start_index = element.start_index.unwrap_or(0); // Use 0 if missing
-
         match &element.kind {
             Some(TextElementKind::ParagraphMarker(pm)) => {
                 if !first_line_in_paragraph {
@@ -1117,23 +1115,37 @@ fn convert_page_element_to_svg(
             }
             write!(svg_output, "</g>")?; // Close group <g>
         }
-        PageElementKind::Image(_) => {
+        PageElementKind::Image(image_data) => {
             // Placeholder for Image (unchanged, no colors to resolve)
             let mut img_attrs = String::new();
             let (tx, ty, _) = apply_transform(element.transform.as_ref(), &mut img_attrs)?;
             let width = dimension_to_pt(element.size.as_ref().and_then(|s| s.width.as_ref()));
             let height = dimension_to_pt(element.size.as_ref().and_then(|s| s.height.as_ref()));
-            write!(
-                svg_output,
-                r#"<rect x="{}" y="{}" width="{}" height="{}" {} style="fill:#e0e0e0; stroke:gray; fill-opacity:0.5;" />"#,
-                tx, ty, width, height, img_attrs
-            )?;
-            write!(
-                svg_output,
-                r#"<text x="{}" y="{}" dy="1em" style="font-size:8pt; fill:gray;">Image Placeholder</text>"#,
-                tx + 2.0,
-                ty + 2.0
-            )?;
+
+            println!("{image_data:#?}");
+
+            if let Some(url) = &image_data.content_url {
+                // Render the actual image using the contentUrl
+                write!(
+                    svg_output,
+                    // preserveAspectRatio helps the image scale nicely within the bounds
+                    r#"<image x="{}" y="{}" width="{}" height="{}" href="{}"{} preserveAspectRatio="xMidYMid meet" />"#,
+                    tx, ty, width, height, url, img_attrs
+                )?;
+            } else {
+                // Fallback if no URL is provided - render a placeholder rectangle
+                write!(
+                    svg_output,
+                    r#"<rect x="{}" y="{}" width="{}" height="{}" {} style="fill:#e0e0e0; stroke:gray; fill-opacity:0.5;" />"#,
+                    tx, ty, width, height, img_attrs
+                )?;
+                write!(
+                    svg_output,
+                    r#"<text x="{}" y="{}" dy="1em" style="font-size:8pt; fill:gray;">Image (No URL)</text>"#,
+                    tx + 2.0,
+                    ty + 2.0
+                )?;
+            }
         }
         PageElementKind::Line(_) => {
             // Placeholder for Line (unchanged, stroke handled differently if needed)

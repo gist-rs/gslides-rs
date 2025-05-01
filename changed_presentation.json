@@ -34,7 +34,7 @@
           },
           "description": "A group of people crossing a street\n\nDescription automatically generated",
           "image": {
-            "contentUrl": "https://lh7-rt.googleusercontent.com/slidesz/AGV_vUcOYDt8ZsxnpH5Azjkh-PjLAnvP8MyutDVtWHtk1ncjfNZFtr_phxPv_0tX4UvPVerDHV0p2qX2yj6rG4D9l9Zustu57dyCfxS6C8dVtm4bF93hV0hOg8HR90dGnXO1DkUdZRZe7A=s2048?key=c7mzVOqYhqFW5d4YUy2sKSkZ",
+            "contentUrl": "https://lh7-rt.googleusercontent.com/slidesz/AGV_vUeuNdpVOedhU3Cjh3QgIg4YPki-jHMCCTHgt2B28f00WjL4XB8RIogk8vMI4luCZPf4DfvHC87gJNigd9T3Flz21TPZPlEJZK9aP4c364TLlZF7gjQQgYrCrlPo2eKz4U_XPpNKtw=s2048?key=c7mzVOqYhqFW5d4YUy2sKSkZ",
             "imageProperties": {
               "cropProperties": {
                 "leftOffset": -0,
@@ -685,7 +685,7 @@
             "unit": "EMU"
           },
           "image": {
-            "contentUrl": "https://lh7-rt.googleusercontent.com/slidesz/AGV_vUd_A99mDhekDLYxqm0E-CvYRtHYXj0faHD6nl_WjERS5ZTGQAHExRs_ajn50zQRfumqMq16_gzPHwhq9oo5o9nNe3Za8psaCkcMNaVGDVicK-pXRO7xgv3zV3xD6mjTtqyhH0QTH6o=s2048?key=c7mzVOqYhqFW5d4YUy2sKSkZ",
+            "contentUrl": "https://lh7-rt.googleusercontent.com/slidesz/AGV_vUfWX_uJuZYD_H4WXB-t5vX8niDBiqUWEtwmpJ3HfFcc_-xFFfEevKDj7rzkIlL3BIB8rg7XN8iDFQCKnr_QyQDpPDvfjCKg2LG7jfGBwZDIHSahLVs6HxYH3iHacQHeDxqpcoDiMKA=s2048?key=c7mzVOqYhqFW5d4YUy2sKSkZ",
             "imageProperties": {
               "outline": {
                 "outlineFill": {
@@ -1314,6 +1314,86 @@
                 "fontScale": 1
               }
             }
+          }
+        },
+        {
+          "objectId": "g3531e6d3f2f_1_28",
+          "size": {
+            "width": {
+              "magnitude": 3000000,
+              "unit": "EMU"
+            },
+            "height": {
+              "magnitude": 3000000,
+              "unit": "EMU"
+            }
+          },
+          "transform": {
+            "scaleY": 0.1958,
+            "translateX": 536650,
+            "translateY": 250375,
+            "unit": "EMU"
+          },
+          "line": {
+            "lineProperties": {
+              "lineFill": {
+                "solidFill": {
+                  "color": {
+                    "themeColor": "ACCENT6"
+                  },
+                  "alpha": 1
+                }
+              },
+              "weight": {
+                "magnitude": 22225,
+                "unit": "EMU"
+              },
+              "dashStyle": "SOLID",
+              "startArrow": "NONE",
+              "endArrow": "NONE"
+            },
+            "lineType": "STRAIGHT_CONNECTOR_1",
+            "lineCategory": "STRAIGHT"
+          }
+        },
+        {
+          "objectId": "g3531e6d3f2f_1_29",
+          "size": {
+            "width": {
+              "magnitude": 3000000,
+              "unit": "EMU"
+            },
+            "height": {
+              "magnitude": 3000000,
+              "unit": "EMU"
+            }
+          },
+          "transform": {
+            "scaleX": -0.196,
+            "translateX": 1277150,
+            "translateY": 990175,
+            "unit": "EMU"
+          },
+          "line": {
+            "lineProperties": {
+              "lineFill": {
+                "solidFill": {
+                  "color": {
+                    "themeColor": "ACCENT6"
+                  },
+                  "alpha": 1
+                }
+              },
+              "weight": {
+                "magnitude": 22225,
+                "unit": "EMU"
+              },
+              "dashStyle": "SOLID",
+              "startArrow": "NONE",
+              "endArrow": "NONE"
+            },
+            "lineType": "STRAIGHT_CONNECTOR_1",
+            "lineCategory": "STRAIGHT"
           }
         }
       ],
@@ -3640,7 +3720,7 @@
             "unit": "EMU"
           },
           "image": {
-            "contentUrl": "https://lh7-rt.googleusercontent.com/slidesz/AGV_vUfQ_QuQRrMQgF1mtY2nwAaSVtbRYwceNFtuO9XrKo2JRjHpExeetJ-p8Ny1EXek7rJuH3oxn9Odu3017rU-RFOsdm89LT5r6uarv9pbxLqz_vzFdaLKd0vpwcgHTHKTO0SyCj2BQ24=s2048?key=c7mzVOqYhqFW5d4YUy2sKSkZ",
+            "contentUrl": "https://lh7-rt.googleusercontent.com/slidesz/AGV_vUexqteiOGeb0qROWcFcBjyYXZkDPS_R8wKjwLJ4sUDli_zkCglC7og_5jhYQmu9OduiIhmDcmMxkP5nl5GPNiVaJ_kHJKkLUPEHn5s8K3B7Ci6H4oHEuYj7tMLD18VN49oNGs5q55E=s2048?key=c7mzVOqYhqFW5d4YUy2sKSkZ",
             "imageProperties": {
               "outline": {
                 "outlineFill": {
@@ -5468,7 +5548,7 @@
             "unit": "EMU"
           },
           "image": {
-            "contentUrl": "https://lh7-rt.googleusercontent.com/slidesz/AGV_vUdbFAwwSnVIKvH1V7HcCIHiaVojjrhT7AWD7rauptzFgKtzhfESGiTet5FZgQn0wQFoKPHgScKNcgdkJiy9qbj7uVaNK7u9yiP_sSob2pbP_dW9iR1-zxA0i7VSbgWdzG1hF81rLnI=s2048?key=c7mzVOqYhqFW5d4YUy2sKSkZ",
+            "contentUrl": "https://lh7-rt.googleusercontent.com/slidesz/AGV_vUdFEkTK8g68Rhl4jx_zccs9jVk88Wldx89PYRs92QWenTxnmM-9PVujYfe36ODzq4iJle5eLGJoRZa2XuC9REQYNz_MlF24M1KVGfsph1ppALCJbRtcWH4AoT7N6MmucKp7Y48ZABg=s2048?key=c7mzVOqYhqFW5d4YUy2sKSkZ",
             "imageProperties": {
               "outline": {
                 "outlineFill": {
@@ -5759,7 +5839,7 @@
             "unit": "EMU"
           },
           "image": {
-            "contentUrl": "https://lh7-rt.googleusercontent.com/slidesz/AGV_vUeosTDGjTENPdF-9z856segwKa70kbm7j4FQCQvBoa5kvj6yr9fDjHqboMW9d3fCToXvA6SYUZOcgMlPWTtF3hSiRvUFaI6OpgriQWYHR2-ah1HfZhDPZ0iLxWM9mawXcrhLQ6S8_4=s2048?key=c7mzVOqYhqFW5d4YUy2sKSkZ",
+            "contentUrl": "https://lh7-rt.googleusercontent.com/slidesz/AGV_vUfpF4xbFDyF1uY8BMIwLZompky-07Qnh0g4zys_V332smbzF1qtiPH8fTcZZf9BGywHmH7Qf_YHq7JBgYY04NnLPn4RhqS25NGpVGhOVQdz0xDp0rF-br2MeyrYA97D3QLZ5B8-NFo=s2048?key=c7mzVOqYhqFW5d4YUy2sKSkZ",
             "imageProperties": {
               "outline": {
                 "outlineFill": {
@@ -11492,7 +11572,7 @@
             "unit": "EMU"
           },
           "image": {
-            "contentUrl": "https://lh7-rt.googleusercontent.com/slidesz/AGV_vUeosTDGjTENPdF-9z856segwKa70kbm7j4FQCQvBoa5kvj6yr9fDjHqboMW9d3fCToXvA6SYUZOcgMlPWTtF3hSiRvUFaI6OpgriQWYHR2-ah1HfZhDPZ0iLxWM9mawXcrhLQ6S8_4=s2048?key=c7mzVOqYhqFW5d4YUy2sKSkZ",
+            "contentUrl": "https://lh7-rt.googleusercontent.com/slidesz/AGV_vUfpF4xbFDyF1uY8BMIwLZompky-07Qnh0g4zys_V332smbzF1qtiPH8fTcZZf9BGywHmH7Qf_YHq7JBgYY04NnLPn4RhqS25NGpVGhOVQdz0xDp0rF-br2MeyrYA97D3QLZ5B8-NFo=s2048?key=c7mzVOqYhqFW5d4YUy2sKSkZ",
             "imageProperties": {
               "outline": {
                 "outlineFill": {
@@ -13673,7 +13753,7 @@
             "unit": "EMU"
           },
           "image": {
-            "contentUrl": "https://lh7-rt.googleusercontent.com/slidesz/AGV_vUeosTDGjTENPdF-9z856segwKa70kbm7j4FQCQvBoa5kvj6yr9fDjHqboMW9d3fCToXvA6SYUZOcgMlPWTtF3hSiRvUFaI6OpgriQWYHR2-ah1HfZhDPZ0iLxWM9mawXcrhLQ6S8_4=s2048?key=c7mzVOqYhqFW5d4YUy2sKSkZ",
+            "contentUrl": "https://lh7-rt.googleusercontent.com/slidesz/AGV_vUfpF4xbFDyF1uY8BMIwLZompky-07Qnh0g4zys_V332smbzF1qtiPH8fTcZZf9BGywHmH7Qf_YHq7JBgYY04NnLPn4RhqS25NGpVGhOVQdz0xDp0rF-br2MeyrYA97D3QLZ5B8-NFo=s2048?key=c7mzVOqYhqFW5d4YUy2sKSkZ",
             "imageProperties": {
               "outline": {
                 "outlineFill": {
@@ -25047,7 +25127,7 @@
     }
   ],
   "locale": "ja-JP",
-  "revisionId": "SkzRhUxkdHV9IA",
+  "revisionId": "x__wFrGj4X3P4w",
   "notesMaster": {
     "objectId": "n",
     "pageType": "NOTES_MASTER",

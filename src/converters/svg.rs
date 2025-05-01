@@ -4,12 +4,14 @@ use crate::models::{
     },
     common::{AffineTransform, Dimension, Size, Unit},
     elements::{PageElement, PageElementKind},
+    line::{LineFill, LineFillContent},
     page::Page,
     page_properties::PageBackgroundFill,
     placeholder::Placeholder,
     presentation::Presentation,
     properties::{Alignment, ParagraphStyle, TextStyle},
     shape::Shape,
+    shape_properties::DashStyle,
     table::Table,
     text::TextContent,
     text_element::TextElementKind,
@@ -1122,8 +1124,6 @@ fn convert_page_element_to_svg(
             let width = dimension_to_pt(element.size.as_ref().and_then(|s| s.width.as_ref()));
             let height = dimension_to_pt(element.size.as_ref().and_then(|s| s.height.as_ref()));
 
-            println!("{image_data:#?}");
-
             if let Some(url) = &image_data.content_url {
                 // Render the actual image using the contentUrl
                 write!(
@@ -1147,29 +1147,137 @@ fn convert_page_element_to_svg(
                 )?;
             }
         }
-        PageElementKind::Line(_) => {
-            // Placeholder for Line (unchanged, stroke handled differently if needed)
-            let mut line_attrs = String::new();
-            let (tx, ty, _) = apply_transform(element.transform.as_ref(), &mut line_attrs)?;
-            let width = dimension_to_pt(element.size.as_ref().and_then(|s| s.width.as_ref()));
-            let height = dimension_to_pt(element.size.as_ref().and_then(|s| s.height.as_ref()));
-            // TODO: Handle line color / stroke properties properly using color_scheme
-            let line_color = DEFAULT_TEXT_COLOR; // Placeholder
+        PageElementKind::Line(line_data) => {
+            let mut line_style = String::new();
+            let mut x1 = 0.0;
+            let mut y1 = 0.0;
+            let mut x2 = 0.0;
+            let mut y2 = 0.0;
+
+            // 1. Calculate Transformed Coordinates using the Affine Transform
+            // Assume the line's base definition is from (0,0) to (W, H) in its local coordinate system,
+            // where W and H are derived from the 'size' field. The transform maps these local
+            // coordinates to the final page coordinates.
+            let W_pt = dimension_to_pt(element.size.as_ref().and_then(|s| s.width.as_ref()));
+            let H_pt = dimension_to_pt(element.size.as_ref().and_then(|s| s.height.as_ref()));
+
+            if let Some(tf) = element.transform.as_ref() {
+                // Extract matrix components (a, b, c, d, e, f) for SVG transform="matrix(...)"
+                // a = scaleX, b = shearY, c = shearX, d = scaleY, e = translateX, f = translateY
+                let a = tf.scale_x.unwrap_or(0.0);
+                let b = tf.shear_y.unwrap_or(0.0);
+                let c = tf.shear_x.unwrap_or(0.0);
+                let d = tf.scale_y.unwrap_or(0.0);
+                // Convert translation components to points using the transform's unit
+                let e = dimension_to_pt(Some(&Dimension {
+                    magnitude: tf.translate_x,
+                    unit: tf.unit.clone(),
+                }));
+                let f = dimension_to_pt(Some(&Dimension {
+                    magnitude: tf.translate_y,
+                    unit: tf.unit.clone(),
+                }));
+
+                // Apply the affine transformation matrix [a c e / b d f / 0 0 1]
+                // to the start point (0, 0) and end point (W_pt, H_pt) of the local line.
+
+                // Transformed start point (local 0, 0):
+                x1 = a * 0.0 + c * 0.0 + e; // = e
+                y1 = b * 0.0 + d * 0.0 + f; // = f
+
+                // Transformed end point (local W_pt, H_pt):
+                x2 = a * W_pt + c * H_pt + e;
+                y2 = b * W_pt + d * H_pt + f;
+            } else {
+                // If no transform is specified (unlikely for lines, but handle defensively),
+                // assume the line starts at (0,0) and its size directly defines the end point.
+                x1 = 0.0;
+                y1 = 0.0;
+                x2 = W_pt;
+                y2 = H_pt;
+                eprintln!(
+                    "Warning: Line element {} lacks a transform. Coordinates might be incorrect.",
+                    element.object_id
+                );
+            }
+
+            // 2. Apply Line Properties from line_data.line_properties to SVG style attribute
+            if let Some(props) = &line_data.line_properties {
+                // Stroke Color and Opacity using lineFill
+                let mut stroke_color = DEFAULT_TEXT_COLOR.to_string(); // Default stroke color
+                let mut stroke_opacity = 1.0; // Default opacity
+
+                if let Some(line_fill) = &props.line_fill {
+                    // Check the type of fill (e.g., SolidFill)
+                    match line_fill.fill_kind.clone() {
+                        LineFillContent::SolidFill(solid_fill) => {
+                            // solid_fill.color is Option<OpaqueColor>
+                            if let Some(opaque_color) = solid_fill.color.as_ref() {
+                                // format_color resolves RGB or ThemeColor using the color_scheme
+                                stroke_color = format_color(Some(opaque_color), color_scheme);
+                            }
+                            // Alpha is directly available in SolidFill
+                            stroke_opacity = solid_fill.alpha.unwrap_or(1.0);
+                        }
+                        // TODO: Handle other LineFill types like None or Gradient if needed.
+                        // Gradients on strokes are possible but more complex.
+                        _ => { /* Use default color and opacity */ }
+                    }
+                }
+                write!(line_style, "stroke:{}; ", stroke_color)?;
+                write!(line_style, "stroke-opacity:{}; ", stroke_opacity)?;
+
+                // Stroke Weight
+                let stroke_width_pt = dimension_to_pt(props.weight.as_ref());
+                // Use minimum 1pt width if calculation results in 0 or less, or if unspecified
+                let effective_stroke_width = if stroke_width_pt > 0.0 {
+                    stroke_width_pt
+                } else {
+                    1.0
+                };
+                write!(line_style, "stroke-width:{}pt; ", effective_stroke_width)?;
+
+                // Dash Style
+                if let Some(dash_style) = &props.dash_style {
+                    let dash_array = match dash_style {
+                        DashStyle::Solid => "none", // SVG default, 'none' explicitly works too
+                        DashStyle::Dash => "4 4",   // Example: Equal dash and gap
+                        DashStyle::Dot => "1 4",    // Example: Small dot, larger gap
+                        DashStyle::DashDot => "4 4 1 4", // Example pattern
+                        DashStyle::LongDash => "8 4", // Example: Longer dash
+                        DashStyle::LongDashDot => "8 4 1 4", // Example pattern
+                        // Add mappings for any other DashStyle variants defined in your models
+                        _ => "none", // Default to solid for unknown styles
+                    };
+                    // Only add the attribute if it's not the default 'none'
+                    if dash_array != "none" {
+                        write!(line_style, "stroke-dasharray:{}; ", dash_array)?;
+                    }
+                }
+
+                // Arrow Heads (Future Enhancement - Requires SVG <marker> definitions)
+                // Example placeholder comment:
+                // if props.start_arrow.is_some() && props.start_arrow != Some(ArrowStyle::None) { /* TODO: Add marker-start="url(#arrowhead)" */ }
+                // if props.end_arrow.is_some() && props.end_arrow != Some(ArrowStyle::None) { /* TODO: Add marker-end="url(#arrowhead)" */ }
+            } else {
+                // Default style if no lineProperties are defined
+                write!(
+                    line_style,
+                    "stroke:{}; stroke-width:1pt; stroke-opacity:1.0; ",
+                    DEFAULT_TEXT_COLOR
+                )?;
+            }
+
+            // 3. Write the SVG <line> element
+            // The coordinates (x1, y1, x2, y2) are already transformed, so no 'transform' attribute is applied here.
             write!(
                 svg_output,
-                r#"<line x1="{}" y1="{}" x2="{}" y2="{}" {} style="stroke:{}; stroke-width:1;" />"#,
-                tx,
-                ty,
-                tx + width,
-                ty + height,
-                line_attrs,
-                line_color
-            )?;
-            write!(
-                svg_output,
-                r#"<text x="{}" y="{}" dy="1em" style="font-size:8pt; fill:gray;">Line Placeholder</text>"#,
-                tx + 2.0,
-                ty + 2.0
+                r#"<line x1="{}" y1="{}" x2="{}" y2="{}" style="{}" />"#,
+                x1,
+                y1,
+                x2,
+                y2,
+                line_style.trim_end() // Trim trailing space from style string
             )?;
         }
         _ => {

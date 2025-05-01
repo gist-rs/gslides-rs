@@ -1102,7 +1102,7 @@ fn convert_page_element_to_svg(
         PageElementKind::ElementGroup(group) => {
             let mut group_attrs = String::new();
             apply_transform(element.transform.as_ref(), &mut group_attrs)?;
-            writeln!(svg_output, "<g{}> <!-- Start Group -->", group_attrs)?; // Apply transform to group <g>
+            writeln!(svg_output, "<g{}>", group_attrs)?; // Apply transform to group <g>
 
             for child_element in &group.children {
                 convert_page_element_to_svg(
@@ -1115,7 +1115,7 @@ fn convert_page_element_to_svg(
                     svg_output,
                 )?;
             }
-            write!(svg_output, "</g> <!-- End Group -->")?; // Close group <g>
+            write!(svg_output, "</g>")?; // Close group <g>
         }
         PageElementKind::Image(_) => {
             // Placeholder for Image (unchanged, no colors to resolve)

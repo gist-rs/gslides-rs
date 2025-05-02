@@ -2,7 +2,7 @@
 //! including building lookup maps, resolving inheritance (placeholders),
 //! and converting slides.
 
-use log::{debug, warn};
+use log::{debug, info, warn};
 
 use super::{
     constants::*,
@@ -188,9 +188,43 @@ pub(crate) fn get_placeholder_default_text_style(
 
     if let Some(shape) = placeholder_element.element_kind.as_shape() {
         if let Some(text) = &shape.text {
-            // --- Strategy 1 (Original Priority): Use List Style for Nesting Level 0 ---
+            // --- Strategy 1 (New Priority): Use the style of the first TextRun ---
+            // This is often the most representative style for the placeholder's base text.
             debug!(
-                "[get_placeholder_default_text_style] Placeholder '{}': Trying List/Bullet style lookup.",
+                "[get_placeholder_default_text_style] Placeholder '{}': Trying first TextRun style lookup.",
+                 placeholder_element.object_id
+             );
+            if let Some(text_elements) = &text.text_elements {
+                if let Some(first_tr_style) =
+                    text_elements
+                        .iter()
+                        .find_map(|element| match &element.kind {
+                            Some(TextElementKind::TextRun(tr)) => tr.style.as_ref(),
+                            _ => None,
+                        })
+                {
+                    debug!(
+                        "[get_placeholder_default_text_style] Placeholder '{}': SUCCESS using first TextRun style: {:?}",
+                         placeholder_element.object_id, first_tr_style
+                     );
+                    return Some(first_tr_style.clone()); // Return this style
+                } else {
+                    debug!(
+                        "[get_placeholder_default_text_style] Placeholder '{}': No styled TextRun found.",
+                         placeholder_element.object_id
+                     );
+                }
+            } else {
+                debug!(
+                    "[get_placeholder_default_text_style] Placeholder '{}': No text elements found for TextRun lookup.",
+                     placeholder_element.object_id
+                 );
+            }
+
+            // --- Strategy 2 (Fallback): Use List Style for Nesting Level 0 ---
+            // If no TextRun style was found, check if there's list information we can use.
+            debug!(
+                "[get_placeholder_default_text_style] Placeholder '{}': Falling back to List/Bullet style lookup.",
                  placeholder_element.object_id
              );
             let list_info: Option<(&String, i32)> =
@@ -222,7 +256,7 @@ pub(crate) fn get_placeholder_default_text_style(
                         .and_then(|level_0_props| level_0_props.bullet_style.as_ref())
                     {
                         debug!(
-                            "[get_placeholder_default_text_style] Placeholder '{}': SUCCESS using list '{}', level 0: {:?}",
+                            "[get_placeholder_default_text_style] Placeholder '{}': SUCCESS using fallback list '{}', level 0: {:?}",
                              placeholder_element.object_id, list_id, level_0_style
                          );
                         return Some(level_0_style.clone()); // Return this style
@@ -232,44 +266,32 @@ pub(crate) fn get_placeholder_default_text_style(
                               placeholder_element.object_id, list_id
                          );
                     }
+                } else {
+                    debug!(
+                        "[get_placeholder_default_text_style] Placeholder '{}': Found list_id '{}', but text.lists is None.",
+                          placeholder_element.object_id, list_id
+                     );
                 }
             } else {
                 debug!(
-                    "[get_placeholder_default_text_style] Placeholder '{}': No ParagraphMarker with list info found.",
+                    "[get_placeholder_default_text_style] Placeholder '{}': No ParagraphMarker with list info found for fallback.",
                       placeholder_element.object_id
                  );
             }
-
-            // --- Strategy 2 (Fallback): Use the style of the first TextRun ---
+        } else {
             debug!(
-                "[get_placeholder_default_text_style] Placeholder '{}': Falling back to first TextRun style lookup.",
-                 placeholder_element.object_id
-             );
-            if let Some(text_elements) = &text.text_elements {
-                if let Some(first_tr_style) =
-                    text_elements
-                        .iter()
-                        .find_map(|element| match &element.kind {
-                            Some(TextElementKind::TextRun(tr)) => tr.style.as_ref(),
-                            _ => None,
-                        })
-                {
-                    debug!(
-                        "[get_placeholder_default_text_style] Placeholder '{}': SUCCESS using fallback TextRun style: {:?}",
-                         placeholder_element.object_id, first_tr_style
-                     );
-                    return Some(first_tr_style.clone());
-                } else {
-                    debug!(
-                        "[get_placeholder_default_text_style] Placeholder '{}': No styled TextRun found for fallback.",
-                         placeholder_element.object_id
-                     );
-                }
-            }
+                "[get_placeholder_default_text_style] Placeholder '{}': Shape has no text content.",
+                placeholder_element.object_id
+            );
         }
+    } else {
+        debug!(
+            "[get_placeholder_default_text_style] Placeholder '{}': Element is not a Shape.",
+            placeholder_element.object_id
+        );
     }
 
-    warn!( // Keep as warn if no style is found at all
+    warn!( // Keep as warn if no style is found at all after trying both strategies
         "[get_placeholder_default_text_style] No default text style could be determined for placeholder '{}'.",
          placeholder_element.object_id
      );

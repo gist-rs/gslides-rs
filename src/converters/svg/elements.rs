@@ -1,7 +1,7 @@
 //! Handles the conversion of specific `PageElement` types (Shape, Table, Group, Line, Image)
 //! into their corresponding SVG representations.
 
-use log::{debug, warn};
+use log::{debug, info, warn};
 
 use super::{
     constants::*,
@@ -335,6 +335,7 @@ fn convert_shape_to_svg(
     // --- Resolve Inherited Text Styles ---
     let mut effective_text_style_base = TextStyle::default();
     let mut effective_paragraph_style: Option<ParagraphStyle> = None;
+
     if let Some(placeholder) = &shape.placeholder {
         if let Some(layout_id) = slide_layout_id {
             if let Some(placeholder_element) = find_placeholder_element(
@@ -349,13 +350,17 @@ fn convert_shape_to_svg(
                 {
                     effective_text_style_base = placeholder_base_style;
                 }
+
                 if let Some(placeholder_shape) = placeholder_element.element_kind.as_shape() {
                     if let Some(text) = &placeholder_shape.text {
                         if let Some(elements) = &text.text_elements {
-                            for element in elements {
-                                if let Some(TextElementKind::ParagraphMarker(pm)) = &element.kind {
+                            for text_element in elements {
+                                if let Some(TextElementKind::ParagraphMarker(pm)) =
+                                    &text_element.kind
+                                {
                                     if let Some(style) = &pm.style {
                                         effective_paragraph_style = Some(style.clone());
+
                                         break;
                                     }
                                 }

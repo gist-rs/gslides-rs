@@ -10,7 +10,7 @@ use super::{
         find_placeholder_element, get_placeholder_default_text_style, ElementsMap, LayoutsMap,
         MastersMap,
     },
-    text::convert_text_content_to_html, // Keep this import
+    text::{convert_text_content_to_html, merge_paragraph_styles}, // Keep this import
     utils::{apply_transform, dimension_to_pt, escape_svg_text, format_color, AsShape},
 };
 use crate::models::{
@@ -335,7 +335,8 @@ fn convert_shape_to_svg(
 
     // --- Resolve Inherited Text Styles ---
     let mut effective_text_style_base = TextStyle::default();
-    let mut effective_paragraph_style: Option<ParagraphStyle> = None;
+    // Style from placeholder
+    let mut placeholder_paragraph_style: Option<ParagraphStyle> = None;
 
     if let Some(placeholder) = &shape.placeholder {
         if let Some(layout_id) = slide_layout_id {
@@ -352,6 +353,7 @@ fn convert_shape_to_svg(
                     effective_text_style_base = placeholder_base_style;
                 }
 
+                // Extract paragraph style from the placeholder element
                 if let Some(placeholder_shape) = placeholder_element.element_kind.as_shape() {
                     if let Some(text) = &placeholder_shape.text {
                         if let Some(elements) = &text.text_elements {
@@ -360,8 +362,8 @@ fn convert_shape_to_svg(
                                     &text_element.kind
                                 {
                                     if let Some(style) = &pm.style {
-                                        effective_paragraph_style = Some(style.clone());
-
+                                        placeholder_paragraph_style = Some(style.clone());
+                                        // Found the first paragraph style in placeholder
                                         break;
                                     }
                                 }
@@ -394,17 +396,26 @@ fn convert_shape_to_svg(
         let text_padding_left = 3.0;
 
         if width_pt > 0.0 && height_pt > 0.0 {
-            let mut final_para_style = effective_paragraph_style.clone();
+            // Find the shape's own primary paragraph style (if any)
+            let mut shape_paragraph_style: Option<ParagraphStyle> = None;
             if let Some(elements) = &text.text_elements {
                 for element in elements {
                     if let Some(TextElementKind::ParagraphMarker(pm)) = &element.kind {
                         if let Some(style) = &pm.style {
-                            final_para_style = Some(style.clone());
+                            shape_paragraph_style = Some(style.clone());
+                            // Use the first paragraph style found in the shape itself
                             break;
                         }
                     }
                 }
             }
+
+            // Merge the shape's style onto the placeholder's style
+            // This merged style becomes the initial style for the text content rendering
+            let final_initial_para_style = merge_paragraph_styles(
+                shape_paragraph_style.as_ref(),
+                placeholder_paragraph_style.as_ref(), // Pass Option<&ParagraphStyle>
+            );
 
             // *** Extract font_scale from shape properties ***
             let font_scale = shape
@@ -440,10 +451,10 @@ fn convert_shape_to_svg(
                 div_padding_style
             )?;
 
-            // *** Pass the extracted font_scale to the HTML converter ***
+            // *** Pass the merged initial paragraph style to the HTML converter ***
             convert_text_content_to_html(
                 text,
-                final_para_style.as_ref(),
+                Some(&final_initial_para_style), // Pass the merged initial style
                 &effective_text_style_base,
                 color_scheme,
                 font_scale, // Pass the extracted font_scale here

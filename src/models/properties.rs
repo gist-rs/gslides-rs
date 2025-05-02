@@ -136,7 +136,7 @@ pub enum SpacingMode {
 /// Styles that apply to a whole paragraph.
 /// If properties are unset, they may be inherited from a parent placeholder.
 /// Derived from: https://developers.google.com/slides/api/reference/rest/v1/presentations.pages/text#ParagraphStyle
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Default)]
 #[serde(rename_all = "camelCase")]
 pub struct ParagraphStyle {
     /// The text alignment for this paragraph.

@@ -6,7 +6,6 @@ use serde::{Deserialize, Serialize};
 use crate::models::elements::PageElement;
 use crate::models::page_properties::PageProperties; // Renamed from 'properties' for clarity if desired, ensure import matches file name
 use crate::models::properties::{
-    // Assuming specific props remain in properties.rs
     LayoutProperties,
     MasterProperties,
     NotesProperties,

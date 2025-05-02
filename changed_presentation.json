@@ -155,10 +155,17 @@
                   "textRun": {
                     "content": "123\n",
                     "style": {
+                      "backgroundColor": {
+                        "opaqueColor": {
+                          "rgbColor": {
+                            "blue": 1
+                          }
+                        }
+                      },
                       "foregroundColor": {
                         "opaqueColor": {
                           "rgbColor": {
-                            "green": 1
+                            "red": 1
                           }
                         }
                       },
@@ -10318,7 +10325,7 @@
     }
   ],
   "locale": "en",
-  "revisionId": "NWWhqjvV1JnU1g",
+  "revisionId": "CHHgbDHLsQ8bOA",
   "notesMaster": {
     "objectId": "n",
     "pageType": "NOTES_MASTER",

@@ -69,7 +69,7 @@ pub struct Autofit {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub autofit_type: Option<AutofitType>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub font_scale: Option<f32>,
+    pub font_scale: Option<f64>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub line_spacing_reduction: Option<f32>,
 }

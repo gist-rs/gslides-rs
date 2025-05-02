@@ -197,6 +197,7 @@ fn convert_shape_to_svg(
     let height_pt = dimension_to_pt(size.and_then(|s| s.height.as_ref()));
 
     // --- Handle Transform ---
+    // ... (transform handling remains the same) ...
     let mut outer_group_transform_attr = String::new();
     let mut geometry_transform_attr = String::new();
     let mut tx_pt = 0.0;
@@ -405,12 +406,27 @@ fn convert_shape_to_svg(
                 }
             }
 
+            // *** Extract font_scale from shape properties ***
+            let font_scale = shape
+                .shape_properties
+                .as_ref()
+                .map(|props| &props.autofit)
+                .and_then(|autofit_ref| autofit_ref.font_scale);
+
+            // Debug log the extracted font_scale
+            if font_scale.is_some() {
+                debug!(
+                    "Shape ID {}: Applying font_scale: {:?}",
+                    element_id, font_scale
+                );
+            }
+
             // Create <foreignObject> inside the outer group. Use base width/height.
             writeln!(
                 svg_output,
                 r#"  <foreignObject x="0" y="0" width="{}" height="{}" overflow="visible">"#,
-                scale_x * width_pt,
-                scale_y * height_pt // Use BASE dimensions here
+                scale_x * width_pt, // Use BASE dimensions here
+                scale_y * height_pt
             )?;
 
             let div_padding_style = format!(
@@ -424,11 +440,13 @@ fn convert_shape_to_svg(
                 div_padding_style
             )?;
 
+            // *** Pass the extracted font_scale to the HTML converter ***
             convert_text_content_to_html(
                 text,
                 final_para_style.as_ref(),
                 &effective_text_style_base,
                 color_scheme,
+                font_scale, // Pass the extracted font_scale here
                 svg_output,
             )?;
 
@@ -448,8 +466,6 @@ fn convert_shape_to_svg(
 
     Ok(())
 }
-
-// ... (rest of elements.rs remains the same, including convert_table_to_svg, convert_image_to_svg, etc.)
 
 /// Converts a Table element to SVG using `<foreignObject>` to embed styled HTML content.
 /// Handles transform, size, basic cell styling (border, background), and cell text content.
@@ -568,6 +584,7 @@ fn convert_table_to_svg(
                             cell_para_style.as_ref(),
                             &cell_text_style_base,
                             color_scheme,
+                            None,
                             svg_output,
                         )?;
                     } else {

@@ -314,11 +314,10 @@ pub(crate) fn merge_text_styles(
     merged
 }
 
-// Keep convert_text_content_to_svg for potential future use or other element types
-// that might benefit from native SVG text, but it's no longer called by convert_shape_to_svg.
 /// Converts the `TextContent` of a shape or table cell into SVG `<text>` and `<tspan>` elements.
 /// Handles basic paragraph breaks, text runs with styling, and alignment.
 /// Applies inheritance logic for text styles (placeholder -> paragraph -> text run).
+/// Takes into account a global font scale factor.
 ///
 /// Note: This implementation uses a simplified approach for line breaks and positioning.
 /// It creates a new `<text>` element for the start of each paragraph (after a ParagraphMarker
@@ -333,6 +332,7 @@ pub(crate) fn merge_text_styles(
 /// * `transform_x`, `transform_y` - Top-left corner coordinates (in points) for the text block.
 /// * `element_width`, `element_height` - Dimensions (in points) of the text block container. `element_height` is currently unused.
 /// * `color_scheme` - The active `ColorScheme` for resolving theme colors.
+/// * `font_scale` - An optional multiplier for all font sizes within this text content.
 /// * `svg_output` - Mutable string buffer to append the generated SVG markup.
 ///
 /// # Returns
@@ -347,12 +347,14 @@ pub(crate) fn convert_text_content_to_svg(
     element_width: f64,
     _element_height: f64, // Currently unused, could be used for vertical alignment/clipping
     color_scheme: Option<&ColorScheme>,
+    font_scale: Option<f64>, // Added font_scale parameter
     svg_output: &mut String,
 ) -> Result<()> {
     let text_elements = match &text_content.text_elements {
         Some(elements) => elements,
         None => return Ok(()), // No text elements, nothing to render
     };
+    let scale = font_scale.unwrap_or(1.0);
 
     // --- State for tracking paragraphs and vertical position ---
     // Base text style for the *current* paragraph (can be modified by bullets)
@@ -364,14 +366,13 @@ pub(crate) fn convert_text_content_to_svg(
     let mut first_line_in_paragraph = true; // Flag to control creation of new <text> vs <tspan>
 
     for element in text_elements {
-        // Estimate line height based on the *current paragraph's base* font size.
-        // This allows line height to adapt if a bullet point changes the base size.
+        // Estimate line height based on the *current paragraph's base* font size, applying scale.
         let current_base_font_size_pt =
             dimension_to_pt(current_paragraph_base_style.font_size.as_ref());
         let line_height_pt = if current_base_font_size_pt > 0.0 {
-            current_base_font_size_pt * 1.2 // Simple line height estimate (120%)
+            (current_base_font_size_pt * scale) * 1.2 // Apply scale to base size for line height estimate
         } else {
-            DEFAULT_FONT_SIZE_PT * 1.2 // Fallback if base size is unknown
+            (DEFAULT_FONT_SIZE_PT * scale) * 1.2 // Apply scale to default
         };
 
         match &element.kind {
@@ -413,15 +414,15 @@ pub(crate) fn convert_text_content_to_svg(
                 let final_run_style =
                     merge_text_styles(tr.style.as_ref(), Some(&current_paragraph_base_style));
 
-                // Get the font size for this specific run for vertical alignment adjustment.
+                // Get the font size for this specific run, apply scale for vertical alignment adjustment.
                 let final_font_size_pt = dimension_to_pt(final_run_style.font_size.as_ref());
                 let effective_font_size_pt = if final_font_size_pt > 0.0 {
-                    final_font_size_pt
+                    final_font_size_pt * scale // Apply scale
                 } else {
-                    DEFAULT_FONT_SIZE_PT
+                    DEFAULT_FONT_SIZE_PT * scale // Apply scale to default
                 };
 
-                // Apply the final style to SVG attributes
+                // Apply the final style to SVG attributes, passing the scale factor
                 let mut text_style_attr = String::new();
                 apply_text_style(Some(&final_run_style), &mut text_style_attr, color_scheme)?;
 
@@ -436,9 +437,7 @@ pub(crate) fn convert_text_content_to_svg(
                         element_width,
                     )?;
 
-                    // Adjust y position for baseline alignment. SVG <text> y attribute sets the baseline.
-                    // Adding the font size shifts the baseline down, placing the text visually near the top.
-                    // This is a common convention but might need refinement based on font metrics.
+                    // Adjust y position for baseline alignment using scaled font size.
                     let y_pos = current_y + effective_font_size_pt;
 
                     // Write the opening <text> tag with position, alignment, and style.
@@ -462,16 +461,8 @@ pub(crate) fn convert_text_content_to_svg(
                         first_line_in_paragraph = true; // Newline forces next run to start a new <text>
                     }
                 } else {
-                    // --- Handling of subsequent runs within the same line ---
-                    // This part is tricky in SVG without manual layout.
-                    // Option 1: Skip subsequent runs (current behavior). Leads to missing text.
-                    // Option 2: Append as <tspan> without explicit positioning. Might overlap or look wrong.
-                    // Option 3: Attempt to calculate dx/dy (complex).
+                    // ... handling of subsequent runs (likely skipped or using tspan) ...
                     eprintln!("Warning: Subsequent TextRuns on the same line currently skipped (Object ID context missing). Content: '{}'", content);
-                    // Example for Option 2 (uncomment if needed, but likely imperfect):
-                    // write!(svg_output, r#"<tspan style="{}">"#, text_style_attr.trim_end())?;
-                    // write_escaped_text_with_newlines(content, svg_output)?;
-                    // write!(svg_output, "</tspan>")?;
                     if content.ends_with('\n') {
                         current_y += line_height_pt;
                         first_line_in_paragraph = true;
@@ -488,12 +479,13 @@ pub(crate) fn convert_text_content_to_svg(
                 let final_autotext_style =
                     merge_text_styles(at.style.as_ref(), Some(&current_paragraph_base_style));
 
+                // Apply scale to AutoText font size
                 let final_autotext_font_size_pt =
                     dimension_to_pt(final_autotext_style.font_size.as_ref());
                 let effective_font_size_pt = if final_autotext_font_size_pt > 0.0 {
-                    final_autotext_font_size_pt
+                    final_autotext_font_size_pt * scale // Apply scale
                 } else {
-                    DEFAULT_FONT_SIZE_PT
+                    DEFAULT_FONT_SIZE_PT * scale // Apply scale to default
                 };
 
                 let mut text_style_attr = String::new();
@@ -511,7 +503,8 @@ pub(crate) fn convert_text_content_to_svg(
                         transform_x,
                         element_width,
                     )?;
-                    let y_pos = current_y + effective_font_size_pt; // Baseline adjustment
+                    // Use scaled font size for baseline adjustment
+                    let y_pos = current_y + effective_font_size_pt;
 
                     write!(
                         svg_output,
@@ -571,12 +564,14 @@ fn write_escaped_text_with_newlines(text: &str, svg_output: &mut String) -> Resu
 /// Styles TextRuns using inline CSS within `<span>` elements.
 /// Paragraph markers create `<p>` tags with alignment.
 /// Handles style inheritance (placeholder/base -> paragraph -> text run).
+/// Applies a global font scale factor to all text sizes.
 ///
 /// # Arguments
 /// * `text_content` - Reference to the `TextContent` containing text elements.
 /// * `effective_paragraph_style` - The initial `ParagraphStyle` (alignment) inherited.
 /// * `effective_text_style_base` - The base `TextStyle` (font, color) inherited.
 /// * `color_scheme` - The active `ColorScheme` for resolving theme colors.
+/// * `font_scale` - An optional multiplier for all font sizes within this text content.
 /// * `html_output` - Mutable string buffer to append the generated HTML markup.
 ///
 /// # Returns
@@ -587,6 +582,7 @@ pub(crate) fn convert_text_content_to_html(
     effective_paragraph_style: Option<&ParagraphStyle>, // Inherited alignment etc.
     effective_text_style_base: &TextStyle,              // Inherited base style
     color_scheme: Option<&ColorScheme>,
+    font_scale: Option<f64>, // Added font_scale parameter
     html_output: &mut String,
 ) -> Result<()> {
     let text_elements = match &text_content.text_elements {
@@ -681,11 +677,12 @@ pub(crate) fn convert_text_content_to_html(
                             // Avoid rendering vertical tab glyph
                             // Use paragraph base style for the bullet itself
                             let mut bullet_css = String::new();
-                            // Apply the *merged* paragraph base style to the bullet
+                            // Apply the *merged* paragraph base style to the bullet, passing scale
                             apply_html_text_style(
                                 Some(&current_paragraph_base_style),
                                 &mut bullet_css,
                                 color_scheme,
+                                font_scale, // Pass scale down
                             )?;
 
                             // Position bullet absolutely. Left offset calculation needs care.
@@ -761,9 +758,14 @@ pub(crate) fn convert_text_content_to_html(
                     final_run_style
                 );
 
-                // --- Apply Style to HTML Span ---
+                // --- Apply Style to HTML Span, passing scale ---
                 let mut span_style = String::new();
-                apply_html_text_style(Some(&final_run_style), &mut span_style, color_scheme)?;
+                apply_html_text_style(
+                    Some(&final_run_style),
+                    &mut span_style,
+                    color_scheme,
+                    font_scale, // Pass scale down
+                )?;
 
                 // --- Escape Content & Handle Newlines ---
                 // Replace internal newlines with <br/>. Need to be careful not to add extra space.
@@ -807,7 +809,13 @@ pub(crate) fn convert_text_content_to_html(
                 let final_autotext_style =
                     merge_text_styles(at.style.as_ref(), Some(&current_paragraph_base_style));
                 let mut span_style = String::new();
-                apply_html_text_style(Some(&final_autotext_style), &mut span_style, color_scheme)?;
+                // Apply style, passing scale
+                apply_html_text_style(
+                    Some(&final_autotext_style),
+                    &mut span_style,
+                    color_scheme,
+                    font_scale, // Pass scale down
+                )?;
 
                 let html_content = escape_html_text(content).replace('\n', "<br/>");
 
@@ -854,6 +862,7 @@ pub(crate) fn convert_text_content_to_html(
 /// * `style` - An optional reference to the `TextStyle` to apply.
 /// * `html_style` - A mutable string buffer to append CSS style properties.
 /// * `color_scheme` - An optional reference to the slide's `ColorScheme`.
+/// * `font_scale` - An optional multiplier for the font size (e.g., from shape autofit).
 ///
 /// # Returns
 /// A `Result<()>` indicating success or a formatting error.
@@ -861,6 +870,7 @@ fn apply_html_text_style(
     style: Option<&TextStyle>,
     html_style: &mut String,
     color_scheme: Option<&ColorScheme>,
+    font_scale: Option<f64>, // Added font_scale parameter
 ) -> Result<()> {
     if let Some(ts) = style {
         // Font Family
@@ -869,17 +879,15 @@ fn apply_html_text_style(
             "font-family:'{}'; ",
             ts.font_family.as_deref().unwrap_or(DEFAULT_FONT_FAMILY)
         )?;
-        // Font Size
-        let font_size_pt = dimension_to_pt(ts.font_size.as_ref());
-        write!(
-            html_style,
-            "font-size:{}pt; ",
-            if font_size_pt > 0.0 {
-                font_size_pt
-            } else {
-                DEFAULT_FONT_SIZE_PT
-            }
-        )?;
+        // Font Size (Apply font_scale)
+        let base_font_size_pt = dimension_to_pt(ts.font_size.as_ref());
+        let effective_font_size_pt = if base_font_size_pt > 0.0 {
+            base_font_size_pt * font_scale.unwrap_or(1.0) // Apply scale
+        } else {
+            DEFAULT_FONT_SIZE_PT * font_scale.unwrap_or(1.0) // Apply scale to default
+        };
+        write!(html_style, "font-size:{}pt; ", effective_font_size_pt)?;
+
         // Foreground Color (HTML 'color')
         let (fg_color, _) = format_optional_color(ts.foreground_color.as_ref(), color_scheme);
         if fg_color != "none" {
@@ -916,6 +924,8 @@ fn apply_html_text_style(
         // Baseline Offset (HTML 'vertical-align' + font-size adjustment)
         match ts.baseline_offset {
             Some(BaselineOffset::Superscript) => {
+                // Font size adjustment ('smaller') might interact strangely with scaled sizes.
+                // Consider omitting 'font-size:smaller' if scaling is applied, or test thoroughly.
                 write!(html_style, "vertical-align:super; font-size:smaller; ")?
             }
             Some(BaselineOffset::Subscript) => {

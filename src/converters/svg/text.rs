@@ -598,6 +598,7 @@ pub(crate) fn convert_text_content_to_html(
     let mut first_element_in_doc = true; // Track if it's the very first element
     let mut current_paragraph_base_style = effective_text_style_base.clone();
     let mut current_para_style_ref = effective_paragraph_style;
+    #[allow(unused_variables)]
     let mut list_nesting_level = 0; // Track list level for potential <ul><li> structure later
 
     for element in text_elements {

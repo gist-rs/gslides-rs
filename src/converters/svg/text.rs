@@ -1,7 +1,7 @@
 //! Functions for converting text content (TextContent, TextRun, ParagraphMarker)
 //! into SVG <text>/<tspan> elements or HTML for <foreignObject>, applying styles.
 
-use log::{debug, warn};
+use log::{debug, info, warn};
 
 use super::{
     constants::*,
@@ -886,9 +886,16 @@ fn apply_html_text_style(
             write!(html_style, "color:{}; ", fg_color)?;
         }
         // Background Color (HTML 'background-color')
-        let (bg_color, _) = format_optional_color(ts.background_color.as_ref(), color_scheme);
-        if bg_color != "none" {
-            write!(html_style, "background-color:{}; ", bg_color)?;
+        // Only apply background-color if it's explicitly set in the style.
+        if ts.background_color.is_some() {
+            info!("🔥 ts.background_color:{:#?}", ts.background_color);
+            let (bg_color, _) = format_optional_color(ts.background_color.as_ref(), color_scheme);
+            info!("🔥 bg_color:{:#?}", bg_color);
+            if bg_color != "none" {
+                write!(html_style, "background-color:{}; ", bg_color)?;
+            }
+        } else {
+            info!("🔥 ts.background_color is None, skipping background-color style.");
         }
         // Bold
         if ts.bold.unwrap_or(false) {

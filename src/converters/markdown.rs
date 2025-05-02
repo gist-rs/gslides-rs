@@ -12,7 +12,6 @@ use std::cmp::Ordering;
 use std::fmt::Write; // Import Write trait for formatting
 
 // --- Helper Function for Sorting ---
-// (get_translate_y and compare_elements_by_y remain the same)
 /// Extracts the translateY value from a PageElement's transform.
 /// Returns f64::MAX if transform or translateY is None, placing such elements last.
 pub fn get_translate_y(element: &PageElement) -> f64 {
@@ -31,8 +30,6 @@ pub fn compare_elements_by_y(a: &PageElement, b: &PageElement) -> Ordering {
 }
 
 // --- Text Extraction Logic ---
-// (extract_text_from_text_run, extract_text_from_text_content,
-//  extract_text_from_shape remain the same)
 /// Extracts text content from a single TextElement (specifically TextRun).
 pub fn extract_text_from_text_run(text_element: &ModelTextElement) -> Option<String> {
     if let Some(ModelTextElementKind::TextRun(text_run)) = &text_element.kind {

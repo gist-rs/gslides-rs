@@ -1,15 +1,25 @@
-<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="720pt" height="540pt" viewBox="0 0 720 540">
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="720pt" height="405pt" viewBox="0 0 720 405">
 <defs>
           <style type="text/css">
             @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@100..900');
          </style>
         </defs>
   <rect width="100%" height="100%" fill="#ffffff" />
-<g data-object-id="p1_i3" transform="translate(34.54385826771654 244.58519685039371)">
-  <rect x="0" y="0" width="236.2204724409449" height="236.2204724409449" style="fill:none; stroke:none;" transform="matrix(2.7522 0 0 0.1628 0 0)" />
-  <foreignObject x="0" y="0" width="650.1259842519686" height="38.45669291338583" overflow="visible">
+<g data-object-id="i0" transform="translate(24.54396453617126 58.62795275590551)">
+  <rect x="0" y="0" width="236.2204724409449" height="236.2204724409449" style="fill:none; stroke:none;" transform="matrix(2.8401999473571777 0 0 0.6841999888420105 0 0)" />
+  <foreignObject x="0" y="0" width="670.9133733914593" height="161.62204460834894" overflow="visible">
     <div xmlns="http://www.w3.org/1999/xhtml" style="width:100%; height:100%; box-sizing: border-box; padding: 2pt 3pt 2pt 3pt;">
-<p style="margin:0; padding:0; position:relative; text-align:center;"><span style="font-family:'Noto Sans JP'; font-size:18pt; color:#000000; font-weight:bold;">COVER PAGE FORMAT [ 2 Pattern ]<br/></span></p>
+<p style="margin:0; padding:0; position:relative; text-align:start;"><span style="font-family:'Noto Sans JP'; font-size:52pt; color:#ff0000;">こんにちは<br/></span></p>
+    </div>
+  </foreignObject>
+</g>
+
+<g data-object-id="i1" transform="translate(24.543307086614174 223.15944881889763)">
+  <rect x="0" y="0" width="236.2204724409449" height="236.2204724409449" style="fill:#ffab40; fill-opacity:1.00; stroke:none;" transform="matrix(2.8401999473571777 0 0 0.26420000195503235 0 0)" />
+  <foreignObject x="0" y="0" width="670.9133733914593" height="62.4094492807163" overflow="visible">
+    <div xmlns="http://www.w3.org/1999/xhtml" style="width:100%; height:100%; box-sizing: border-box; padding: 2pt 3pt 2pt 3pt;">
+<p style="margin:0; padding:0; position:relative; text-align:start;"><span style="font-family:'Noto Sans JP'; font-size:28pt; color:#00ff00;">世界<br/></span></p>
+<p style="margin:0; padding:0; position:relative; text-align:start;"><span style="font-family:'Noto Sans JP'; font-size:28pt; color:#00ff00;">123<br/></span></p>
     </div>
   </foreignObject>
 </g>

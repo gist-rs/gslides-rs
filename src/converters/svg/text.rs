@@ -646,6 +646,7 @@ pub(crate) fn convert_text_content_to_html(
     let mut temp_html_buffer = String::new();
 
     let mut paragraph_open = false;
+    #[allow(unused_variables)]
     let mut first_element_in_doc = true; // Track if it's the very first element
     let mut current_paragraph_base_style = effective_text_style_base.clone();
     // This will hold the fully resolved style for the <p> tag being opened
@@ -741,7 +742,6 @@ pub(crate) fn convert_text_content_to_html(
                                 bullet_css.trim_end(),
                                 escape_html_text(glyph)
                             )?;
-                            // ... (debug log) ...
                         }
                     }
                 }
@@ -759,18 +759,13 @@ pub(crate) fn convert_text_content_to_html(
 
             Some(TextElementKind::TextRun(tr)) => {
                 let content = tr.content.as_deref().unwrap_or("");
-                // ... (debug log) ...
 
                 // --- Ensure Paragraph is Open (write to temp buffer if needed) ---
                 if !paragraph_open {
                     warn!("[convert_text_content_to_html] TextRun found without an open paragraph! Starting one.");
                     let mut p_style = "margin:0; padding:0;".to_string();
-                    let ps = &current_paragraph_style;
-                    let text_align = match ps.alignment {
-                        /* ... */ _ => "start",
-                    };
+                    let text_align = "start";
                     write!(p_style, " text-align:{};", text_align)?;
-                    // ... (indentation logic) ...
                     write!(temp_html_buffer, "<p style=\"{}\">", p_style.trim_end())?; // Write to temp buffer
                     paragraph_open = true;
                 }
@@ -778,7 +773,6 @@ pub(crate) fn convert_text_content_to_html(
                 // --- Merge Styles ---
                 let final_run_style =
                     merge_text_styles(tr.style.as_ref(), Some(&current_paragraph_base_style));
-                // ... (debug log) ...
 
                 // --- Apply Style to HTML Span ---
                 let mut span_style = String::new();
@@ -804,7 +798,6 @@ pub(crate) fn convert_text_content_to_html(
                     } else {
                         write!(temp_html_buffer, "{}", html_content)?; // Write to temp buffer
                     }
-                    // ... (debug log) ...
                 }
                 first_element_in_doc = false;
             } // End TextRun handling
@@ -820,12 +813,8 @@ pub(crate) fn convert_text_content_to_html(
                 if !paragraph_open {
                     warn!("[convert_text_content_to_html] AutoText found without an open paragraph! Starting one.");
                     let mut p_style = "margin:0; padding:0;".to_string();
-                    let ps = &current_paragraph_style;
-                    let text_align = match ps.alignment {
-                        /* ... */ _ => "start",
-                    };
+                    let text_align = "start";
                     write!(p_style, " text-align:{};", text_align)?;
-                    // ... (indentation logic) ...
                     write!(temp_html_buffer, "<p style=\"{}\">", p_style.trim_end())?; // Write to temp buffer
                     paragraph_open = true;
                 }
@@ -856,7 +845,6 @@ pub(crate) fn convert_text_content_to_html(
                     } else {
                         write!(temp_html_buffer, "{}", html_content)?; // Write to temp buffer
                     }
-                    // ... (debug log) ...
                 }
                 first_element_in_doc = false;
             }

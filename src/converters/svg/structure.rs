@@ -2,7 +2,7 @@
 //! including building lookup maps, resolving inheritance (placeholders),
 //! and converting slides.
 
-use log::{debug, info, warn};
+use log::{debug, warn};
 
 use super::{
     constants::*,

@@ -1,7 +1,7 @@
 //! Handles the conversion of specific `PageElement` types (Shape, Table, Group, Line, Image)
 //! into their corresponding SVG representations.
 
-use log::{debug, info, warn};
+use log::{debug, warn};
 
 use super::{
     constants::*,
@@ -180,6 +180,7 @@ fn build_shape_style(
 /// # Returns
 /// `Result<()>`
 #[allow(clippy::too_many_arguments)]
+#[allow(unused_assignments)]
 fn convert_shape_to_svg(
     element_id: &str,
     shape: &Shape,
@@ -197,7 +198,6 @@ fn convert_shape_to_svg(
     let height_pt = dimension_to_pt(size.and_then(|s| s.height.as_ref()));
 
     // --- Handle Transform ---
-    // ... (transform handling remains the same) ...
     let mut outer_group_transform_attr = String::new();
     let mut geometry_transform_attr = String::new();
     let mut tx_pt = 0.0;

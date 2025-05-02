@@ -656,8 +656,6 @@ pub(crate) fn generate_readable_summary(
     } // End main loop processing changes
 
     // --- Final Summary Assembly ---
-    // ... (rest of the function remains the same) ...
-
     let final_total = summarized_counts.0 + summarized_counts.1 + summarized_counts.2;
     let mut final_summary = format!(
         "## Summary:\nDetected {} relevant changes: {} additions, {} removals, {} modifications.",

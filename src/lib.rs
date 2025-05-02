@@ -91,20 +91,4 @@ mod tests {
             }
         }
     }
-
-    // Keep the markdown test if needed
-    #[test]
-    fn test_markdown_extraction_from_json() {
-        // ... (markdown test code, maybe add logging init here too if run separately) ...
-        let _ = env_logger::builder()
-            .is_test(true)
-            .filter_level(log::LevelFilter::Info)
-            .parse_default_env()
-            .try_init(); // Add logger init
-
-        let json_path = "changed_presentation.json";
-        // ... rest of markdown test ...
-        log::info!("--- Extracted Markdown ---"); // Use log::info
-                                                  // ...
-    }
 }

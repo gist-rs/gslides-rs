@@ -1,8 +1,8 @@
 use std::fs;
 use std::path::Path;
 
-use gslides_rs::diff::error::DiffError;
-use gslides_rs::{ComparerBuilder, Presentation};
+use gslides_tools::diff::error::DiffError;
+use gslides_tools::{ComparerBuilder, Presentation};
 
 /// Helper function to load and parse a Presentation JSON file.
 fn load_presentation(file_path: &str) -> Result<Presentation, DiffError> {

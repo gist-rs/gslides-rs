@@ -182,18 +182,36 @@ The client functions return `Result<T, gslides_rs::errors::SlidesApiError>`. Che
 
 The diff functions return `Result<T, gslides_rs::diff::error::DiffError>`. Check the `DiffError` enum variants for diff-specific issues (serialization, diffing logic, formatting).
 
+
+## WASM
+
+### Setup
+```
+cargo install wasm-pack
+```
+
+### Build/Release
+```
+# Build
+wasm-pack build --scope gist-rs --release --target=nodejs
+
+# Release
+wasm-pack publish --access=public
+```
+
+### Build/Release (no wasm-pack)
+```
+# Build
+cargo build --target wasm32-unknown-unknown --release
+wasm-bindgen target/wasm32-unknown-unknown/release/gslides_rs.wasm --out-dir pkg --nodejs
+
+# Release
+npm publish pkg --access=public
+```
+
 ## Contributing
 
 Contributions are welcome! Please feel free to submit issues or pull requests.
-
-## TODO
-
-1. try html approach.
-1. get_md(json_str) // accpet string with json format and convert to md then return as md string.
-1. get_md_diff(base_json_str, compared_json_str) // like 1 but input 2 string and return md diff.
-1. get_structured_diff(base_json_str, compared_json_str) // like 2 but return structured diff.
-1. get_md_diff_summary(base_json_str, compared_json_str) // readable
-1. get_structured_diff_summary(base_json_str, compared_json_str) // readable
 
 ## License
 

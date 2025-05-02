@@ -24,71 +24,54 @@ use wasm_bindgen::prelude::*;
 pub fn greet(name: &str) -> String {
     format!("Hello {name} from Rust!!")
 }
+// Function to setup logging for WASM (call this once from JS)
+#[wasm_bindgen(start)]
+pub fn init_wasm_logging() {
+    // Only install the panic hook in release builds
+    #[cfg(not(debug_assertions))]
+    console_error_panic_hook::set_once();
+    // Use `fern` or `console_log` for logging
+    // Example using `console_log`:
+    let _ = console_log::init_with_level(log::Level::Info); // Or Level::Debug, Warn, Error
+    log::info!("WASM logging initialized.");
+}
 
-#[cfg(test)]
-mod tests {
-    use crate::models::presentation::Presentation;
-    use std::fs;
-    // Remove Write import if not used directly here
-    // use std::io::Write;
+/// Converts a Google Slides presentation JSON string into an SVG string (first slide only).
+/// Returns the SVG content of the first slide upon success.
+/// Returns a JsValue error object on failure (deserialization or conversion error).
+#[wasm_bindgen]
+pub fn convert_json_to_svg(presentation_json_string: &str) -> std::result::Result<String, JsValue> {
+    log::info!("Received presentation JSON, attempting deserialization...");
 
-    #[test]
-    fn test_svg_conversion_from_json() {
-        // Rename test if needed
-        // Initialize logger for this test run
-        // Use try_init to avoid panic if logger is already initialized (e.g., by another test)
-        // Set default level to info, but allow overriding with RUST_LOG
-        let _ = env_logger::builder()
-            .is_test(true)
-            .filter_level(log::LevelFilter::Info) // Default level
-            .parse_default_env() // Allow RUST_LOG override
-            .try_init();
+    // 1. Deserialize the JSON string into a Presentation object
+    let presentation: Presentation =
+        serde_json::from_str(presentation_json_string).map_err(|e| {
+            let error_msg = format!("JSON Deserialization Error: {}", e);
+            log::error!("{}", error_msg);
+            JsValue::from_str(&error_msg)
+        })?;
 
-        // Load a sample presentation JSON (replace with your actual path)
-        let json_path = "changed_presentation.json"; // Use the JSON with the placeholder issue
+    log::info!("Deserialization successful. Starting SVG conversion...");
 
-        let json_string =
-            fs::read_to_string(json_path).expect("Should have been able to read the file");
+    // 2. Convert the Presentation object to SVG slides
+    let svg_slides = converters::svg::convert_presentation_to_svg(&presentation).map_err(|e| {
+        let error_msg = format!("SVG Conversion Error: {}", e);
+        log::error!("{}", error_msg);
+        JsValue::from_str(&error_msg)
+    })?;
 
-        let presentation: Presentation = match serde_json::from_str(&json_string) {
-            Ok(p) => p,
-            Err(e) => {
-                log::error!("Deserialization failed: {}", e); // Use log::error
-                let snippet_len = json_string.len().min(500);
-                log::error!("JSON Snippet:\n{}", &json_string[..snippet_len]); // Use log::error
-                panic!("Failed to deserialize presentation JSON");
-            }
-        };
+    log::info!(
+        "SVG Conversion successful. Found {} slides.",
+        svg_slides.len()
+    );
 
-        log::info!("Attempting SVG conversion..."); // Use log::info
-        match crate::converters::svg::convert_presentation_to_svg(&presentation) {
-            Ok(svg_slides) => {
-                log::info!(
-                    "SVG Conversion successful. Got {} slides.",
-                    svg_slides.len()
-                ); // Use log::info
-                assert!(!svg_slides.is_empty(), "Expected at least one SVG slide");
-
-                // Optional: Write SVG files for inspection
-                for (i, svg_content) in svg_slides.iter().enumerate() {
-                    let output_path = format!("slide_{}.svg", i + 1);
-                    match fs::write(&output_path, svg_content) {
-                        Ok(_) => log::info!("Written SVG to {}", output_path), // Use log::info
-                        Err(e) => log::error!("Failed to write SVG to {}: {}", output_path, e), // Use log::error
-                    }
-                    // Print the first slide's SVG for quick check in logs
-                    if i == 0 {
-                        log::debug!(
-                            "--- SVG Slide 1 ---:\n{}\n--- End SVG Slide 1 ---",
-                            svg_content
-                        ); // Use log::debug
-                    }
-                }
-            }
-            Err(e) => {
-                log::error!("SVG Conversion failed: {}", e); // Use log::error
-                panic!("SVG Conversion failed");
-            }
-        }
+    // 3. Return the first slide's SVG content, or an error if there are no slides
+    if let Some(first_slide_svg) = svg_slides.into_iter().next() {
+        log::info!("Returning SVG for the first slide.");
+        Ok(first_slide_svg)
+    } else {
+        let error_msg = "SVG Conversion succeeded, but no slides were found in the output.";
+        log::warn!("{}", error_msg); // Log as warning as conversion itself didn't fail
+        Err(JsValue::from_str(error_msg))
     }
 }

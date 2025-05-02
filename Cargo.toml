@@ -1,5 +1,5 @@
 [package]
-name = "gslides_rs"
+name = "gslides-tools"
 version = "0.1.0"
 edition = "2021"
 resolver = "2"
@@ -20,11 +20,13 @@ treediff = { version= "5.0.0", optional = true, features = ["with-serde-json"] }
 similar = { version = "2.7.0", features = ["inline"] }
 anyhow = "1.0.98"
 getrandom = { version = "0.2", features = ["js"] }
-wasm-bindgen = "0.2.100"
+wasm-bindgen = "0.2.93"
 env_logger = "0.11.8"
+console_log = "1.0.0"
+console_error_panic_hook = { version = "0.1.7", optional = true }
 
 [features]
-default = ["diff"]
+default = ["console_error_panic_hook", "diff"]
 diff = ["dep:treediff"]
 yup-oauth2 = ["dep:yup-oauth2"]
 
@@ -34,3 +36,7 @@ dotenvy = "0.15"
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 yup-oauth2 = { version = "12.1.0", optional = true }
+
+[profile.release]
+opt-level = 's' # Optimize for size. 'z' is smaller but potentially slower.
+lto = true      # Enable Link Time Optimization

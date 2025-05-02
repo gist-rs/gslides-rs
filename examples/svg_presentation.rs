@@ -1,6 +1,6 @@
 use std::fs;
 
-use gslides_rs::{converters::svg::convert_presentation_to_svg, Presentation};
+use gslides_tools::{converters::svg::convert_presentation_to_svg, Presentation};
 // No need to explicitly 'use log;' here unless this file uses log macros itself
 
 fn main() {

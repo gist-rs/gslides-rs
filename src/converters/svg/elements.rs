@@ -491,111 +491,146 @@ fn convert_shape_to_svg(
 /// # Returns
 /// `Result<()>`
 #[allow(clippy::too_many_arguments)]
+#[allow(clippy::too_many_arguments)]
 fn convert_table_to_svg(
     element_id: &str,
     table: &Table,
     transform: Option<&AffineTransform>,
-    size: Option<&Size>,
+    size: Option<&Size>, // This is the PageElement's size, the target box for the table
     color_scheme: Option<&ColorScheme>,
     svg_output: &mut String,
 ) -> Result<()> {
-    let mut foreign_object_attrs = String::new();
-    let (_, _) = apply_transform(transform, &mut foreign_object_attrs)?;
-    let page_element_width_pt = dimension_to_pt(size.and_then(|s| s.width.as_ref()));
-    let page_element_height_pt = dimension_to_pt(size.and_then(|s| s.height.as_ref()));
+    let mut foreign_object_svg_transform_attrs = String::new();
+    // This transform positions the foreignObject on the page
+    let (_, _) = apply_transform(transform, &mut foreign_object_svg_transform_attrs)?;
 
-    // Calculate total required width for HTML table content
-    let mut calculated_html_table_width_pt = 0.0;
-    let table_border_and_padding_buffer = 5.0; // Buffer for borders/padding
+    // These are the dimensions of the "target box" for the table on the slide
+    let target_width_pt = dimension_to_pt(size.and_then(|s| s.width.as_ref()));
+    let target_height_pt = dimension_to_pt(size.and_then(|s| s.height.as_ref()));
+
+    // Calculate table's natural (unscaled) content width based on column definitions
+    let mut natural_content_width_pt = 0.0;
+    let content_buffer = 2.0; // Small buffer for borders/internal spacing
 
     if let Some(columns) = &table.table_columns {
         for col_props in columns {
             if let Some(dim) = &col_props.column_width {
-                calculated_html_table_width_pt += dimension_to_pt(Some(dim));
+                natural_content_width_pt += dimension_to_pt(Some(dim));
             } else {
-                calculated_html_table_width_pt += 50.0; // Default column width if unspecified
+                natural_content_width_pt += 50.0; // Default fallback for a column if no width given
             }
         }
     }
-    if calculated_html_table_width_pt > 0.0 {
-        calculated_html_table_width_pt += table_border_and_padding_buffer;
+    if natural_content_width_pt > 0.0 {
+        natural_content_width_pt += content_buffer;
+    } else {
+        // If no columns, use the target_width_pt as a fallback for natural width
+        natural_content_width_pt = target_width_pt.max(50.0); // Ensure it's not zero
     }
 
-    // Revised initial check: only skip if we have no viable width at all
-    if page_element_width_pt <= 0.0 && calculated_html_table_width_pt <= 0.0 {
+    // Calculate table's natural (unscaled) content height based on row definitions
+    let mut natural_content_height_pt = 0.0;
+    if let Some(rows) = &table.table_rows {
+        for row in rows {
+            if let Some(dim) = &row.row_height {
+                natural_content_height_pt += dimension_to_pt(Some(dim));
+            } else {
+                natural_content_height_pt += DEFAULT_FONT_SIZE_PT * 1.5; // Default fallback
+            }
+        }
+    }
+    if natural_content_height_pt > 0.0 {
+        natural_content_height_pt += content_buffer;
+    } else {
+        // If no rows, use target_height_pt as a fallback for natural height
+        natural_content_height_pt = target_height_pt.max(20.0); // Ensure it's not zero
+    }
+
+    // Guard against zero or negative target dimensions for the foreignObject
+    if target_width_pt <= 0.0 || target_height_pt <= 0.0 {
         warn!(
-            "Skipping table element {} due to zero or negative width from both PageElement size and column calculations.",
-            element_id
+            "Skipping table element {} due to zero or negative target dimensions for foreignObject ({}x{}pt).",
+            element_id, target_width_pt, target_height_pt
         );
         return Ok(());
     }
 
-    // Calculate total required height for HTML table content
-    let mut calculated_html_table_height_pt = 0.0;
-    // Re-use table_border_and_padding_buffer defined above
-
-    if let Some(rows) = &table.table_rows {
-        for row in rows {
-            if let Some(dim) = &row.row_height {
-                calculated_html_table_height_pt += dimension_to_pt(Some(dim));
-            } else {
-                calculated_html_table_height_pt += DEFAULT_FONT_SIZE_PT * 1.5; // Default row height
-            }
-        }
-    }
-    if calculated_html_table_height_pt > 0.0 {
-        calculated_html_table_height_pt += table_border_and_padding_buffer;
-    }
-
-    // Determine the final width for the foreignObject
-    let final_foreign_object_width_pt = if calculated_html_table_width_pt > page_element_width_pt
-        && calculated_html_table_width_pt > 0.0
-    {
-        calculated_html_table_width_pt
-    } else if page_element_width_pt > 0.0 {
-        page_element_width_pt
+    // Calculate scale factors to fit natural content size into target PageElement size
+    let scale_x = if natural_content_width_pt > 0.0 {
+        target_width_pt / natural_content_width_pt
     } else {
-        // Should only be hit if page_element_width_pt was <=0 but calculated_html_table_width_pt was >0 (already handled)
-        // OR if both were 0, but the top check caught that. This is an ultimate fallback.
-        calculated_html_table_width_pt.max(DEFAULT_FONT_SIZE_PT * 5.0) // Use calculated if >0, else a small default.
+        1.0 // Avoid division by zero, no scaling if natural width is zero
     };
-
-    // Determine the final height for the foreignObject
-    let final_foreign_object_height_pt = if calculated_html_table_height_pt > page_element_height_pt
-        && calculated_html_table_height_pt > 0.0
-    {
-        calculated_html_table_height_pt
-    } else if page_element_height_pt > 0.0 {
-        page_element_height_pt
+    let scale_y = if natural_content_height_pt > 0.0 {
+        target_height_pt / natural_content_height_pt
     } else {
-        calculated_html_table_height_pt.max(DEFAULT_FONT_SIZE_PT * 2.0) // Use calculated if >0, else a small default.
+        1.0 // Avoid division by zero, no scaling if natural height is zero
     };
 
     // --- <foreignObject> Setup ---
+    // Width and height are from the PageElement's size (the target box).
+    // The transform attribute positions this box on the slide.
     write!(
         svg_output,
         r#"<foreignObject x="0" y="0" width="{}" height="{}" overflow="visible" data-object-id="{}"{}>"#,
-        final_foreign_object_width_pt, // Use final calculated/derived width
-        final_foreign_object_height_pt, // Use final calculated/derived height
+        target_width_pt,  // Target width for the foreignObject
+        target_height_pt, // Target height for the foreignObject
         element_id,
-        foreign_object_attrs
+        foreign_object_svg_transform_attrs // SVG transform for positioning
     )?;
     writeln!(svg_output)?;
 
-    // --- HTML Content within <foreignObject> ---
+    // Calculate scale factors to fit natural content size into target PageElement size
+    let scale_x_candidate = if natural_content_width_pt > 0.0 {
+        target_width_pt / natural_content_width_pt
+    } else {
+        1.0
+    };
+    let scale_y_candidate = if natural_content_height_pt > 0.0 {
+        target_height_pt / natural_content_height_pt
+    } else {
+        1.0
+    };
+
+    // To preserve aspect ratio, use the smaller scale factor for both axes.
+    // This ensures the content fits without distortion.
+    let final_scale_factor = if scale_x_candidate > scale_y_candidate {
+        scale_x_candidate
+    } else {
+        scale_y_candidate
+    };
+
+    // Ensure scale factor is not effectively zero if target dimensions are positive.
+    // (This is a simplified check; more robust would be to ensure natural_dims are > 0 before division)
+    let final_scale_factor =
+        if final_scale_factor.abs() < 1e-6 && (target_width_pt > 0.0 || target_height_pt > 0.0) {
+            1.0
+        } else {
+            final_scale_factor
+        };
+
+    // --- Scaler <div> within <foreignObject> ---
+    // This div will be the natural size of the table content and then scaled.
     write!(
         svg_output,
-        r#"  <div xmlns="http://www.w3.org/1999/xhtml" style="width:100%; height:100%; box-sizing: border-box;">"#
+        r#"  <div xmlns="http://www.w3.org/1999/xhtml" style="width:{}pt; height:{}pt; transform: scale({}, {}); transform-origin: 0 0; box-sizing: border-box;">"#,
+        natural_content_width_pt,  // Natural width before scaling
+        natural_content_height_pt, // Natural height before scaling
+        final_scale_factor,        // Apply uniform scale factor
+        final_scale_factor         // Apply uniform scale factor
     )?;
     writeln!(svg_output)?;
 
+    // --- HTML <table> ---
+    // This table will fill 100% of its parent scaler div.
+    // Its internal column/row dimensions are the natural (unscaled) ones.
     write!(
         svg_output,
         r#"    <table style="border-collapse: collapse; width:100%; height:100%; border: 1px solid #ccc; table-layout: fixed;">"#
     )?;
     writeln!(svg_output)?;
 
-    // --- Add <colgroup> for column widths ---
+    // --- <colgroup> for column widths (natural, unscaled widths) ---
     if let Some(columns) = &table.table_columns {
         if !columns.is_empty() {
             writeln!(svg_output, "      <colgroup>")?;
@@ -620,12 +655,13 @@ fn convert_table_to_svg(
     }
     // --- End <colgroup> ---
 
-    // --- Table Rows and Cells ---
+    // --- Table Rows and Cells (natural, unscaled row heights) ---
     if let Some(rows) = &table.table_rows {
         for row in rows {
             writeln!(svg_output)?;
             let mut row_style_attr = String::new();
             if let Some(dim) = &row.row_height {
+                // Use row.row_height
                 let rh_pt = dimension_to_pt(Some(dim));
                 if rh_pt > 0.0 {
                     write!(row_style_attr, r#" style="height:{}pt;""#, rh_pt)?;
@@ -656,7 +692,7 @@ fn convert_table_to_svg(
                                 write!(cell_style, " background-color:{};", bg_color_hex)?;
                             }
                         }
-                        // TODO: Handle contentAlignment (vertical-align: middle/bottom)
+                        // TODO: Handle contentAlignment
                     }
 
                     write!(
@@ -678,6 +714,7 @@ fn convert_table_to_svg(
                                 }
                             }
                         }
+                        // Font scaling within table cells is generally not desired, so pass None
                         convert_text_content_to_html(
                             text,
                             cell_para_style.as_ref(),
@@ -707,7 +744,7 @@ fn convert_table_to_svg(
     // --- Closing Tags ---
     write!(svg_output, "</table>")?;
     writeln!(svg_output)?;
-    write!(svg_output, "  </div>")?;
+    write!(svg_output, "  </div>")?; // Close scaler div
     writeln!(svg_output)?;
     write!(svg_output, "</foreignObject>")?;
 

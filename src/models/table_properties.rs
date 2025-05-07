@@ -1,4 +1,5 @@
 use serde::{Deserialize, Serialize};
+use serde_json::Value; // Added for the custom deserializer
 
 // Import necessary types from other modules
 use crate::models::common::Dimension;
@@ -14,6 +15,32 @@ pub enum TableBorderFillContent {
     SolidFill(SolidFill),
 }
 
+// Helper function to deserialize Option<TableBorderFillContent>
+// where an empty JSON object {} is treated as None.
+fn deserialize_table_border_fill_option<'de, D>(
+    deserializer: D,
+) -> Result<Option<TableBorderFillContent>, D::Error>
+where
+    D: ::serde::Deserializer<'de>,
+{
+    let value = match Value::deserialize(deserializer) {
+        Ok(v) => v,
+        Err(e) => return Err(::serde::de::Error::custom(format!("Failed to deserialize to serde_json::Value: {}", e))),
+    };
+
+    if value.is_null() {
+        Ok(None)
+    } else if value.is_object() && value.as_object().map_or(false, |obj| obj.is_empty()) {
+        Ok(None)
+    } else {
+        match TableBorderFillContent::deserialize(value) {
+            Ok(content) => Ok(Some(content)),
+            Err(e) => Err(::serde::de::Error::custom(format!("Failed to deserialize TableBorderFillContent: {}", e))),
+        }
+    }
+}
+
+/*
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct TableBorderFill {
@@ -21,6 +48,7 @@ pub struct TableBorderFill {
     #[serde(flatten)]
     pub fill_kind: TableBorderFillContent,
 }
+*/
 
 /// The border styling properties of a TableBorderCell.
 /// Derived from: https://developers.google.com/slides/api/reference/rest/v1/presentations.pages/tables#TableBorderProperties
@@ -28,8 +56,11 @@ pub struct TableBorderFill {
 #[serde(rename_all = "camelCase")]
 pub struct TableBorderProperties {
     /// The fill of the table border.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub table_border_fill: Option<TableBorderFill>,
+    #[serde(
+        skip_serializing_if = "Option::is_none",
+        deserialize_with = "deserialize_table_border_fill_option" // Added custom deserializer
+    )]
+    pub table_border_fill: Option<TableBorderFillContent>,
     /// The thickness of the border.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub weight: Option<Dimension>,
@@ -61,7 +92,7 @@ pub struct TableBorderRow {
     /// Properties of each border cell. When a border's adjacent table cells are
     /// merged, it is not included in the response.
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub table_border_cells: Option<Vec<TableBorderCell>,>,
+    pub table_border_cells: Option<Vec<TableBorderCell>>,
 }
 
 /// The background fill of a table cell.

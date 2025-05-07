@@ -599,7 +599,7 @@ fn convert_table_to_svg(
                             svg_output,
                         )?;
                     } else {
-                        write!(svg_output, "&nbsp;")?;
+                        write!(svg_output, "")?;
                     }
                     write!(svg_output, "</td>")?;
                     writeln!(svg_output)?;

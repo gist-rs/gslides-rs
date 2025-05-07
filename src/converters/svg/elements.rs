@@ -536,6 +536,35 @@ fn convert_table_to_svg(
         svg_output,
         r#"    <table style="border-collapse: collapse; width:100%; height:100%; border: 1px solid #ccc; table-layout: fixed;">"#
     )?;
+    writeln!(svg_output)?;
+
+    // --- Add <colgroup> for column widths ---
+    if let Some(columns) = &table.table_columns {
+        if !columns.is_empty() {
+            writeln!(svg_output, "      <colgroup>")?;
+            for col_props in columns {
+                if let Some(dim) = &col_props.column_width {
+                    let col_width_pt = dimension_to_pt(Some(dim));
+                    if col_width_pt > 0.0 {
+                        // Use self-closing <col />
+                        writeln!(
+                            svg_output,
+                            r#"        <col style="width:{}pt;" />"#,
+                            col_width_pt
+                        )?;
+                    } else {
+                        // Use self-closing <col />
+                        writeln!(svg_output, r#"        <col style="width:auto;" />"#)?;
+                    }
+                } else {
+                    // Use self-closing <col />
+                    writeln!(svg_output, r#"        <col style="width:auto;" />"#)?;
+                }
+            }
+            writeln!(svg_output, "      </colgroup>")?;
+        }
+    }
+    // --- End <colgroup> --
 
     // --- Table Rows and Cells ---
     if let Some(rows) = &table.table_rows {

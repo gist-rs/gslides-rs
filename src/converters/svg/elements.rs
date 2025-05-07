@@ -500,28 +500,85 @@ fn convert_table_to_svg(
     svg_output: &mut String,
 ) -> Result<()> {
     let mut foreign_object_attrs = String::new();
-    // apply_transform gets the full matrix attribute string
-    let (_, _) = apply_transform(transform, &mut foreign_object_attrs)?; // We only need the attribute string
-    let width_pt = dimension_to_pt(size.and_then(|s| s.width.as_ref()));
-    let height_pt = dimension_to_pt(size.and_then(|s| s.height.as_ref()));
+    let (_, _) = apply_transform(transform, &mut foreign_object_attrs)?;
+    let page_element_width_pt = dimension_to_pt(size.and_then(|s| s.width.as_ref()));
+    let page_element_height_pt = dimension_to_pt(size.and_then(|s| s.height.as_ref()));
 
-    if width_pt <= 0.0 || height_pt <= 0.0 {
+    // Calculate total required width for HTML table content
+    let mut calculated_html_table_width_pt = 0.0;
+    let table_border_and_padding_buffer = 5.0; // Buffer for borders/padding
+
+    if let Some(columns) = &table.table_columns {
+        for col_props in columns {
+            if let Some(dim) = &col_props.column_width {
+                calculated_html_table_width_pt += dimension_to_pt(Some(dim));
+            } else {
+                calculated_html_table_width_pt += 50.0; // Default column width if unspecified
+            }
+        }
+    }
+    if calculated_html_table_width_pt > 0.0 {
+        calculated_html_table_width_pt += table_border_and_padding_buffer;
+    }
+
+    // Revised initial check: only skip if we have no viable width at all
+    if page_element_width_pt <= 0.0 && calculated_html_table_width_pt <= 0.0 {
         warn!(
-            "Skipping table element {} with zero or negative dimensions ({}x{}pt).",
-            element_id, width_pt, height_pt
+            "Skipping table element {} due to zero or negative width from both PageElement size and column calculations.",
+            element_id
         );
         return Ok(());
     }
 
+    // Calculate total required height for HTML table content
+    let mut calculated_html_table_height_pt = 0.0;
+    // Re-use table_border_and_padding_buffer defined above
+
+    if let Some(rows) = &table.table_rows {
+        for row in rows {
+            if let Some(dim) = &row.row_height {
+                calculated_html_table_height_pt += dimension_to_pt(Some(dim));
+            } else {
+                calculated_html_table_height_pt += DEFAULT_FONT_SIZE_PT * 1.5; // Default row height
+            }
+        }
+    }
+    if calculated_html_table_height_pt > 0.0 {
+        calculated_html_table_height_pt += table_border_and_padding_buffer;
+    }
+
+    // Determine the final width for the foreignObject
+    let final_foreign_object_width_pt = if calculated_html_table_width_pt > page_element_width_pt
+        && calculated_html_table_width_pt > 0.0
+    {
+        calculated_html_table_width_pt
+    } else if page_element_width_pt > 0.0 {
+        page_element_width_pt
+    } else {
+        // Should only be hit if page_element_width_pt was <=0 but calculated_html_table_width_pt was >0 (already handled)
+        // OR if both were 0, but the top check caught that. This is an ultimate fallback.
+        calculated_html_table_width_pt.max(DEFAULT_FONT_SIZE_PT * 5.0) // Use calculated if >0, else a small default.
+    };
+
+    // Determine the final height for the foreignObject
+    let final_foreign_object_height_pt = if calculated_html_table_height_pt > page_element_height_pt
+        && calculated_html_table_height_pt > 0.0
+    {
+        calculated_html_table_height_pt
+    } else if page_element_height_pt > 0.0 {
+        page_element_height_pt
+    } else {
+        calculated_html_table_height_pt.max(DEFAULT_FONT_SIZE_PT * 2.0) // Use calculated if >0, else a small default.
+    };
+
     // --- <foreignObject> Setup ---
-    // Position at 0,0; the transform matrix handles the actual placement.
     write!(
         svg_output,
         r#"<foreignObject x="0" y="0" width="{}" height="{}" overflow="visible" data-object-id="{}"{}>"#,
-        width_pt,
-        height_pt,
+        final_foreign_object_width_pt, // Use final calculated/derived width
+        final_foreign_object_height_pt, // Use final calculated/derived height
         element_id,
-        foreign_object_attrs // Apply full transform here
+        foreign_object_attrs
     )?;
     writeln!(svg_output)?;
 
@@ -546,37 +603,40 @@ fn convert_table_to_svg(
                 if let Some(dim) = &col_props.column_width {
                     let col_width_pt = dimension_to_pt(Some(dim));
                     if col_width_pt > 0.0 {
-                        // Use self-closing <col />
                         writeln!(
                             svg_output,
                             r#"        <col style="width:{}pt;" />"#,
                             col_width_pt
                         )?;
                     } else {
-                        // Use self-closing <col />
                         writeln!(svg_output, r#"        <col style="width:auto;" />"#)?;
                     }
                 } else {
-                    // Use self-closing <col />
                     writeln!(svg_output, r#"        <col style="width:auto;" />"#)?;
                 }
             }
             writeln!(svg_output, "      </colgroup>")?;
         }
     }
-    // --- End <colgroup> --
+    // --- End <colgroup> ---
 
     // --- Table Rows and Cells ---
     if let Some(rows) = &table.table_rows {
         for row in rows {
             writeln!(svg_output)?;
-            write!(svg_output, "      <tr>")?;
+            let mut row_style_attr = String::new();
+            if let Some(dim) = &row.row_height {
+                let rh_pt = dimension_to_pt(Some(dim));
+                if rh_pt > 0.0 {
+                    write!(row_style_attr, r#" style="height:{}pt;""#, rh_pt)?;
+                }
+            }
+            write!(svg_output, "      <tr{}>", row_style_attr)?;
 
             if let Some(cells) = &row.table_cells {
                 if !cells.is_empty() {
                     writeln!(svg_output)?;
                 }
-
                 for cell in cells {
                     let colspan = cell.column_span.unwrap_or(1);
                     let rowspan = cell.row_span.unwrap_or(1);
@@ -588,7 +648,7 @@ fn convert_table_to_svg(
                         write!(td_attrs, r#" rowspan="{}""#, rowspan)?;
                     }
 
-                    let mut cell_style = "border: 1px solid #eee; padding: 3pt; vertical-align: top; overflow: hidden;".to_string();
+                    let mut cell_style = "border: 1px solid #eee; padding: 3pt; vertical-align: top; overflow: hidden; box-sizing:border-box;".to_string();
                     if let Some(props) = &cell.table_cell_properties {
                         if let Some(bg_fill) = &props.table_cell_background_fill {
                             if let Some(solid) = &bg_fill.solid_fill {
@@ -597,7 +657,6 @@ fn convert_table_to_svg(
                             }
                         }
                         // TODO: Handle contentAlignment (vertical-align: middle/bottom)
-                        // match props.content_alignment { ... }
                     }
 
                     write!(

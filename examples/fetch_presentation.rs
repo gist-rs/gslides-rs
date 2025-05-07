@@ -1,5 +1,5 @@
 #[cfg(feature = "yup-oauth2")]
-use gslides_rs::{
+use gslides_tools::{
     client,
     errors::SlidesApiError,
     // Import specific element kinds if you want to match on them, otherwise Debug print works

@@ -166,7 +166,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
 ```bash
 # Fetch a presentation (replace with a real ID)
-cargo run --example fetch_presentation -- YOUR_PRESENTATION_ID
+CARGO_FLAGS="--features yup-oauth2" cargo run --example fetch_presentation -- YOUR_PRESENTATION_ID
 
 # Compare two JSON files (ensure base_presentation.json and changed_presentation.json exist)
 # You might need to fetch presentations first and save them as JSON

@@ -23,9 +23,73 @@ use crate::models::{
     shape::Shape,
     shape_properties::*,
     table::Table,
+    table_properties::{TableBorderFillContent, TableBorderProperties}, // Added for table borders
     text_element::TextElementKind, // Required for checking ParagraphMarker in shape style override
 };
 use std::fmt::Write;
+
+/// Helper function to build a CSS string for an individual border (e.g., "1pt solid #FF0000").
+fn build_individual_border_style(
+    border_props_opt: Option<&TableBorderProperties>,
+    color_scheme: Option<&ColorScheme>,
+) -> String {
+    if let Some(props) = border_props_opt {
+        let weight_pt = dimension_to_pt(props.weight.as_ref());
+
+        if weight_pt < 0.1 {
+            // Consider borders less than 0.1pt as non-existent
+            return "none".to_string();
+        }
+
+        let (base_color_str, alpha) = match &props.table_border_fill {
+            Some(TableBorderFillContent::SolidFill(solid_fill)) => (
+                format_color(solid_fill.color.as_ref(), color_scheme),
+                solid_fill.alpha.unwrap_or(1.0),
+            ),
+            None => {
+                // No fill defined, Slides might use a default (e.g. black) or treat as no border.
+                // If a weight is specified but no color, Slides seems to default to a theme-dependent gray or black.
+                // For now, if no fill, we treat as "none", which CSS interprets as no border.
+                // A more accurate approach might be to return a default color like "#ccc" or inherit.
+                return "none".to_string();
+            }
+        };
+
+        if base_color_str.to_lowercase() == "none" {
+            return "none".to_string();
+        }
+
+        let final_color_str = if alpha < 1.0 && base_color_str.starts_with('#') {
+            // Attempt to convert hex to rgba if alpha is present and not 1.0
+            // Assuming hex is 7 chars like #RRGGBB
+            if base_color_str.len() == 7 {
+                let r_val = u8::from_str_radix(&base_color_str[1..3], 16).unwrap_or(0);
+                let g_val = u8::from_str_radix(&base_color_str[3..5], 16).unwrap_or(0);
+                let b_val = u8::from_str_radix(&base_color_str[5..7], 16).unwrap_or(0);
+                format!("rgba({},{},{},{:.2})", r_val, g_val, b_val, alpha)
+            } else {
+                // If hex is not in #RRGGBB format (e.g. #RGB), just use base color string (alpha ignored)
+                base_color_str
+            }
+        } else {
+            base_color_str // Use base_color_str if it's not hex, or if alpha is 1.0
+        };
+
+        let dash_style_css = match props.dash_style.as_ref().unwrap_or(&DashStyle::Solid) {
+            DashStyle::Solid | DashStyle::DashStyleUnspecified => "solid",
+            DashStyle::Dash => "dashed",
+            DashStyle::Dot => "dotted",
+            // CSS doesn't have direct equivalents for DashDot, LongDash, LongDashDot.
+            // We'll use "dashed" as a general fallback for non-solid/dotted styles.
+            DashStyle::DashDot | DashStyle::LongDash | DashStyle::LongDashDot => "dashed",
+        };
+
+        format!("{}pt {} {}", weight_pt, dash_style_css, final_color_str)
+    } else {
+        // If TableBorderProperties is entirely missing for this border segment.
+        "none".to_string() // Default to no border if properties are absent
+    }
+}
 
 /// Helper function to build the SVG `style` attribute string for shape geometry (fill, stroke).
 ///
@@ -621,16 +685,15 @@ fn convert_table_to_svg(
     )?;
     writeln!(svg_output)?;
 
-    // --- HTML <table> ---
-    // This table will fill 100% of its parent scaler div.
-    // Its internal column/row dimensions are the natural (unscaled) ones.
+    // Main table style: use border-collapse.
+    // Individual cell borders will define the visual borders.
+    // A default overall border for the table element itself can be added if desired, e.g., "border: 0.5pt solid #ccc;"
     write!(
         svg_output,
-        r#"    <table style="border-collapse: collapse; width:100%; height:100%; border: 1px solid #ccc; table-layout: fixed;">"#
+        r#"    <table style="border-collapse: collapse; width:100%; height:100%; table-layout: fixed;">"#
     )?;
     writeln!(svg_output)?;
 
-    // --- <colgroup> for column widths (natural, unscaled widths) ---
     if let Some(columns) = &table.table_columns {
         if !columns.is_empty() {
             writeln!(svg_output, "      <colgroup>")?;
@@ -644,6 +707,7 @@ fn convert_table_to_svg(
                             col_width_pt
                         )?;
                     } else {
+                        // Fallback if column width is zero or not specified properly
                         writeln!(svg_output, r#"        <col style="width:auto;" />"#)?;
                     }
                 } else {
@@ -653,15 +717,12 @@ fn convert_table_to_svg(
             writeln!(svg_output, "      </colgroup>")?;
         }
     }
-    // --- End <colgroup> ---
 
-    // --- Table Rows and Cells (natural, unscaled row heights) ---
     if let Some(rows) = &table.table_rows {
-        for row in rows {
+        for (row_idx, row) in rows.iter().enumerate() {
             writeln!(svg_output)?;
             let mut row_style_attr = String::new();
             if let Some(dim) = &row.row_height {
-                // Use row.row_height
                 let rh_pt = dimension_to_pt(Some(dim));
                 if rh_pt > 0.0 {
                     write!(row_style_attr, r#" style="height:{}pt;""#, rh_pt)?;
@@ -674,6 +735,14 @@ fn convert_table_to_svg(
                     writeln!(svg_output)?;
                 }
                 for cell in cells {
+                    let current_row_idx = cell.location.as_ref().map_or(row_idx, |loc| {
+                        loc.row_index.unwrap_or(row_idx as i32) as usize
+                    });
+                    let current_col_idx = cell
+                        .location
+                        .as_ref()
+                        .map_or(0, |loc| loc.column_index.unwrap_or(0) as usize);
+
                     let colspan = cell.column_span.unwrap_or(1);
                     let rowspan = cell.row_span.unwrap_or(1);
                     let mut td_attrs = String::new();
@@ -684,21 +753,84 @@ fn convert_table_to_svg(
                         write!(td_attrs, r#" rowspan="{}""#, rowspan)?;
                     }
 
-                    let mut cell_style = "border: 1px solid #eee; padding: 3pt; vertical-align: top; overflow: hidden; box-sizing:border-box;".to_string();
+                    let mut cell_style = "padding: 3pt; vertical-align: top; overflow: hidden; box-sizing:border-box;".to_string();
+
                     if let Some(props) = &cell.table_cell_properties {
                         if let Some(bg_fill) = &props.table_cell_background_fill {
                             if let Some(solid) = &bg_fill.solid_fill {
                                 let bg_color_hex = format_color(solid.color.as_ref(), color_scheme);
-                                write!(cell_style, " background-color:{};", bg_color_hex)?;
+                                if bg_color_hex != "none" {
+                                    write!(cell_style, " background-color:{};", bg_color_hex)?;
+                                }
                             }
                         }
-                        // TODO: Handle contentAlignment
+                        // TODO: contentAlignment (map to CSS vertical-align & text-align)
+                    }
+
+                    // Border Styles - CSS borders are applied to the cell itself.
+                    // Top border
+                    let top_border_props = table
+                        .horizontal_border_rows
+                        .as_ref()
+                        .and_then(|h_borders| h_borders.get(current_row_idx))
+                        .and_then(|h_row| h_row.table_border_cells.as_ref())
+                        .and_then(|border_cells| border_cells.get(current_col_idx))
+                        .and_then(|border_cell| border_cell.table_border_properties.as_ref());
+                    let border_top_style =
+                        build_individual_border_style(top_border_props, color_scheme);
+                    if border_top_style != "none" {
+                        write!(cell_style, " border-top:{};", border_top_style)?;
+                    }
+
+                    // Bottom border (for the last row of a rowspan, or current row if rowspan is 1)
+                    let bottom_border_row_idx = current_row_idx + rowspan as usize;
+                    let bottom_border_props = table
+                        .horizontal_border_rows
+                        .as_ref()
+                        .and_then(|h_borders| h_borders.get(bottom_border_row_idx))
+                        .and_then(|h_row| h_row.table_border_cells.as_ref())
+                        .and_then(|border_cells| border_cells.get(current_col_idx))
+                        .and_then(|border_cell| border_cell.table_border_properties.as_ref());
+                    let border_bottom_style =
+                        build_individual_border_style(bottom_border_props, color_scheme);
+                    if border_bottom_style != "none" {
+                        write!(cell_style, " border-bottom:{};", border_bottom_style)?;
+                    }
+
+                    // Left border
+                    let left_border_props = table
+                        .vertical_border_rows
+                        .as_ref()
+                        .and_then(|v_borders| v_borders.get(current_row_idx))
+                        .and_then(|v_row| v_row.table_border_cells.as_ref())
+                        .and_then(|border_cells| border_cells.get(current_col_idx))
+                        .and_then(|border_cell| border_cell.table_border_properties.as_ref());
+                    let border_left_style =
+                        build_individual_border_style(left_border_props, color_scheme);
+                    if border_left_style != "none" {
+                        write!(cell_style, " border-left:{};", border_left_style)?;
+                    }
+
+                    // Right border (for the last col of a colspan, or current col if colspan is 1)
+                    let right_border_col_idx = current_col_idx + colspan as usize;
+                    let right_border_props = table
+                        .vertical_border_rows
+                        .as_ref()
+                        .and_then(|v_borders| v_borders.get(current_row_idx))
+                        .and_then(|v_row| v_row.table_border_cells.as_ref())
+                        .and_then(|border_cells| border_cells.get(right_border_col_idx))
+                        .and_then(|border_cell| border_cell.table_border_properties.as_ref());
+                    let border_right_style =
+                        build_individual_border_style(right_border_props, color_scheme);
+                    if border_right_style != "none" {
+                        write!(cell_style, " border-right:{};", border_right_style)?;
                     }
 
                     write!(
                         svg_output,
                         "        <td{} style=\"{}\">",
-                        td_attrs, cell_style
+                        td_attrs,
+                        cell_style.trim_end()
                     )?;
 
                     if let Some(text) = &cell.text {
@@ -714,7 +846,6 @@ fn convert_table_to_svg(
                                 }
                             }
                         }
-                        // Font scaling within table cells is generally not desired, so pass None
                         convert_text_content_to_html(
                             text,
                             cell_para_style.as_ref(),
@@ -724,6 +855,7 @@ fn convert_table_to_svg(
                             svg_output,
                         )?;
                     } else {
+                        // Empty cell, still needs closing tag
                         write!(svg_output, "")?;
                     }
                     write!(svg_output, "</td>")?;
@@ -741,10 +873,9 @@ fn convert_table_to_svg(
         }
     }
 
-    // --- Closing Tags ---
     write!(svg_output, "</table>")?;
     writeln!(svg_output)?;
-    write!(svg_output, "  </div>")?; // Close scaler div
+    write!(svg_output, "  </div>")?;
     writeln!(svg_output)?;
     write!(svg_output, "</foreignObject>")?;
 

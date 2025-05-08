@@ -498,13 +498,14 @@ fn convert_shape_to_svg(
                 );
             }
 
-            // Create <foreignObject> inside the outer group. Use calculated width/height units.
-            // The element's transform (scale/shear) is applied to the parent <g>, not the foreignObject itself.
+            // Create <foreignObject> inside the outer group.
+            // Its width and height are scaled by the shape's transform factors (scale_x, scale_y).
+            // The foreignObject itself is positioned at (0,0) within the translated group, and does not have an additional transform attribute.
             writeln!(
                 svg_output,
                 r#"  <foreignObject x="0" y="0" width="{}" height="{}" overflow="visible">"#,
-                width_units,  // Use base units
-                height_units  // Use base units
+                width_units * scale_x,
+                height_units * scale_y
             )?;
 
             let div_padding_style = format!(

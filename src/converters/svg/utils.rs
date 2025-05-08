@@ -158,14 +158,14 @@ pub fn format_optional_color(
 /// * `svg_attrs` - A mutable string to which the `transform="matrix(...)"` attribute will be appended.
 ///
 /// # Returns
-/// A `Result` containing a tuple `(tx_pt, ty_pt, width_pt)` representing the translation in points
-/// and a placeholder width (width calculation is usually separate). Returns an error on formatting failure.
+/// A `Result` containing a tuple `(tx_units, ty_units)` representing the translation in SVG units.
+/// Returns an error on formatting failure.
 pub fn apply_transform(
     transform: Option<&AffineTransform>,
     svg_attrs: &mut String,
 ) -> Result<(f64, f64)> {
-    let mut tx_pt = 0.0;
-    let mut ty_pt = 0.0;
+    let mut tx_units = 0.0;
+    let mut ty_units = 0.0;
 
     if let Some(tf) = transform {
         // Use provided scale/shear values, defaulting to identity transform components if missing
@@ -178,26 +178,27 @@ pub fn apply_transform(
         // or default to EMU if the transform unit itself is missing (based on API typical behavior).
         let translate_unit = tf.unit.as_ref().cloned().unwrap_or(Unit::Emu);
 
-        tx_pt = dimension_to_pt(Some(&Dimension {
+        // Use dimension_to_svg_units for translation components
+        tx_units = dimension_to_svg_units(Some(&Dimension {
             magnitude: Some(tf.translate_x.unwrap_or(0.0)), // Default magnitude to 0 if missing
             unit: Some(translate_unit.clone()),
         }));
-        ty_pt = dimension_to_pt(Some(&Dimension {
+        ty_units = dimension_to_svg_units(Some(&Dimension {
             magnitude: Some(tf.translate_y.unwrap_or(0.0)), // Default magnitude to 0 if missing
             unit: Some(translate_unit),
         }));
 
         // Construct the SVG transform matrix: matrix(a, b, c, d, e, f)
-        // Where: a=scaleX, b=shearY, c=shearX, d=scaleY, e=translateX, f=translateY
+        // Where: a=scaleX, b=shearY, c=shearX, d=scaleY, e=translateX(units), f=translateY(units)
         write!(
             svg_attrs,
             r#" transform="matrix({} {} {} {} {} {})""#,
-            scale_x, shear_y, shear_x, scale_y, tx_pt, ty_pt
+            scale_x, shear_y, shear_x, scale_y, tx_units, ty_units
         )?;
     } else {
         // No transform provided, leave svg_attrs unchanged and return (0, 0) translation.
     }
-    Ok((tx_pt, ty_pt)) // Return translation in points
+    Ok((tx_units, ty_units)) // Return translation in SVG units
 }
 
 // --- Model Helper Traits ---

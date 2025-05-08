@@ -260,62 +260,58 @@ fn convert_shape_to_svg(
     color_scheme: Option<&ColorScheme>,
     svg_output: &mut String,
 ) -> Result<()> {
-    // Calculate base dimensions in points
-    let width_pt = dimension_to_pt(size.and_then(|s| s.width.as_ref()));
-    let height_pt = dimension_to_pt(size.and_then(|s| s.height.as_ref()));
+    // Calculate base dimensions in SVG units
+    let width_units = dimension_to_svg_units(size.and_then(|s| s.width.as_ref()));
+    let height_units = dimension_to_svg_units(size.and_then(|s| s.height.as_ref()));
 
     // --- Handle Transform ---
-    let mut outer_group_transform_attr = String::new();
+    // Decompose transform for separate application to group (translate) and geometry (scale/shear)
+    let mut translate_transform_attr = String::new();
     let mut geometry_transform_attr = String::new();
-    let mut tx_pt = 0.0;
-    let mut ty_pt = 0.0;
-    let mut scale_x = 1.0;
-    let mut scale_y = 1.0;
-    let mut shear_x = 0.0;
-    let mut shear_y = 0.0;
-
-    if let Some(tf) = transform {
-        scale_x = tf.scale_x.unwrap_or(1.0);
-        scale_y = tf.scale_y.unwrap_or(1.0);
-        shear_x = tf.shear_x.unwrap_or(0.0);
-        shear_y = tf.shear_y.unwrap_or(0.0);
-
+    let (scale_x, scale_y, shear_x, shear_y, tx_units, ty_units) = if let Some(tf) = transform {
+        let sx = tf.scale_x.unwrap_or(1.0);
+        let sy = tf.scale_y.unwrap_or(1.0);
+        let shx = tf.shear_x.unwrap_or(0.0);
+        let shy = tf.shear_y.unwrap_or(0.0);
         let translate_unit = tf.unit.as_ref().cloned().unwrap_or(Unit::Emu);
-        tx_pt = dimension_to_pt(Some(&Dimension {
+        let tx = dimension_to_svg_units(Some(&Dimension {
             magnitude: Some(tf.translate_x.unwrap_or(0.0)),
             unit: Some(translate_unit.clone()),
         }));
-        ty_pt = dimension_to_pt(Some(&Dimension {
+        let ty = dimension_to_svg_units(Some(&Dimension {
             magnitude: Some(tf.translate_y.unwrap_or(0.0)),
             unit: Some(translate_unit),
         }));
+        (sx, sy, shx, shy, tx, ty)
+    } else {
+        // Default to identity transform components
+        (1.0, 1.0, 0.0, 0.0, 0.0, 0.0)
+    };
 
-        // Outer group only gets translation
-        if tx_pt != 0.0 || ty_pt != 0.0 {
-            write!(
-                outer_group_transform_attr,
-                r#" transform="translate({} {})""#,
-                tx_pt, ty_pt
-            )?;
-        }
+    // Build transform string for outer group (translation only)
+    if tx_units != 0.0 || ty_units != 0.0 {
+        write!(
+            translate_transform_attr,
+            r#" transform="translate({} {})""#,
+            tx_units, ty_units
+        )?;
+    }
 
-        // Geometry gets scale/shear matrix (relative to translated origin)
-        if scale_x != 1.0 || scale_y != 1.0 || shear_x != 0.0 || shear_y != 0.0 {
-            write!(
-                geometry_transform_attr,
-                r#" transform="matrix({} {} {} {} 0 0)""#,
-                scale_x, shear_y, shear_x, scale_y
-            )?;
-        }
+    // Build transform string for geometry (scale/shear only, relative to 0,0)
+    if scale_x != 1.0 || scale_y != 1.0 || shear_x != 0.0 || shear_y != 0.0 {
+        write!(
+            geometry_transform_attr,
+            r#" transform="matrix({} {} {} {} 0 0)""#,
+            scale_x, shear_y, shear_x, scale_y
+        )?;
     }
 
     // --- Start Outer Group ---
-    // This group only has translation applied (if any).
+    // Apply the full transform from apply_transform here
     writeln!(
         svg_output,
         "<g data-object-id=\"{}\"{}>",
-        element_id,
-        outer_group_transform_attr // Only translate transform here
+        element_id, translate_transform_attr
     )?;
 
     // --- Render Shape Geometry ---
@@ -328,28 +324,33 @@ fn convert_shape_to_svg(
         .as_ref()
         .unwrap_or(&crate::models::shape::ShapeType::TypeUnspecified);
 
-    if width_pt > 0.0 && height_pt > 0.0 {
+    // Render geometry relative to the group's transformed origin (0,0)
+    // using the calculated SVG unit dimensions.
+    if width_units > 0.0 && height_units > 0.0 {
         if shape.shape_properties.is_some() {
             let shape_style = build_shape_style(shape_props_ref, color_scheme)?;
 
+            // Geometry no longer needs individual transform attribute,
+            // as the parent group has the full transform.
             match shape_type {
                 crate::models::shape::ShapeType::Rectangle
                 | crate::models::shape::ShapeType::TextBox => {
                     writeln!(
                         svg_output,
-                        // Apply geometry transform here
                         r#"  <rect x="0" y="0" width="{}" height="{}" style="{}"{} />"#,
-                        width_pt, height_pt, shape_style, geometry_transform_attr
+                        width_units, height_units, shape_style, geometry_transform_attr
                     )?;
                 }
                 crate::models::shape::ShapeType::RoundRectangle => {
-                    let default_rx = (width_pt * 0.08).min(height_pt * 0.08).max(2.0);
-                    // Apply geometry transform here
+                    // Calculate rx based on SVG units
+                    let default_rx = (width_units * 0.08)
+                        .min(height_units * 0.08)
+                        .max(2.0 * (96.0 / PT_PER_INCH)); // Scale min rx
                     writeln!(
                         svg_output,
                         r#"  <rect x="0" y="0" width="{}" height="{}" rx="{}" ry="{}" style="{}"{} />"#,
-                        width_pt,
-                        height_pt,
+                        width_units,
+                        height_units,
                         default_rx,
                         default_rx,
                         shape_style,
@@ -357,31 +358,28 @@ fn convert_shape_to_svg(
                     )?;
                 }
                 crate::models::shape::ShapeType::Ellipse => {
-                    // Apply geometry transform here
                     writeln!(
                         svg_output,
-                        // Ellipse uses cx/cy, so transform needs careful application.
-                        // Easiest is to wrap ellipse in a <g> with the transform.
-                        "<g{}> <ellipse cx=\"{}\" cy=\"{}\" rx=\"{}\" ry=\"{}\" style=\"{}\" /> </g>",
-                        geometry_transform_attr, // Apply transform to wrapper group
-                        width_pt / 2.0, // cx/cy relative to wrapper group's 0,0
-                        height_pt / 2.0,
-                        width_pt / 2.0, // rx/ry are base dimensions
-                        height_pt / 2.0,
-                        shape_style
+                        // Ellipse cx/cy/rx/ry use SVG units now
+                        "<ellipse cx=\"{}\" cy=\"{}\" rx=\"{}\" ry=\"{}\" style=\"{}\"{} />",
+                        width_units / 2.0,
+                        height_units / 2.0,
+                        width_units / 2.0,
+                        height_units / 2.0,
+                        shape_style,
+                        geometry_transform_attr,
                     )?;
                 }
                 _ => {
-                    // Placeholder geometry - apply transform to it as well
                     warn!("Unsupported or unspecified shape type '{:?}' for element ID: {}. Rendering placeholder.", shape_type, element_id);
                     writeln!(
                         svg_output,
                         r#"  <rect x="0" y="0" width="{}" height="{}" style="fill:#e0e0e0; stroke:gray; stroke-dasharray: 3 3; fill-opacity:0.7;"{} />"#,
-                        width_pt, height_pt, geometry_transform_attr
+                        width_units, height_units, geometry_transform_attr,
                     )?;
-                    // Text inside placeholder doesn't need the geometry transform
                     writeln!(
                         svg_output,
+                        // Use pt for font size style
                         r#"  <text x="2" y="10" style="font-family:sans-serif; font-size:8pt; fill:#555;">Unsupported Shape: {}</text>"#,
                         escape_svg_text(&format!("{:?}", shape_type))
                     )?;
@@ -393,10 +391,11 @@ fn convert_shape_to_svg(
                 element_id
             );
         }
-    } else if width_pt > 0.0 || height_pt > 0.0 {
+    } else if width_units > 0.0 || height_units > 0.0 {
+        // Check units
         warn!(
-            "Shape (id: {}) has zero width or height ({}x{}pt). Geometry skipped.",
-            element_id, width_pt, height_pt
+            "Shape (id: {}) has zero width or height ({}x{} units). Geometry skipped.",
+            element_id, width_units, height_units
         );
     }
 
@@ -462,7 +461,7 @@ fn convert_shape_to_svg(
         let text_padding_bottom = 2.0;
         let text_padding_left = 3.0;
 
-        if width_pt > 0.0 && height_pt > 0.0 {
+        if width_units > 0.0 && height_units > 0.0 {
             // Find the shape's own primary paragraph style (if any)
             let mut shape_paragraph_style: Option<ParagraphStyle> = None;
             if let Some(elements) = &text.text_elements {
@@ -499,12 +498,13 @@ fn convert_shape_to_svg(
                 );
             }
 
-            // Create <foreignObject> inside the outer group. Use base width/height.
+            // Create <foreignObject> inside the outer group. Use calculated width/height units.
+            // The element's transform (scale/shear) is applied to the parent <g>, not the foreignObject itself.
             writeln!(
                 svg_output,
                 r#"  <foreignObject x="0" y="0" width="{}" height="{}" overflow="visible">"#,
-                scale_x * width_pt, // Use BASE dimensions here
-                scale_y * height_pt
+                width_units,  // Use base units
+                height_units  // Use base units
             )?;
 
             let div_padding_style = format!(
@@ -533,8 +533,8 @@ fn convert_shape_to_svg(
             writeln!(svg_output, "  </foreignObject>")?;
         } else if !text.text_elements.as_ref().map_or(true, |v| v.is_empty()) {
             debug!(
-                "Skipping text rendering for shape ID {} due to zero-area shape ({}x{}pt).",
-                element_id, width_pt, height_pt
+                "Skipping text rendering for shape ID {} due to zero-area shape ({}x{} units).",
+                element_id, width_units, height_units
             );
         }
     }
@@ -865,30 +865,33 @@ fn convert_image_to_svg(
     svg_output: &mut String,
 ) -> Result<()> {
     let mut img_attrs = String::new();
-    // apply_transform gets the full matrix attribute string
-    let (_, _) = apply_transform(transform, &mut img_attrs)?; // We only need the attribute string
-    let width_pt = dimension_to_pt(size.and_then(|s| s.width.as_ref()));
-    let height_pt = dimension_to_pt(size.and_then(|s| s.height.as_ref()));
+    // apply_transform gets the full matrix attribute string (already uses SVG units for translate)
+    apply_transform(transform, &mut img_attrs)?;
+    let width_units = dimension_to_svg_units(size.and_then(|s| s.width.as_ref()));
+    let height_units = dimension_to_svg_units(size.and_then(|s| s.height.as_ref()));
 
-    if width_pt <= 0.0 || height_pt <= 0.0 {
+    // Check dimensions in SVG units
+    if width_units <= 0.0 || height_units <= 0.0 {
         warn!(
-            "Skipping image element {} with zero dimensions ({}x{}pt).",
-            element_id, width_pt, height_pt
+            "Skipping image element {} with zero dimensions ({}x{} units).",
+            element_id, width_units, height_units
         );
         return Ok(());
     }
 
     if let Some(url) = &image_data.content_url {
         let safe_url = url; // Assuming URL is safe enough for XML attribute
-                            // Apply transform directly to the <image> tag. Position at (0,0) relative to the transform.
+                            // Apply transform directly to the <image> tag.
+                            // Position at (0,0) relative to the transform matrix.
+                            // Width/Height use calculated SVG units.
         write!(
             svg_output,
             r#"<image x="0" y="0" width="{}" height="{}" xlink:href="{}"{} preserveAspectRatio="xMidYMid meet" data-object-id="{}"/>"#,
-            width_pt,
-            height_pt,
+            width_units,
+            height_units,
             safe_url,
-            img_attrs,
-            element_id // img_attrs contains the transform
+            img_attrs, // Contains the full transform matrix
+            element_id
         )?;
     } else {
         warn!("Image element {} is missing contentUrl.", element_id);
@@ -902,7 +905,7 @@ fn convert_image_to_svg(
         write!(
             svg_output,
             r#"<rect width="{}" height="{}" style="fill:#e0e0e0; stroke:gray; fill-opacity:0.5;" />"#,
-            width_pt, height_pt
+            width_units, height_units
         )?;
         write!(
             svg_output,
@@ -940,31 +943,33 @@ fn convert_line_to_svg(
     let mut x2 = 0.0;
     let mut y2 = 0.0;
 
-    // 1. Calculate Transformed Coordinates
+    // 1. Calculate Transformed Coordinates in SVG Units
     // The line exists in a local coordinate system defined by 'size', typically from (0,0)
     // to (width, height) where width or height might be zero for horizontal/vertical lines.
     // The 'transform' maps this local system to page coordinates.
-    let local_width_pt = dimension_to_pt(size.and_then(|s| s.width.as_ref()));
-    let local_height_pt = dimension_to_pt(size.and_then(|s| s.height.as_ref()));
+    let local_width_units = dimension_to_svg_units(size.and_then(|s| s.width.as_ref()));
+    let local_height_units = dimension_to_svg_units(size.and_then(|s| s.height.as_ref()));
 
     // Apply the affine transformation matrix [a c e / b d f / 0 0 1]
     // to the start point (local 0, 0) and end point (local W, H).
+    // Scale (a,d) and Shear (b,c) are unitless.
+    // Translation (e,f) needs to be in SVG units.
     if let Some(tf) = transform {
-        // DON'T CHANGE THIS!
-        let a = tf.scale_x.unwrap_or(0.0); // Default to 0.0 for scale if missing
-        let b = tf.shear_y.unwrap_or(0.0); // b = shearY
-        let c = tf.shear_x.unwrap_or(0.0); // c = shearX
-        let d = tf.scale_y.unwrap_or(0.0); // Default to 0.0 for scale if missing
+        let a = tf.scale_x.unwrap_or(1.0); // Default scale to 1.0 if missing
+        let b = tf.shear_y.unwrap_or(0.0);
+        let c = tf.shear_x.unwrap_or(0.0);
+        let d = tf.scale_y.unwrap_or(1.0); // Default scale to 1.0 if missing
         let translate_unit = tf
             .unit
             .as_ref()
             .cloned()
             .unwrap_or(crate::models::common::Unit::Emu);
-        let e = dimension_to_pt(Some(&Dimension {
+        // Calculate translation e, f in SVG units
+        let e = dimension_to_svg_units(Some(&Dimension {
             magnitude: Some(tf.translate_x.unwrap_or(0.0)),
             unit: Some(translate_unit.clone()),
         }));
-        let f = dimension_to_pt(Some(&Dimension {
+        let f = dimension_to_svg_units(Some(&Dimension {
             magnitude: Some(tf.translate_y.unwrap_or(0.0)),
             unit: Some(translate_unit),
         }));
@@ -974,14 +979,15 @@ fn convert_line_to_svg(
         y1 = f;
 
         // Transformed end point (local W, H) -> (aW + cH + e, bW + dH + f)
-        x2 = a * local_width_pt + c * local_height_pt + e;
-        y2 = b * local_width_pt + d * local_height_pt + f;
+        // Use local dimensions in SVG units
+        x2 = a * local_width_units + c * local_height_units + e;
+        y2 = b * local_width_units + d * local_height_units + f;
     } else {
-        // Defensive: If no transform, assume line starts at (0,0) and size defines end point.
+        // Defensive: If no transform, assume line starts at (0,0) and size defines end point in SVG units.
         x1 = 0.0;
         y1 = 0.0;
-        x2 = local_width_pt;
-        y2 = local_height_pt;
+        x2 = local_width_units;
+        y2 = local_height_units;
         eprintln!(
             "Warning: Line element {} lacks a transform. Coordinates might be incorrect.",
             element_id
@@ -1104,31 +1110,38 @@ fn render_placeholder(
     svg_output: &mut String,
 ) -> Result<()> {
     let mut ph_attrs = String::new();
-    let (tx_pt, ty_pt) = apply_transform(transform, &mut ph_attrs)?; // Get transform attributes and translation
-    let width_pt = dimension_to_pt(size.and_then(|s| s.width.as_ref())).max(20.0); // Min width
-    let height_pt = dimension_to_pt(size.and_then(|s| s.height.as_ref())).max(10.0); // Min height
+    // apply_transform now returns translation in SVG units
+    let (tx_units, ty_units) = apply_transform(transform, &mut ph_attrs)?;
+    // Calculate placeholder dimensions in SVG units
+    let min_width_units = 20.0 * (96.0 / PT_PER_INCH);
+    let min_height_units = 10.0 * (96.0 / PT_PER_INCH);
+    let width_units =
+        dimension_to_svg_units(size.and_then(|s| s.width.as_ref())).max(min_width_units);
+    let height_units =
+        dimension_to_svg_units(size.and_then(|s| s.height.as_ref())).max(min_height_units);
 
     // Apply transform to a group containing the placeholder visuals
-    // Use matrix from ph_attrs if present, otherwise use translate for position.
-    let group_transform = if ph_attrs.is_empty() && (tx_pt != 0.0 || ty_pt != 0.0) {
-        format!(r#" transform="translate({} {})""#, tx_pt, ty_pt)
-    } else {
-        ph_attrs // Contains the full matrix or is empty
-    };
+    // ph_attrs already contains the full matrix transform from apply_transform.
+    // The fallback translate is no longer needed as apply_transform handles None transform.
+    // let group_transform = if ph_attrs.is_empty() && (tx_units != 0.0 || ty_units != 0.0) {
+    //     format!(r#" transform="translate({} {})""#, tx_units, ty_units)
+    // } else {
+    //     ph_attrs // Contains the full matrix or is empty
+    // };
 
     write!(
         svg_output,
         "<g data-object-id=\"{}\"{}>",
         element_id,
-        group_transform // Use consolidated transform
+        ph_attrs // Use attributes directly from apply_transform
     )?;
-    // Dashed rectangle at 0,0 within group
+    // Dashed rectangle at 0,0 within group, using SVG units
     write!(
         svg_output,
         r#"<rect width="{}" height="{}" style="fill:#f0f0f0; stroke:lightgray; stroke-dasharray:3 3; fill-opacity:0.5;" />"#,
-        width_pt, height_pt
+        width_units, height_units
     )?;
-    // Text label within group
+    // Text label within group (font size still in pt for style)
     write!(
         svg_output,
         r#"<text x="2" y="2" dy="0.8em" style="font-family:sans-serif; font-size:8pt; fill:gray;">{}</text>"#,

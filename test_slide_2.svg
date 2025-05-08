@@ -6,7 +6,7 @@
         </defs>
   <rect width="100%" height="100%" fill="#ffffff" />
 <g data-object-id="g3542a8dbd9b_0_1">
-  <rect x="0" y="0" width="236.2204724409449" height="236.2204724409449" style="fill:#eeeeee; fill-opacity:1.00; stroke:#ff0000; stroke-opacity:1.00; stroke-width:0.75pt;" transform="matrix(3.048 0 0 1.7145 0 0)" />
+  <rect x="0" y="0" width="314.96062992125985" height="314.96062992125985" style="fill:#eeeeee; fill-opacity:1.00; stroke:#ff0000; stroke-opacity:1.00; stroke-width:0.75pt;" transform="matrix(3.048 0 0 1.7145 0 0)" />
 </g>
 
 <foreignObject x="0" y="0" width="314.96062992125985" height="314.96062992125985" overflow="visible" data-object-id="g351625ec973_0_5" transform="matrix(1 0 0 1 0 0)">
@@ -28,7 +28,7 @@
     </table>
   </div>
 </foreignObject>
-<foreignObject x="0" y="0" width="314.96062992125985" height="314.96062992125985" overflow="visible" data-object-id="g3542a8dbd9b_0_2" transform="matrix(1 0 0 1 0 342.6062992125984)">
+<foreignObject x="0" y="0" width="314.96062992125985" height="314.96062992125985" overflow="visible" data-object-id="g3542a8dbd9b_0_2" transform="matrix(1 0 0 1 0 456.8083989501312)">
   <div xmlns="http://www.w3.org/1999/xhtml" style="display: inline-block; transform: scale(1, 1); transform-origin: 0 0; box-sizing: border-box;">
     <table style="border-collapse: collapse; width:480px; height:80px; table-layout: fixed;">
       <colgroup>
@@ -47,16 +47,16 @@
     </table>
   </div>
 </foreignObject>
-<g data-object-id="g3542a8dbd9b_0_3" transform="translate(24.93023622047244 5.534114173228346)">
-  <rect x="0" y="0" width="236.2204724409449" height="236.2204724409449" style="fill:none; stroke:none;" transform="matrix(2.8229 0 0 0.1724 0 0)" />
-  <foreignObject x="0" y="0" width="666.8267716535433" height="40.724409448818896" overflow="visible">
+<g data-object-id="g3542a8dbd9b_0_3" transform="translate(33.240314960629924 7.378818897637795)">
+  <rect x="0" y="0" width="314.96062992125985" height="314.96062992125985" style="fill:none; stroke:none;" transform="matrix(2.8229 0 0 0.1724 0 0)" />
+  <foreignObject x="0" y="0" width="314.96062992125985" height="314.96062992125985" overflow="visible">
     <div xmlns="http://www.w3.org/1999/xhtml" style="width:100%; height:100%; box-sizing: border-box; padding: 2pt 3pt 2pt 3pt;">
 <p style="margin:0; padding:0; position:relative; text-align:start;"><span style="font-family:'Arial'; font-size:24pt; color:#0857c3; font-weight:bold;">Data Engineer Training Course - Curriculum<br/></span></p>
     </div>
   </foreignObject>
 </g>
 
-<foreignObject x="0" y="0" width="314.96062992125985" height="314.96062992125985" overflow="visible" data-object-id="g3542a8dbd9b_0_4" transform="matrix(1 0 0 1 24.93023622047244 42.05722440944882)">
+<foreignObject x="0" y="0" width="314.96062992125985" height="314.96062992125985" overflow="visible" data-object-id="g3542a8dbd9b_0_4" transform="matrix(1 0 0 1 33.240314960629924 56.07629921259843)">
   <div xmlns="http://www.w3.org/1999/xhtml" style="display: inline-block; transform: scale(1, 1); transform-origin: 0 0; box-sizing: border-box;">
     <table style="border-collapse: collapse; width:889.0944881889764px; height:417.77165354330714px; table-layout: fixed;">
       <colgroup>
@@ -163,9 +163,9 @@
     </table>
   </div>
 </foreignObject>
-<g data-object-id="g3542a8dbd9b_0_5" transform="translate(24.93023622047244 364.86507874015746)">
-  <rect x="0" y="0" width="236.2204724409449" height="236.2204724409449" style="fill:none; stroke:none;" transform="matrix(2.5594 0 0 0.0923 0 0)" />
-  <foreignObject x="0" y="0" width="604.5826771653544" height="21.80314960629921" overflow="visible">
+<g data-object-id="g3542a8dbd9b_0_5" transform="translate(33.240314960629924 486.4867716535433)">
+  <rect x="0" y="0" width="314.96062992125985" height="314.96062992125985" style="fill:none; stroke:none;" transform="matrix(2.5594 0 0 0.0923 0 0)" />
+  <foreignObject x="0" y="0" width="314.96062992125985" height="314.96062992125985" overflow="visible">
     <div xmlns="http://www.w3.org/1999/xhtml" style="width:100%; height:100%; box-sizing: border-box; padding: 2pt 3pt 2pt 3pt;">
 <p style="margin:0; padding:0; position:relative; text-align:start;"><span style="font-family:'Arial'; font-size:12pt; color:#000000;">※より良い授業のため，カリキュラムは変更の可能性があります</span><span style="font-family:'Arial'; font-size:12pt; color:#000000;"><br/></span></p>
     </div>

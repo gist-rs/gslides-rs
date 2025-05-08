@@ -10,6 +10,7 @@ use super::{
 };
 use crate::models::{
     colors::ColorScheme,
+    common::Dimension,
     properties::{Alignment, BaselineOffset, ParagraphStyle, TextStyle},
     text::TextContent,
     text_element::TextElementKind,
@@ -699,13 +700,12 @@ pub(crate) fn convert_text_content_to_html(
 
                 // Build paragraph style string
                 let mut p_style = "margin:0; padding:0; position:relative;".to_string();
-                let mut indent_start_pt = 0.0;
-                let ps = &current_paragraph_style;
+                let ps = &current_paragraph_style; // Use the merged paragraph style
                 let text_align = match ps.alignment {
                     Some(Alignment::Center) => "center",
                     Some(Alignment::End) => "end",
                     Some(Alignment::Justified) => "justify",
-                    _ => "start",
+                    _ => "start", // Default to start (includes Alignment::Start or None)
                 };
                 write!(p_style, " text-align:{};", text_align)?;
                 debug!(
@@ -713,40 +713,80 @@ pub(crate) fn convert_text_content_to_html(
                     text_align
                 );
 
-                indent_start_pt = dimension_to_pt(ps.indent_start.as_ref());
                 let indent_first_line_pt = dimension_to_pt(ps.indent_first_line.as_ref());
-                if indent_start_pt > 0.0 {
-                    write!(p_style, " padding-left:{}pt;", indent_start_pt)?;
-                }
                 if indent_first_line_pt != 0.0 {
                     write!(p_style, " text-indent:{}pt;", indent_first_line_pt)?;
                 }
 
+                // --- Line Height for <p> tag ---
+                // Based on current_paragraph_base_style.font_size (which includes bullet styling)
+                // and current_paragraph_style.line_spacing.
+                let para_base_font_unscaled_pt =
+                    dimension_to_pt(current_paragraph_base_style.font_size.as_ref());
+                let para_font_scaled_pt = if para_base_font_unscaled_pt > 0.0 {
+                    para_base_font_unscaled_pt * font_scale.unwrap_or(1.0)
+                } else {
+                    DEFAULT_FONT_SIZE_PT * font_scale.unwrap_or(1.0) // Fallback to scaled default
+                };
+
+                // Use line_spacing from ParagraphStyle (e.g. 100.0 for 100%), default to 100.0 if not set.
+                let line_spacing_percent = ps.line_spacing.unwrap_or(100.0); // Default to 100% if not specified
+
+                if para_font_scaled_pt > 0.0 {
+                    // Only set line-height if we have a valid font size.
+                    let calculated_line_height_pt =
+                        para_font_scaled_pt * (line_spacing_percent as f64 / 100.0);
+                    if calculated_line_height_pt >= 0.1 {
+                        // Using 0.1pt as a very small threshold.
+                        write!(p_style, " line-height:{}pt;", calculated_line_height_pt)?;
+                        debug!(
+                            "[convert_text_content_to_html] Applied line-height: {}pt to <p> (BaseFontScaled: {}pt, LineSpacing: {}%)",
+                            calculated_line_height_pt, para_font_scaled_pt, line_spacing_percent
+                        );
+                    } else {
+                        debug!(
+                            "[convert_text_content_to_html] Calculated line_height {}pt for <p> is too small or zero, omitting. (BaseFontScaled: {}pt, LineSpacing: {}%)",
+                            calculated_line_height_pt, para_font_scaled_pt, line_spacing_percent
+                        );
+                    }
+                }
+
                 // --- Bullet Rendering ---
+                // Add white-space:nowrap for bullet layout if bullet exists to help keep bullet and text together.
+                if pm.bullet.is_some() {
+                    write!(p_style, " white-space:nowrap;")?;
+                }
                 let mut bullet_span = String::new();
                 if let Some(bullet) = &pm.bullet {
-                    write!(p_style, " white-space:nowrap;")?;
                     if let Some(glyph) = &bullet.glyph {
+                        // Vertical tab character sometimes used as a placeholder or non-visible glyph.
                         if !glyph.is_empty() && glyph != "\u{000B}" {
-                            let mut bullet_css = String::new();
-                            apply_html_text_style(
-                                Some(&current_paragraph_base_style),
-                                &mut bullet_css,
+                            let mut bullet_css_style = String::new();
+                            // Bullet text uses current_paragraph_base_style (which already includes bullet's own TextStyle).
+                            // apply_html_text_style handles scaling for the bullet's span font-size internally.
+                            let _bullet_font_size_pt = apply_html_text_style(
+                                // Store return value, even if not used later here
+                                Some(&current_paragraph_base_style), // This style IS the bullet's text style essentially
+                                &mut bullet_css_style,
                                 color_scheme,
                                 font_scale,
-                                line_spacing_reduction, // Pass it here
+                                line_spacing_reduction,
                             )?;
-                            let bullet_left_offset = (indent_start_pt * 0.5).max(0.0);
                             write!(
                                 bullet_span,
-                                r#"<span aria-hidden="true" style="position:absolute; left:{}pt; {}">{}</span>"#,
-                                bullet_left_offset,
-                                bullet_css.trim_end(),
+                                r#"<span aria-hidden="true" style="{}">{}</span>"#,
+                                bullet_css_style.trim_end(),
                                 escape_html_text(glyph)
                             )?;
                         }
                     }
                 }
+
+                // The following block was causing the "cannot find value `font_size_pt`" error
+                // and is removed because paragraph line-height is already handled above.
+                // if font_size_pt != 0.0 {
+                //     write!(p_style, " line-height:{}pt;", font_size_pt)?;
+                // }
 
                 // Write the opening <p> tag and the bullet span to the temp buffer
                 write!(
@@ -755,6 +795,7 @@ pub(crate) fn convert_text_content_to_html(
                     p_style.trim_end(),
                     bullet_span
                 )?;
+
                 paragraph_open = true;
                 first_element_in_doc = false;
             } // End ParagraphMarker handling
@@ -762,29 +803,48 @@ pub(crate) fn convert_text_content_to_html(
             Some(TextElementKind::TextRun(tr)) => {
                 let content = tr.content.as_deref().unwrap_or("");
 
-                // --- Ensure Paragraph is Open (write to temp buffer if needed) ---
-                if !paragraph_open {
-                    warn!("[convert_text_content_to_html] TextRun found without an open paragraph! Starting one.");
-                    let mut p_style = "margin:0; padding:0;".to_string();
-                    let text_align = "start";
-                    write!(p_style, " text-align:{};", text_align)?;
-                    write!(temp_html_buffer, "<p style=\"{}\">", p_style.trim_end())?; // Write to temp buffer
-                    paragraph_open = true;
-                }
-
                 // --- Merge Styles ---
                 let final_run_style =
                     merge_text_styles(tr.style.as_ref(), Some(&current_paragraph_base_style));
 
                 // --- Apply Style to HTML Span ---
                 let mut span_style = String::new();
-                apply_html_text_style(
+                let font_size_pt = apply_html_text_style(
                     Some(&final_run_style),
                     &mut span_style,
                     color_scheme,
                     font_scale,
                     line_spacing_reduction, // Pass it here
                 )?;
+
+                // --- Ensure Paragraph is Open (write to temp buffer if needed) ---
+                if !paragraph_open {
+                    warn!("[convert_text_content_to_html] TextRun found without an open paragraph! Starting one.");
+                    let mut p_style = "margin:0; padding:0;".to_string();
+                    // Use current_paragraph_style for alignment if available, otherwise default.
+                    let current_ps_for_fallback =
+                        initial_paragraph_style.cloned().unwrap_or_default();
+
+                    let text_align = match current_ps_for_fallback.alignment {
+                        Some(Alignment::Center) => "center",
+                        Some(Alignment::End) => "end",
+                        Some(Alignment::Justified) => "justify",
+                        _ => "start",
+                    };
+                    write!(p_style, " text-align:{};", text_align)?;
+
+                    // Fallback line-height based on run's font size if paragraph wasn't open
+                    if font_size_pt > 0.0 {
+                        // Check against base font size of the run
+                        let scaled_font_size_for_line_height =
+                            font_size_pt * font_scale.unwrap_or(1.0);
+                        // Default line spacing (e.g., 120% of font size) or a fixed multiplier for fallback
+                        let fallback_line_height = scaled_font_size_for_line_height * 1.2; // Example: 120%
+                        write!(p_style, " line-height:{}pt;", fallback_line_height)?;
+                    }
+                    write!(temp_html_buffer, "<p style=\"{}\">", p_style.trim_end())?; // Write to temp buffer
+                    paragraph_open = true;
+                }
 
                 // --- Escape Content & Handle Newlines ---
                 let html_content = escape_html_text(content).replace('\n', "<br/>");
@@ -812,27 +872,43 @@ pub(crate) fn convert_text_content_to_html(
                     continue;
                 }
 
-                // --- Ensure Paragraph is Open (write to temp buffer if needed) ---
-                if !paragraph_open {
-                    warn!("[convert_text_content_to_html] AutoText found without an open paragraph! Starting one.");
-                    let mut p_style = "margin:0; padding:0;".to_string();
-                    let text_align = "start";
-                    write!(p_style, " text-align:{};", text_align)?;
-                    write!(temp_html_buffer, "<p style=\"{}\">", p_style.trim_end())?; // Write to temp buffer
-                    paragraph_open = true;
-                }
-
                 // --- Merge Styles ---
                 let final_autotext_style =
                     merge_text_styles(at.style.as_ref(), Some(&current_paragraph_base_style));
                 let mut span_style = String::new();
-                apply_html_text_style(
+                let font_size_pt = apply_html_text_style(
                     Some(&final_autotext_style),
                     &mut span_style,
                     color_scheme,
                     font_scale,
                     line_spacing_reduction, // Pass it here
                 )?;
+
+                // --- Ensure Paragraph is Open (write to temp buffer if needed) ---
+                if !paragraph_open {
+                    warn!("[convert_text_content_to_html] AutoText found without an open paragraph! Starting one.");
+                    let mut p_style = "margin:0; padding:0;".to_string();
+                    // Use current_paragraph_style for alignment if available, otherwise default.
+                    let current_ps_for_fallback =
+                        initial_paragraph_style.cloned().unwrap_or_default();
+                    let text_align = match current_ps_for_fallback.alignment {
+                        Some(Alignment::Center) => "center",
+                        Some(Alignment::End) => "end",
+                        Some(Alignment::Justified) => "justify",
+                        _ => "start",
+                    };
+                    write!(p_style, " text-align:{};", text_align)?;
+
+                    if font_size_pt > 0.0 {
+                        // Check against base font size of the autotext
+                        let scaled_font_size_for_line_height =
+                            font_size_pt * font_scale.unwrap_or(1.0);
+                        let fallback_line_height = scaled_font_size_for_line_height * 1.2; // Example: 120%
+                        write!(p_style, " line-height:{}pt;", fallback_line_height)?;
+                    }
+                    write!(temp_html_buffer, "<p style=\"{}\">", p_style.trim_end())?; // Write to temp buffer
+                    paragraph_open = true;
+                }
 
                 // --- Escape Content & Handle Newlines ---
                 let html_content = escape_html_text(content).replace('\n', "<br/>");
@@ -865,7 +941,10 @@ pub(crate) fn convert_text_content_to_html(
     // Trim surrounding whitespace from the generated HTML block in the temp buffer
     let trimmed_html = temp_html_buffer.trim();
     // Append the cleaned-up HTML to the main output buffer provided by the caller
-    write!(output_buffer, "{}", trimmed_html)?;
+    if !trimmed_html.is_empty() {
+        // Avoid writing if the entire content was empty
+        write!(output_buffer, "{}", trimmed_html)?;
+    }
 
     Ok(())
 }
@@ -886,7 +965,7 @@ fn apply_html_text_style(
     color_scheme: Option<&ColorScheme>,
     font_scale: Option<f64>,
     line_spacing_reduction: Option<f32>, // Added line_spacing_reduction parameter
-) -> Result<()> {
+) -> Result<f64> {
     // Apply line_spacing_reduction first if present and non-zero
     if let Some(reduction) = line_spacing_reduction {
         if reduction != 0.0 {
@@ -901,6 +980,7 @@ fn apply_html_text_style(
         }
     }
 
+    let mut font_size_pt = 0.0;
     if let Some(ts) = style {
         // Font Family
         write!(
@@ -910,6 +990,7 @@ fn apply_html_text_style(
         )?;
         // Font Size (Apply font_scale)
         let base_font_size_pt = dimension_to_pt(ts.font_size.as_ref());
+        font_size_pt = base_font_size_pt;
         let effective_font_size_pt = if base_font_size_pt > 0.0 {
             base_font_size_pt * font_scale.unwrap_or(1.0) // Apply scale
         } else {
@@ -969,5 +1050,5 @@ fn apply_html_text_style(
         // Link - Add specific handling if links should be rendered as <a> tags
         // if let Some(link) = &ts.link { ... }
     }
-    Ok(())
+    Ok(font_size_pt)
 }

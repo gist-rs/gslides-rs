@@ -508,15 +508,45 @@ fn convert_shape_to_svg(
                 height_units * scale_y
             )?;
 
-            let div_padding_style = format!(
+            let padding_style_str = format!(
                 "padding: {}pt {}pt {}pt {}pt;",
                 text_padding_top, text_padding_right, text_padding_bottom, text_padding_left
             );
 
+            // Base style for the div
+            let mut div_final_style = format!(
+                "width:100%; height:100%; box-sizing: border-box; {}",
+                padding_style_str
+            );
+
+            // Apply content alignment using flexbox
+            // shape_props_ref is available from earlier in the function.
+            // ContentAlignment enum is imported via `use crate::models::shape_properties::*;`
+            match shape_props_ref.content_alignment {
+                ContentAlignment::Middle => {
+                    // Using `write!` from `std::fmt::Write` which is already imported.
+                    // The result of write! is a Result, so it needs to be handled, e.g., with `?` or `unwrap()`.
+                    // Since this function returns Result<()>, `?` is appropriate.
+                    write!(
+                        div_final_style,
+                        " display: flex; flex-direction: column; justify-content: center;"
+                    )?;
+                }
+                ContentAlignment::Bottom => {
+                    write!(
+                        div_final_style,
+                        " display: flex; flex-direction: column; justify-content: flex-end;"
+                    )?;
+                }
+                // For ContentAlignment::Top or ContentAlignment::ContentAlignmentUnspecified,
+                // default block layout provides top-alignment, so no additional flex styles are needed.
+                _ => {}
+            }
+
             writeln!(
                 svg_output,
-                r#"    <div xmlns="http://www.w3.org/1999/xhtml" style="width:100%; height:100%; box-sizing: border-box; {}">"#,
-                div_padding_style
+                r#"    <div xmlns="http://www.w3.org/1999/xhtml" style="{}">"#,
+                div_final_style.trim_end() // trim_end() is good practice
             )?;
 
             // *** Pass the merged initial paragraph style to the HTML converter ***

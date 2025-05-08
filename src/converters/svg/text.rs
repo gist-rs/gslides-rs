@@ -634,8 +634,9 @@ pub(crate) fn convert_text_content_to_html(
     initial_paragraph_style: Option<&ParagraphStyle>, // Merged style from shape/placeholder
     effective_text_style_base: &TextStyle,            // Inherited base style
     color_scheme: Option<&ColorScheme>,
-    font_scale: Option<f64>,    // Added font_scale parameter
-    output_buffer: &mut String, // Renamed parameter for clarity
+    font_scale: Option<f64>,             // Added font_scale parameter
+    line_spacing_reduction: Option<f32>, // Added line_spacing_reduction parameter
+    output_buffer: &mut String,          // Renamed parameter for clarity
 ) -> Result<()> {
     let text_elements = match &text_content.text_elements {
         Some(elements) => elements,
@@ -733,6 +734,7 @@ pub(crate) fn convert_text_content_to_html(
                                 &mut bullet_css,
                                 color_scheme,
                                 font_scale,
+                                line_spacing_reduction, // Pass it here
                             )?;
                             let bullet_left_offset = (indent_start_pt * 0.5).max(0.0);
                             write!(
@@ -781,6 +783,7 @@ pub(crate) fn convert_text_content_to_html(
                     &mut span_style,
                     color_scheme,
                     font_scale,
+                    line_spacing_reduction, // Pass it here
                 )?;
 
                 // --- Escape Content & Handle Newlines ---
@@ -828,6 +831,7 @@ pub(crate) fn convert_text_content_to_html(
                     &mut span_style,
                     color_scheme,
                     font_scale,
+                    line_spacing_reduction, // Pass it here
                 )?;
 
                 // --- Escape Content & Handle Newlines ---
@@ -880,18 +884,23 @@ fn apply_html_text_style(
     style: Option<&TextStyle>,
     html_style: &mut String,
     color_scheme: Option<&ColorScheme>,
-    font_scale: Option<f64>, // Added font_scale parameter
+    font_scale: Option<f64>,
+    line_spacing_reduction: Option<f32>, // Added line_spacing_reduction parameter
 ) -> Result<()> {
-    if let Some(scale_value) = font_scale {
-        // Check if scale_value is not 1.0 to avoid redundant style attributes.
-        if (scale_value - 1.0).abs() > f64::EPSILON {
+    // Apply line_spacing_reduction first if present and non-zero
+    if let Some(reduction) = line_spacing_reduction {
+        if reduction != 0.0 {
+            // Google Slides UI shows reduction as a percentage (e.g., 20% for 0.2)
+            // CSS line-height is a multiplier. If reduction is 0.2 (20%), line-height should be 0.8.
+            let line_height_multiplier = 1.0 - reduction;
             write!(
                 html_style,
-                "line-height: {}; display:inline-block;",
-                scale_value
+                "line-height: {:.2}; display:inline-block; ", // Format to 2 decimal places for CSS
+                line_height_multiplier
             )?;
         }
     }
+
     if let Some(ts) = style {
         // Font Family
         write!(

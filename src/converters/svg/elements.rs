@@ -483,18 +483,23 @@ fn convert_shape_to_svg(
                 placeholder_paragraph_style.as_ref(), // Pass Option<&ParagraphStyle>
             );
 
-            // *** Extract font_scale from shape properties ***
-            let font_scale = shape
-                .shape_properties
-                .as_ref()
-                .map(|props| &props.autofit)
-                .and_then(|autofit_ref| autofit_ref.font_scale);
+            // *** Extract font_scale and line_spacing_reduction from shape_properties.autofit ***
+            let autofit_props_opt = shape.shape_properties.as_ref().map(|props| &props.autofit);
+            let font_scale = autofit_props_opt.and_then(|af_props| af_props.font_scale);
+            let line_spacing_reduction =
+                autofit_props_opt.and_then(|af_props| af_props.line_spacing_reduction);
 
-            // Debug log the extracted font_scale
+            // Debug log the extracted values
             if font_scale.is_some() {
                 debug!(
-                    "Shape ID {}: Applying font_scale: {:?}",
+                    "Shape ID {}: Using font_scale: {:?}",
                     element_id, font_scale
+                );
+            }
+            if line_spacing_reduction.is_some() {
+                debug!(
+                    "Shape ID {}: Using line_spacing_reduction: {:?}",
+                    element_id, line_spacing_reduction
                 );
             }
 
@@ -555,7 +560,8 @@ fn convert_shape_to_svg(
                 Some(&final_initial_para_style), // Pass the merged initial style
                 &effective_text_style_base,
                 color_scheme,
-                font_scale, // Pass the extracted font_scale here
+                font_scale,             // Pass the extracted font_scale here
+                line_spacing_reduction, // Pass the extracted line_spacing_reduction here
                 svg_output,
             )?;
 
@@ -845,6 +851,7 @@ fn convert_table_to_svg(
                             cell_para_style.as_ref(),
                             &cell_text_style_base,
                             color_scheme,
+                            None,
                             None,
                             svg_output,
                         )?;

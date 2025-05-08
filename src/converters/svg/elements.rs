@@ -753,7 +753,7 @@ fn convert_table_to_svg(
                         write!(td_attrs, r#" rowspan="{}""#, rowspan)?;
                     }
 
-                    let mut cell_style = "padding: 3pt; vertical-align: top; overflow: hidden; box-sizing:border-box;".to_string();
+                    let mut cell_style = "padding: 3pt; overflow: hidden; box-sizing:border-box;".to_string();
 
                     if let Some(props) = &cell.table_cell_properties {
                         if let Some(bg_fill) = &props.table_cell_background_fill {
@@ -764,7 +764,30 @@ fn convert_table_to_svg(
                                 }
                             }
                         }
-                        // TODO: contentAlignment (map to CSS vertical-align & text-align)
+                        
+                        // Handle contentAlignment for vertical alignment
+                        match props.content_alignment {
+                            Some(ContentAlignment::Middle) => {
+                                write!(cell_style, " vertical-align: middle;")?;
+                            }
+                            Some(ContentAlignment::Top) => {
+                                write!(cell_style, " vertical-align: top;")?;
+                            }
+                            Some(ContentAlignment::Bottom) => {
+                                write!(cell_style, " vertical-align: bottom;")?;
+                            }
+                            None => {
+                                // Default to middle if not specified, common for table cells
+                                write!(cell_style, " vertical-align: middle;")?;
+                            }
+                            // Catch-all for other potential enum variants like Unspecified, Unsupported
+                            _ => {
+                                // Default to middle for any other unhandled cases
+                                write!(cell_style, " vertical-align: middle;")?;
+                            }
+                        }
+                        // Note: Horizontal text alignment within a cell is typically handled by ParagraphStyle
+                        // of the text content itself, not by tableCellProperties.contentAlignment.
                     }
 
                     // Border Styles - CSS borders are applied to the cell itself.

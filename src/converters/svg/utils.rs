@@ -48,6 +48,22 @@ pub fn dimension_to_pt(dim: Option<&Dimension>) -> f64 {
     }
 }
 
+/// Converts an optional `Dimension` to the SVG user units (based on 96 units/inch).
+/// Returns 0.0 if the dimension is `None`, has no magnitude, or uses an unknown/unsupported unit.
+pub fn dimension_to_svg_units(dim: Option<&Dimension>) -> f64 {
+    match dim {
+        Some(d) => {
+            let magnitude = d.magnitude.unwrap_or(0.0);
+            match d.unit.as_ref() {
+                Some(Unit::Emu) => magnitude / EMU_PER_SVG_UNIT,
+                Some(Unit::Pt) => magnitude * (96.0 / PT_PER_INCH), // Convert pt to 96 DPI units
+                _ => 0.0, // Treat unspecified or unknown units as 0
+            }
+        }
+        None => 0.0, // Treat missing Dimension as 0
+    }
+}
+
 // --- Color Formatting ---
 
 /// Converts an `OpaqueColor` to an SVG color string (e.g., `#RRGGBB`).

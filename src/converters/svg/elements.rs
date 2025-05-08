@@ -11,7 +11,10 @@ use super::{
         MastersMap,
     },
     text::{convert_text_content_to_html, merge_paragraph_styles}, // Keep this import
-    utils::{apply_transform, dimension_to_pt, escape_svg_text, format_color, AsShape},
+    utils::{
+        apply_transform, dimension_to_pt, dimension_to_svg_units, escape_svg_text, format_color,
+        AsShape,
+    },
 };
 use crate::models::{
     colors::ColorScheme,
@@ -568,50 +571,52 @@ fn convert_table_to_svg(
     // This transform positions the foreignObject on the page
     let (_, _) = apply_transform(transform, &mut foreign_object_svg_transform_attrs)?;
 
-    // These are the dimensions of the "target box" for the table on the slide
-    let target_width_pt = dimension_to_pt(size.and_then(|s| s.width.as_ref()));
-    let target_height_pt = dimension_to_pt(size.and_then(|s| s.height.as_ref()));
+    // These are the dimensions of the "target box" for the table on the slide in SVG units
+    let target_width_units = dimension_to_svg_units(size.and_then(|s| s.width.as_ref()));
+    let target_height_units = dimension_to_svg_units(size.and_then(|s| s.height.as_ref()));
 
-    // Calculate table's natural (unscaled) content width based on column definitions
-    let mut natural_content_width_pt = 0.0;
+    // Calculate table's natural (unscaled) content width based on column definitions in SVG units
+    let mut natural_content_width_units = 0.0;
 
     if let Some(columns) = &table.table_columns {
         for col_props in columns {
             if let Some(dim) = &col_props.column_width {
-                natural_content_width_pt += dimension_to_pt(Some(dim));
+                natural_content_width_units += dimension_to_svg_units(Some(dim));
             } else {
-                natural_content_width_pt += 50.0; // Default fallback for a column if no width given
+                // Fallback needs consideration - 50.0 was likely pt, need equivalent in units
+                natural_content_width_units += 50.0 * (96.0 / PT_PER_INCH); // Approx 66.67 units
             }
         }
     }
-    // If natural_content_width_pt is still 0 (e.g. no columns or all columns had zero width),
-    // use the target_width_pt as a fallback.
-    if natural_content_width_pt <= 0.0 {
-        natural_content_width_pt = target_width_pt.max(50.0); // Ensure it's not zero
+    // If natural_content_width_units is still 0 use the target_width_units as a fallback.
+    if natural_content_width_units <= 0.0 {
+        natural_content_width_units = target_width_units.max(50.0 * (96.0 / PT_PER_INCH));
+        // Ensure not zero
     }
 
-    // Calculate table's natural (unscaled) content height based on row definitions
-    let mut natural_content_height_pt = 0.0;
+    // Calculate table's natural (unscaled) content height based on row definitions in SVG units
+    let mut natural_content_height_units = 0.0;
     if let Some(rows) = &table.table_rows {
         for row in rows {
             if let Some(dim) = &row.row_height {
-                natural_content_height_pt += dimension_to_pt(Some(dim));
+                natural_content_height_units += dimension_to_svg_units(Some(dim));
             } else {
-                natural_content_height_pt += DEFAULT_FONT_SIZE_PT * 1.5; // Default fallback
+                // Convert default PT font size to units
+                natural_content_height_units += (DEFAULT_FONT_SIZE_PT * 1.5) * (96.0 / PT_PER_INCH);
             }
         }
     }
-    // If natural_content_height_pt is still 0 (e.g. no rows or all rows had zero height),
-    // use the target_height_pt as a fallback.
-    if natural_content_height_pt <= 0.0 {
-        natural_content_height_pt = target_height_pt.max(20.0); // Ensure it's not zero
+    // If natural_content_height_units is still 0 use the target_height_units as a fallback.
+    if natural_content_height_units <= 0.0 {
+        natural_content_height_units = target_height_units.max(20.0 * (96.0 / PT_PER_INCH));
+        // Ensure not zero
     }
 
     // Guard against zero or negative target dimensions for the foreignObject
-    if target_width_pt <= 0.0 || target_height_pt <= 0.0 {
+    if target_width_units <= 0.0 || target_height_units <= 0.0 {
         warn!(
-            "Skipping table element {} due to zero or negative target dimensions for foreignObject ({}x{}pt).",
-            element_id, target_width_pt, target_height_pt
+            "Skipping table element {} due to zero or negative target dimensions for foreignObject ({}x{} units).",
+            element_id, target_width_units, target_height_units
         );
         return Ok(());
     }
@@ -622,17 +627,18 @@ fn convert_table_to_svg(
     write!(
         svg_output,
         r#"<foreignObject x="0" y="0" width="{}" height="{}" overflow="visible" data-object-id="{}"{}>"#,
-        target_width_pt,  // Target width for the foreignObject
-        target_height_pt, // Target height for the foreignObject
+        target_width_units,  // Target width for the foreignObject
+        target_height_units, // Target height for the foreignObject
         element_id,
         foreign_object_svg_transform_attrs // SVG transform for positioning
     )?;
     writeln!(svg_output)?;
 
-    let final_scale_factor = 720.0 / 961.0;
+    let final_scale_factor = 1.0; // Or 720.0/960.0
 
     // --- Scaler <div> within <foreignObject> ---
     // This div will be the natural size of the table content and then scaled.
+    // The table itself will have dimensions in 'px' units for HTML rendering.
     write!(
         svg_output,
         r#"  <div xmlns="http://www.w3.org/1999/xhtml" style="display: inline-block; transform: scale({}, {}); transform-origin: 0 0; box-sizing: border-box;">"#,
@@ -643,11 +649,11 @@ fn convert_table_to_svg(
 
     // Main table style: use border-collapse.
     // Individual cell borders will define the visual borders.
-    // A default overall border for the table element itself can be added if desired, e.g., "border: 0.5pt solid #ccc;"
+    // The table width/height are set in 'px' units, corresponding to the calculated SVG units.
     write!(
         svg_output,
-        r#"    <table style="border-collapse: collapse; width:{}pt; height:{}pt; table-layout: fixed;">"#,
-        natural_content_width_pt, natural_content_height_pt
+        r#"    <table style="border-collapse: collapse; width:{}px; height:{}px; table-layout: fixed;">"#,
+        natural_content_width_units, natural_content_height_units
     )?;
     writeln!(svg_output)?;
 

@@ -320,13 +320,23 @@ pub(crate) fn convert_slide_to_svg(
 ) -> Result<String> {
     let mut svg_string = String::new();
 
-    // Determine page dimensions in points
-    let page_width_pt = dimension_to_pt(presentation_page_size.and_then(|s| s.width.as_ref()));
-    let page_height_pt = dimension_to_pt(presentation_page_size.and_then(|s| s.height.as_ref()));
+    // Determine page dimensions in points for viewBox consistency
+    let viewbox_width_pt = dimension_to_pt(presentation_page_size.and_then(|s| s.width.as_ref()));
+    let viewbox_height_pt = dimension_to_pt(presentation_page_size.and_then(|s| s.height.as_ref()));
 
-    if page_width_pt <= 0.0 || page_height_pt <= 0.0 {
+    // Calculate pixel-equivalent dimensions for width/height attributes (at 96 DPI)
+    let page_width_for_attr = presentation_page_size
+        .and_then(|s| s.width.as_ref())
+        .map(|d| d.magnitude.unwrap_or(0.0))
+        .map_or(0.0, |emu| (emu / EMU_PER_INCH * 96.0).round()); // Use constants::EMU_PER_INCH
+    let page_height_for_attr = presentation_page_size
+        .and_then(|s| s.height.as_ref())
+        .map(|d| d.magnitude.unwrap_or(0.0))
+        .map_or(0.0, |emu| (emu / EMU_PER_INCH * 96.0).round()); // Use constants::EMU_PER_INCH
+
+    if viewbox_width_pt <= 0.0 || viewbox_height_pt <= 0.0 {
         return Err(SvgConversionError::MissingData(
-            "Invalid or missing presentation page size".to_string(),
+            "Invalid or missing presentation page size for viewBox".to_string(),
         ));
     }
 
@@ -334,7 +344,7 @@ pub(crate) fn convert_slide_to_svg(
     writeln!(
         svg_string,
         r#"<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="{0}pt" height="{1}pt" viewBox="0 0 {0} {1}">"#,
-        page_width_pt, page_height_pt
+        page_width_for_attr, page_height_for_attr
     )?;
 
     // Font

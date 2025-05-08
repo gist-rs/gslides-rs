@@ -753,7 +753,8 @@ fn convert_table_to_svg(
                         write!(td_attrs, r#" rowspan="{}""#, rowspan)?;
                     }
 
-                    let mut cell_style = "padding: 3pt; overflow: hidden; box-sizing:border-box;".to_string();
+                    let mut cell_style =
+                        "padding: 3pt; overflow: hidden; box-sizing:border-box;".to_string();
 
                     if let Some(props) = &cell.table_cell_properties {
                         if let Some(bg_fill) = &props.table_cell_background_fill {
@@ -764,7 +765,7 @@ fn convert_table_to_svg(
                                 }
                             }
                         }
-                        
+
                         // Handle contentAlignment for vertical alignment
                         match props.content_alignment {
                             Some(ContentAlignment::Middle) => {
@@ -1016,10 +1017,10 @@ fn convert_line_to_svg(
     // Scale (a,d) and Shear (b,c) are unitless.
     // Translation (e,f) needs to be in SVG units.
     if let Some(tf) = transform {
-        let a = tf.scale_x.unwrap_or(1.0); // Default scale to 1.0 if missing
+        let a = tf.scale_x.unwrap_or(0.0); // Default scale to 1.0 if missing
         let b = tf.shear_y.unwrap_or(0.0);
         let c = tf.shear_x.unwrap_or(0.0);
-        let d = tf.scale_y.unwrap_or(1.0); // Default scale to 1.0 if missing
+        let d = tf.scale_y.unwrap_or(0.0); // Default scale to 1.0 if missing
         let translate_unit = tf
             .unit
             .as_ref()

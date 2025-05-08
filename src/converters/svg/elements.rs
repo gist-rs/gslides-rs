@@ -574,7 +574,6 @@ fn convert_table_to_svg(
 
     // Calculate table's natural (unscaled) content width based on column definitions
     let mut natural_content_width_pt = 0.0;
-    let content_buffer = 2.0; // Small buffer for borders/internal spacing
 
     if let Some(columns) = &table.table_columns {
         for col_props in columns {
@@ -585,10 +584,9 @@ fn convert_table_to_svg(
             }
         }
     }
-    if natural_content_width_pt > 0.0 {
-        natural_content_width_pt += content_buffer;
-    } else {
-        // If no columns, use the target_width_pt as a fallback for natural width
+    // If natural_content_width_pt is still 0 (e.g. no columns or all columns had zero width),
+    // use the target_width_pt as a fallback.
+    if natural_content_width_pt <= 0.0 {
         natural_content_width_pt = target_width_pt.max(50.0); // Ensure it's not zero
     }
 
@@ -603,10 +601,9 @@ fn convert_table_to_svg(
             }
         }
     }
-    if natural_content_height_pt > 0.0 {
-        natural_content_height_pt += content_buffer;
-    } else {
-        // If no rows, use target_height_pt as a fallback for natural height
+    // If natural_content_height_pt is still 0 (e.g. no rows or all rows had zero height),
+    // use the target_height_pt as a fallback.
+    if natural_content_height_pt <= 0.0 {
         natural_content_height_pt = target_height_pt.max(20.0); // Ensure it's not zero
     }
 
@@ -632,42 +629,15 @@ fn convert_table_to_svg(
     )?;
     writeln!(svg_output)?;
 
-    // Calculate scale factors to fit natural content size into target PageElement size
-    let scale_x_candidate = if natural_content_width_pt > 0.0 {
-        target_width_pt / natural_content_width_pt
-    } else {
-        1.0
-    };
-    let scale_y_candidate = if natural_content_height_pt > 0.0 {
-        target_height_pt / natural_content_height_pt
-    } else {
-        1.0
-    };
-
-    let final_scale_factor = if scale_x_candidate < scale_y_candidate {
-        scale_x_candidate
-    } else {
-        scale_y_candidate
-    };
-
-    // Ensure scale factor is not effectively zero if target dimensions are positive.
-    // (This is a simplified check; more robust would be to ensure natural_dims are > 0 before division)
-    let final_scale_factor =
-        if final_scale_factor.abs() < 1e-6 && (target_width_pt > 0.0 || target_height_pt > 0.0) {
-            1.0
-        } else {
-            final_scale_factor
-        };
+    let final_scale_factor = 720.0 / 961.0;
 
     // --- Scaler <div> within <foreignObject> ---
     // This div will be the natural size of the table content and then scaled.
     write!(
         svg_output,
-        r#"  <div xmlns="http://www.w3.org/1999/xhtml" style="width:{}pt; height:{}pt; transform: scale({}, {}); transform-origin: 0 0; box-sizing: border-box;">"#,
-        natural_content_width_pt,  // Natural width before scaling
-        natural_content_height_pt, // Natural height before scaling
-        final_scale_factor,        // Apply uniform scale factor
-        final_scale_factor         // Apply uniform scale factor
+        r#"  <div xmlns="http://www.w3.org/1999/xhtml" style="display: inline-block; transform: scale({}, {}); transform-origin: 0 0; box-sizing: border-box;">"#,
+        final_scale_factor, // Apply uniform scale factor
+        final_scale_factor  // Apply uniform scale factor
     )?;
     writeln!(svg_output)?;
 
@@ -676,7 +646,8 @@ fn convert_table_to_svg(
     // A default overall border for the table element itself can be added if desired, e.g., "border: 0.5pt solid #ccc;"
     write!(
         svg_output,
-        r#"    <table style="border-collapse: collapse; width:100%; height:100%; table-layout: fixed;">"#
+        r#"    <table style="border-collapse: collapse; width:{}pt; height:{}pt; table-layout: fixed;">"#,
+        natural_content_width_pt, natural_content_height_pt
     )?;
     writeln!(svg_output)?;
 

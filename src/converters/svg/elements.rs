@@ -619,18 +619,6 @@ fn convert_table_to_svg(
         return Ok(());
     }
 
-    // Calculate scale factors to fit natural content size into target PageElement size
-    let scale_x = if natural_content_width_pt > 0.0 {
-        target_width_pt / natural_content_width_pt
-    } else {
-        1.0 // Avoid division by zero, no scaling if natural width is zero
-    };
-    let scale_y = if natural_content_height_pt > 0.0 {
-        target_height_pt / natural_content_height_pt
-    } else {
-        1.0 // Avoid division by zero, no scaling if natural height is zero
-    };
-
     // --- <foreignObject> Setup ---
     // Width and height are from the PageElement's size (the target box).
     // The transform attribute positions this box on the slide.
@@ -656,9 +644,7 @@ fn convert_table_to_svg(
         1.0
     };
 
-    // To preserve aspect ratio, use the smaller scale factor for both axes.
-    // This ensures the content fits without distortion.
-    let final_scale_factor = if scale_x_candidate > scale_y_candidate {
+    let final_scale_factor = if scale_x_candidate < scale_y_candidate {
         scale_x_candidate
     } else {
         scale_y_candidate

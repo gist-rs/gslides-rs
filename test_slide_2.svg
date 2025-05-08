@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="720pt" height="405pt" viewBox="0 0 720 405">
+<defs>
+          <style type="text/css">
+            @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@100..900');
+         </style>
+        </defs>
+  <rect width="100%" height="100%" fill="#ffffff" />
+<g data-object-id="g3542a8dbd9b_0_1">
+  <rect x="0" y="0" width="236.2204724409449" height="236.2204724409449" style="fill:#eeeeee; fill-opacity:1.00; stroke:#ff0000; stroke-opacity:1.00; stroke-width:0.75pt;" transform="matrix(3.048 0 0 1.7145 0 0)" />
+</g>
+
+<foreignObject x="0" y="0" width="236.2204724409449" height="236.2204724409449" overflow="visible" data-object-id="g351625ec973_0_5" transform="matrix(1 0 0 1 0 0)">
+  <div xmlns="http://www.w3.org/1999/xhtml" style="width:722pt; height:62pt; transform: scale(0.32717516958579623, 0.32717516958579623); transform-origin: 0 0; box-sizing: border-box;">
+    <table style="border-collapse: collapse; width:100%; height:100%; table-layout: fixed;">
+      <colgroup>
+        <col style="width:360pt;" />
+        <col style="width:360pt;" />
+      </colgroup>
+
+      <tr style="height:30pt;">
+        <td style="padding: 3pt; vertical-align: top; overflow: hidden; box-sizing:border-box; background-color:#9e9e9e; border-top:0.75pt solid #9e9e9e; border-bottom:0.75pt solid #ffff00; border-left:0.75pt solid #9e9e9e; border-right:0.75pt solid #0000ff;"><p style="margin:0; padding:0; position:relative; text-align:start;"><span style="font-family:'Consolas'; font-size:14pt; color:#ff0000; font-weight:bold;">foo<br/></span></p></td>
+        <td style="padding: 3pt; vertical-align: top; overflow: hidden; box-sizing:border-box; background-color:#f4cccc; border-top:0.75pt solid #9e9e9e; border-bottom:0.75pt solid #00ff00; border-left:0.75pt solid #0000ff; border-right:0.75pt solid #9e9e9e;"><p style="margin:0; padding:0; position:relative; text-align:start;"><span style="font-family:'Arial'; font-size:14pt; color:#4285f4; font-weight:bold;">bar<br/></span></p></td>
+      </tr>
+      <tr style="height:30pt;">
+        <td style="padding: 3pt; vertical-align: top; overflow: hidden; box-sizing:border-box; background-color:#eeff41; border-top:0.75pt solid #ffff00; border-bottom:0.75pt solid #9e9e9e; border-left:0.75pt solid #9e9e9e; border-right:0.75pt solid #ff0000;"><p style="margin:0; padding:0; position:relative; text-align:start;"><span style="font-family:'Arial'; font-size:14pt; color:#000000;">123<br/></span></p></td>
+        <td style="padding: 3pt; vertical-align: top; overflow: hidden; box-sizing:border-box; background-color:#ffffff; border-top:0.75pt solid #00ff00; border-bottom:0.75pt solid #9e9e9e; border-left:0.75pt solid #ff0000; border-right:0.75pt solid #9e9e9e;"><p style="margin:0; padding:0; position:relative; text-align:start;"><span style="font-family:'Arial'; font-size:14pt; color:#000000;">45</span><span style="font-family:'Arial'; font-size:14pt; color:#ffffff;">6<br/></span></p></td>
+      </tr>
+    </table>
+  </div>
+</foreignObject>
+</svg>

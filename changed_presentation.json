@@ -110,7 +110,7 @@
                   "endIndex": 6,
                   "paragraphMarker": {
                     "style": {
-                      "alignment": "START",
+                      "alignment": "END",
                       "direction": "LEFT_TO_RIGHT"
                     }
                   }
@@ -9647,7 +9647,7 @@
     }
   ],
   "locale": "en",
-  "revisionId": "nHSxfcNaLQI8LQ",
+  "revisionId": "2U1aXVF7eSp7MQ",
   "notesMaster": {
     "objectId": "n",
     "pageType": "NOTES_MASTER",

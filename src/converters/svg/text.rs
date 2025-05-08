@@ -882,6 +882,16 @@ fn apply_html_text_style(
     color_scheme: Option<&ColorScheme>,
     font_scale: Option<f64>, // Added font_scale parameter
 ) -> Result<()> {
+    if let Some(scale_value) = font_scale {
+        // Check if scale_value is not 1.0 to avoid redundant style attributes.
+        if (scale_value - 1.0).abs() > f64::EPSILON {
+            write!(
+                html_style,
+                "line-height: {}; display:inline-block;",
+                scale_value
+            )?;
+        }
+    }
     if let Some(ts) = style {
         // Font Family
         write!(

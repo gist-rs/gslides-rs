@@ -13,7 +13,7 @@
   <rect x="0" y="0" width="314.96062992125985" height="314.96062992125985" style="fill:#9e9e9e; fill-opacity:1.00; stroke:none;" transform="matrix(2.8401999473571777 0 0 0.6841999888420105 0 0)" />
   <foreignObject x="0" y="0" width="894.5511645219458" height="215.49605947779858" overflow="visible">
     <div xmlns="http://www.w3.org/1999/xhtml" style="width:100%; height:100%; box-sizing: border-box; padding: 2pt 3pt 2pt 3pt; display: flex; flex-direction: column; justify-content: flex-end;">
-<p style="margin:0; padding:0; position:relative; text-align:start;"><span style="font-family:'Noto Sans JP'; font-size:52pt; color:#4285f4;">こ</span><span style="font-family:'Noto Sans JP'; font-size:52pt; color:#ffffff;">ん</span><span style="font-family:'Noto Sans JP'; font-size:52pt; color:#ff0000;">に</span><span style="font-family:'Noto Sans JP'; font-size:52pt; color:#ffffff;">ち</span><span style="font-family:'Noto Sans JP'; font-size:52pt; color:#ff0000;">は<br/></span></p>
+<p style="margin:0; padding:0; position:relative; text-align:end;"><span style="font-family:'Noto Sans JP'; font-size:52pt; color:#4285f4;">こ</span><span style="font-family:'Noto Sans JP'; font-size:52pt; color:#ffffff;">ん</span><span style="font-family:'Noto Sans JP'; font-size:52pt; color:#ff0000;">に</span><span style="font-family:'Noto Sans JP'; font-size:52pt; color:#ffffff;">ち</span><span style="font-family:'Noto Sans JP'; font-size:52pt; color:#ff0000;">は<br/></span></p>
     </div>
   </foreignObject>
 </g>
@@ -22,8 +22,8 @@
   <rect x="0" y="0" width="314.96062992125985" height="314.96062992125985" style="fill:#ffab40; fill-opacity:1.00; stroke:none;" transform="matrix(2.8401999473571777 0 0 0.26420000195503235 0 0)" />
   <foreignObject x="0" y="0" width="894.5511645219458" height="83.21259904095507" overflow="visible">
     <div xmlns="http://www.w3.org/1999/xhtml" style="width:100%; height:100%; box-sizing: border-box; padding: 2pt 3pt 2pt 3pt;">
-<p style="margin:0; padding:0; position:relative; text-align:center;"><span style="font-family:'Noto Sans JP'; font-size:23.8pt; color:#00ff00;">世界<br/></span></p>
-<p style="margin:0; padding:0; position:relative; text-align:center;"><span style="font-family:'Noto Sans JP'; font-size:23.8pt; color:#ff0000; background-color:#0000ff;">123<br/></span></p>
+<p style="margin:0; padding:0; position:relative; text-align:center;"><span style="line-height: 0.85; display:inline-block;font-family:'Noto Sans JP'; font-size:23.8pt; color:#00ff00;">世界<br/></span></p>
+<p style="margin:0; padding:0; position:relative; text-align:center;"><span style="line-height: 0.85; display:inline-block;font-family:'Noto Sans JP'; font-size:23.8pt; color:#ff0000; background-color:#0000ff;">123<br/></span></p>
     </div>
   </foreignObject>
 </g>

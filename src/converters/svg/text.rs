@@ -732,13 +732,19 @@ pub(crate) fn convert_text_content_to_html(
                 // Use line_spacing from ParagraphStyle (e.g. 100.0 for 100%), default to 100.0 if not set.
                 let line_spacing_percent = ps.line_spacing.unwrap_or(100.0); // Default to 100% if not specified
 
-                if para_font_scaled_pt > 0.0 {
+                if para_base_font_unscaled_pt > 0.0 {
+                    // write!(p_style, " line-height:{}pt;", para_base_font_unscaled_pt)?;
+                } else if para_font_scaled_pt > 0.0 {
                     // Only set line-height if we have a valid font size.
                     let calculated_line_height_pt =
                         para_font_scaled_pt * (line_spacing_percent as f64 / 100.0);
                     if calculated_line_height_pt >= 0.1 {
                         // Using 0.1pt as a very small threshold.
-                        write!(p_style, " line-height:{}pt;", calculated_line_height_pt)?;
+                        write!(
+                            p_style,
+                            " line-height:{}pt; id:{:?}",
+                            calculated_line_height_pt, para_base_font_unscaled_pt
+                        )?;
                         debug!(
                             "[convert_text_content_to_html] Applied line-height: {}pt to <p> (BaseFontScaled: {}pt, LineSpacing: {}%)",
                             calculated_line_height_pt, para_font_scaled_pt, line_spacing_percent

@@ -3,7 +3,7 @@ A Rust library for parsing and comparing Google Slides presentations using the v
 
 ## Overview
 
-`gslides_rs` provides Rust data structures mirroring the Google Slides API v1 resources (like Presentations, Pages, Page Elements) and utilities to interact with them. This includes:
+`gslides_tools` provides Rust data structures mirroring the Google Slides API v1 resources (like Presentations, Pages, Page Elements) and utilities to interact with them. This includes:
 
 1.  A basic client to fetch presentation data using service account authentication.
 2.  A diffing engine to compare two presentation structures and report the differences.
@@ -34,10 +34,10 @@ Add the following to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-gslides_rs = "0.1.0" # Or the latest version
+gslides_tools = "0.2.0" # Or the latest version
 
 # Include the diff feature if needed
-# gslides_rs = { version = "0.1.0", features = ["diff"] }
+# gslides_tools = { version = "0.1.0", features = ["diff"] }
 
 # You also need runtime and potentially other dependencies if using the client/examples
 tokio = { version = "1", features = ["full"] }
@@ -82,7 +82,7 @@ This example fetches a presentation and prints basic information and element det
 ```rust
 // examples/fetch_presentation.rs
 
-use gslides_rs::{client, errors::SlidesApiError, models::presentation::Presentation};
+use gslides_tools::{client, errors::SlidesApiError, models::presentation::Presentation};
 use dotenvy::dotenv;
 use std::env;
 
@@ -178,20 +178,20 @@ cargo run --example diff_presentation
 
 ## Error Handling
 
-The client functions return `Result<T, gslides_rs::errors::SlidesApiError>`. Check the `SlidesApiError` enum variants for details on possible failures (network, auth, API errors, JSON parsing, etc.).
+The client functions return `Result<T, gslides_tools::errors::SlidesApiError>`. Check the `SlidesApiError` enum variants for details on possible failures (network, auth, API errors, JSON parsing, etc.).
 
-The diff functions return `Result<T, gslides_rs::diff::error::DiffError>`. Check the `DiffError` enum variants for diff-specific issues (serialization, diffing logic, formatting).
+The diff functions return `Result<T, gslides_tools::diff::error::DiffError>`. Check the `DiffError` enum variants for diff-specific issues (serialization, diffing logic, formatting).
 
 
 ## WASM
 
 ### Setup
-```
+```bash
 cargo install wasm-pack
 ```
 
 ### Build/Release
-```
+```bash
 # Build
 wasm-pack build --scope gist-rs --release --target=nodejs
 
@@ -200,10 +200,10 @@ wasm-pack publish --access=public
 ```
 
 ### Build/Release (no wasm-pack)
-```
+```bash
 # Build
 cargo build --target wasm32-unknown-unknown --release
-wasm-bindgen target/wasm32-unknown-unknown/release/gslides_rs.wasm --out-dir pkg --nodejs
+wasm-bindgen target/wasm32-unknown-unknown/release/gslides_tools.wasm --out-dir pkg --nodejs
 
 # Release
 npm publish pkg --access=public

@@ -403,6 +403,7 @@ fn convert_shape_to_svg(
     let mut effective_text_style_base = TextStyle::default();
     // Style from placeholder
     let mut placeholder_paragraph_style: Option<ParagraphStyle> = None;
+    let mut inherited_content_alignment = ContentAlignment::ContentAlignmentUnspecified;
 
     if let Some(placeholder) = &shape.placeholder {
         if let Some(layout_id) = slide_layout_id {
@@ -421,6 +422,9 @@ fn convert_shape_to_svg(
 
                 // Extract paragraph style from the placeholder element
                 if let Some(placeholder_shape) = placeholder_element.element_kind.as_shape() {
+                    if let Some(props) = &placeholder_shape.shape_properties {
+                        inherited_content_alignment = props.content_alignment.clone();
+                    }
                     if let Some(text) = &placeholder_shape.text {
                         if let Some(elements) = &text.text_elements {
                             for text_element in elements {
@@ -451,6 +455,15 @@ fn convert_shape_to_svg(
             );
         }
     }
+
+    // Resolve final content alignment: shape's specific setting overrides inherited.
+    let shape_specific_alignment = shape_props_ref.content_alignment.clone();
+    let final_content_alignment =
+        if shape_specific_alignment != ContentAlignment::ContentAlignmentUnspecified {
+            shape_specific_alignment
+        } else {
+            inherited_content_alignment
+        };
 
     // --- Render Text Content using <foreignObject> ---
     // Positioned at (0,0) relative to the outer (translate-only) group.
@@ -525,9 +538,9 @@ fn convert_shape_to_svg(
             );
 
             // Apply content alignment using flexbox
-            // shape_props_ref is available from earlier in the function.
+            // Use the resolved final_content_alignment
             // ContentAlignment enum is imported via `use crate::models::shape_properties::*;`
-            match shape_props_ref.content_alignment {
+            match final_content_alignment {
                 ContentAlignment::Middle => {
                     // Using `write!` from `std::fmt::Write` which is already imported.
                     // The result of write! is a Result, so it needs to be handled, e.g., with `?` or `unwrap()`.

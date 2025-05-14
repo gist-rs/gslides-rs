@@ -10,7 +10,6 @@ use super::{
 };
 use crate::models::{
     colors::ColorScheme,
-    common::Dimension,
     properties::{Alignment, BaselineOffset, ParagraphStyle, TextStyle},
     text::TextContent,
     text_element::TextElementKind,

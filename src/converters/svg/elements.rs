@@ -595,7 +595,6 @@ fn convert_shape_to_svg(
 /// # Returns
 /// `Result<()>`
 #[allow(clippy::too_many_arguments)]
-#[allow(clippy::too_many_arguments)]
 fn convert_table_to_svg(
     element_id: &str,
     table: &Table,
@@ -1173,7 +1172,7 @@ fn render_placeholder(
 ) -> Result<()> {
     let mut ph_attrs = String::new();
     // apply_transform now returns translation in SVG units
-    let (tx_units, ty_units) = apply_transform(transform, &mut ph_attrs)?;
+    let (_tx_units, _ty_units) = apply_transform(transform, &mut ph_attrs)?;
     // Calculate placeholder dimensions in SVG units
     let min_width_units = 20.0 * (96.0 / PT_PER_INCH);
     let min_height_units = 10.0 * (96.0 / PT_PER_INCH);

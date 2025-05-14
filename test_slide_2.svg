@@ -1,37 +1,26 @@
-<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="960pt" height="540pt" viewBox="0 0 960 540">
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="960pt" height="720pt" viewBox="0 0 960 720">
 <defs>
           <style type="text/css">
             @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@100..900');
          </style>
         </defs>
   <rect width="100%" height="100%" fill="#ffffff" />
-<g data-object-id="g3542a8dbd9b_0_175" transform="translate(906.0946981627296 511.8922834645669)">
-  <rect x="0" y="0" width="314.96062992125985" height="314.96062992125985" style="fill:none; stroke:none;" transform="matrix(0.1253 0 0 0.0656 0 0)" />
-  <foreignObject x="0" y="0" width="39.46456692913386" height="20.661417322834648" overflow="visible">
+<g data-object-id="p2_i2" transform="translate(54.62152230971129 320.16650918635173)">
+  <rect x="0" y="0" width="314.96062992125985" height="314.96062992125985" style="fill:none; stroke:none;" transform="matrix(2.6587 0 0 0.1589 0 0)" />
+  <foreignObject x="0" y="0" width="837.3858267716536" height="50.04724409448819" overflow="visible">
     <div xmlns="http://www.w3.org/1999/xhtml" style="width:100%; height:100%; box-sizing: border-box; padding: 2pt 3pt 2pt 3pt;">
-<p style="margin:0; padding:0; position:relative; text-align:end;"><span style="font-family:'Noto Sans JP'; font-size:8pt; color:#000000;">2</span><span style="font-family:'Noto Sans JP'; font-size:8pt; color:#000000;"><br/></span></p>
+<p xmlns="http://www.w3.org/1999/xhtml" style="margin:0; padding:0; position:relative; text-align:start; line-height:26.999999284744263pt;"><span style="font-family:'Noto Sans JP'; font-size:30pt; color:#000000; font-weight:bold; line-height:30pt;">PeopleDot Slide format<br/></span></p>
     </div>
   </foreignObject>
 </g>
 
-<g data-object-id="g3542a8dbd9b_0_176" transform="translate(35.333333333333336 120.05503937007875)">
-  <rect x="0" y="0" width="314.96062992125985" height="314.96062992125985" style="fill:none; stroke:none;" transform="matrix(0.8957 0 0 0.1561 0 0)" />
-  <foreignObject x="0" y="0" width="282.1102362204725" height="49.16535433070866" overflow="visible">
+<g data-object-id="p2_i3" transform="translate(57.99989501312336 375.072125984252)">
+  <rect x="0" y="0" width="314.96062992125985" height="314.96062992125985" style="fill:none; stroke:none;" transform="matrix(2.6479 0 0 0.0917 0 0)" />
+  <foreignObject x="0" y="0" width="833.9842519685039" height="28.88188976377953" overflow="visible">
     <div xmlns="http://www.w3.org/1999/xhtml" style="width:100%; height:100%; box-sizing: border-box; padding: 2pt 3pt 2pt 3pt;">
-<p style="margin:0; padding:0; position:relative; text-align:start;"><span style="font-family:'Noto Sans JP'; font-size:12pt; color:#000000;">あのイーハトーヴォのすきとおった風、夏でも底に冷たさをもつ<br/></span></p>
+<p xmlns="http://www.w3.org/1999/xhtml" style="margin:0; padding:0; position:relative; text-align:start; line-height:10.799999713897705pt;"><span style="font-family:'Noto Sans JP'; font-size:12pt; color:#000000; line-height:12pt;">2024.5.31 | ver.1.0.0<br/></span></p>
     </div>
   </foreignObject>
 </g>
 
-<line x1="45.333333333333336" y1="169.41173228346457" x2="304.6404199475066" y2="169.41173228346457" style="stroke:#bf9d6d; stroke-opacity:1; stroke-width:0.75pt;" data-object-id="g3542a8dbd9b_0_177"/>
-<g data-object-id="g3542a8dbd9b_0_180" transform="translate(645.1372178477691 120.05503937007875)">
-  <rect x="0" y="0" width="314.96062992125985" height="314.96062992125985" style="fill:none; stroke:none;" transform="matrix(0.8957 0 0 0.1561 0 0)" />
-  <foreignObject x="0" y="0" width="282.1102362204725" height="49.16535433070866" overflow="visible">
-    <div xmlns="http://www.w3.org/1999/xhtml" style="width:100%; height:100%; box-sizing: border-box; padding: 2pt 3pt 2pt 3pt;">
-<p style="margin:0; padding:0; position:relative; text-align:start; line-height:14.63pt; id:0.0"><span style="font-family:'Noto Sans JP'; font-size:12pt; color:#000000;">あのイーハトーヴォのすきとおった風、夏でも底に冷たさをもつ<br/></span></p>
-    </div>
-  </foreignObject>
-</g>
-
-<line x1="655.1372178477691" y1="169.41173228346457" x2="914.4443044619424" y2="169.41173228346457" style="stroke:#bf9d6d; stroke-opacity:1; stroke-width:0.75pt;" data-object-id="g3542a8dbd9b_0_181"/>
 </svg>

@@ -647,15 +647,14 @@ pub(crate) fn convert_text_content_to_html(
     let mut temp_html_buffer = String::new();
 
     let mut paragraph_open = false;
-    #[allow(unused_variables)]
-    let mut first_element_in_doc = true; // Track if it's the very first element
+    // let mut first_element_in_doc = true; // Removed as unused
     let mut current_paragraph_base_style = effective_text_style_base.clone();
     // This will hold the fully resolved style for the <p> tag being opened
     let mut current_paragraph_style = initial_paragraph_style.cloned().unwrap_or_default();
     #[allow(unused_variables)]
     let mut list_nesting_level = 0; // Track list level for potential <ul><li> structure later
 
-    for element in text_elements {
+    for (element_idx, element) in text_elements.iter().enumerate() {
         match &element.kind {
             Some(TextElementKind::ParagraphMarker(pm)) => {
                 // --- Close Previous Paragraph ---
@@ -717,45 +716,6 @@ pub(crate) fn convert_text_content_to_html(
                     write!(p_style, " text-indent:{}pt;", indent_first_line_pt)?;
                 }
 
-                // --- Line Height for <p> tag ---
-                // Based on current_paragraph_base_style.font_size (which includes bullet styling)
-                // and current_paragraph_style.line_spacing.
-                let para_base_font_unscaled_pt =
-                    dimension_to_pt(current_paragraph_base_style.font_size.as_ref());
-                let para_font_scaled_pt = if para_base_font_unscaled_pt > 0.0 {
-                    para_base_font_unscaled_pt * font_scale.unwrap_or(1.0)
-                } else {
-                    DEFAULT_FONT_SIZE_PT * font_scale.unwrap_or(1.0) // Fallback to scaled default
-                };
-
-                // Use line_spacing from ParagraphStyle (e.g. 100.0 for 100%), default to 100.0 if not set.
-                let line_spacing_percent = ps.line_spacing.unwrap_or(100.0); // Default to 100% if not specified
-
-                if para_base_font_unscaled_pt > 0.0 {
-                    // write!(p_style, " line-height:{}pt;", para_base_font_unscaled_pt)?;
-                } else if para_font_scaled_pt > 0.0 {
-                    // Only set line-height if we have a valid font size.
-                    let calculated_line_height_pt =
-                        para_font_scaled_pt * (line_spacing_percent as f64 / 100.0);
-                    if calculated_line_height_pt >= 0.1 {
-                        // Using 0.1pt as a very small threshold.
-                        write!(
-                            p_style,
-                            " line-height:{}pt; id:{:?}",
-                            calculated_line_height_pt, para_base_font_unscaled_pt
-                        )?;
-                        debug!(
-                            "[convert_text_content_to_html] Applied line-height: {}pt to <p> (BaseFontScaled: {}pt, LineSpacing: {}%)",
-                            calculated_line_height_pt, para_font_scaled_pt, line_spacing_percent
-                        );
-                    } else {
-                        debug!(
-                            "[convert_text_content_to_html] Calculated line_height {}pt for <p> is too small or zero, omitting. (BaseFontScaled: {}pt, LineSpacing: {}%)",
-                            calculated_line_height_pt, para_font_scaled_pt, line_spacing_percent
-                        );
-                    }
-                }
-
                 // --- Bullet Rendering ---
                 // Add white-space:nowrap for bullet layout if bullet exists to help keep bullet and text together.
                 if pm.bullet.is_some() {
@@ -767,11 +727,8 @@ pub(crate) fn convert_text_content_to_html(
                         // Vertical tab character sometimes used as a placeholder or non-visible glyph.
                         if !glyph.is_empty() && glyph != "\u{000B}" {
                             let mut bullet_css_style = String::new();
-                            // Bullet text uses current_paragraph_base_style (which already includes bullet's own TextStyle).
-                            // apply_html_text_style handles scaling for the bullet's span font-size internally.
                             let _bullet_font_size_pt = apply_html_text_style(
-                                // Store return value, even if not used later here
-                                Some(&current_paragraph_base_style), // This style IS the bullet's text style essentially
+                                Some(&current_paragraph_base_style),
                                 &mut bullet_css_style,
                                 color_scheme,
                                 font_scale,
@@ -787,22 +744,95 @@ pub(crate) fn convert_text_content_to_html(
                     }
                 }
 
-                // The following block was causing the "cannot find value `font_size_pt`" error
-                // and is removed because paragraph line-height is already handled above.
-                // if font_size_pt != 0.0 {
-                //     write!(p_style, " line-height:{}pt;", font_size_pt)?;
-                // }
+                // --- Determine Line Height for <p> tag ---
+                let mut p_line_height_pt: Option<f64> = None;
+                // Look ahead for the first TextRun or AutoText in this paragraph
+                // to determine the line height based on its font size.
+                for next_element_idx in (element_idx + 1)..text_elements.len() {
+                    if let Some(next_element_kind) = &text_elements[next_element_idx].kind {
+                        match next_element_kind {
+                            TextElementKind::TextRun(tr_next) => {
+                                let style_for_line_height = merge_text_styles(
+                                    tr_next.style.as_ref(),
+                                    Some(&current_paragraph_base_style),
+                                );
+                                let base_fs =
+                                    dimension_to_pt(style_for_line_height.font_size.as_ref());
+                                let scaled_fs = if base_fs > 0.0 {
+                                    base_fs
+                                } else {
+                                    DEFAULT_FONT_SIZE_PT
+                                } * font_scale.unwrap_or(1.0);
+                                p_line_height_pt = Some(scaled_fs);
+                                break;
+                            }
+                            TextElementKind::AutoText(at_next) => {
+                                let style_for_line_height = merge_text_styles(
+                                    at_next.style.as_ref(),
+                                    Some(&current_paragraph_base_style),
+                                );
+                                let base_fs =
+                                    dimension_to_pt(style_for_line_height.font_size.as_ref());
+                                let scaled_fs = if base_fs > 0.0 {
+                                    base_fs
+                                } else {
+                                    DEFAULT_FONT_SIZE_PT
+                                } * font_scale.unwrap_or(1.0);
+                                p_line_height_pt = Some(scaled_fs);
+                                break;
+                            }
+                            TextElementKind::ParagraphMarker(_) => {
+                                // Found next paragraph marker before any text, stop lookahead.
+                                break;
+                            }
+                        }
+                    }
+                }
+
+                // Fallback: If no TextRun/AutoText found, or if it had no font size,
+                // use the current paragraph's base style's font size (scaled).
+                if p_line_height_pt.is_none() || p_line_height_pt == Some(0.0) {
+                    let base_fs = dimension_to_pt(current_paragraph_base_style.font_size.as_ref());
+                    let scaled_fallback_fs = (if base_fs > 0.0 {
+                        base_fs
+                    } else {
+                        DEFAULT_FONT_SIZE_PT
+                    }) * font_scale.unwrap_or(1.0);
+                    p_line_height_pt = Some(scaled_fallback_fs);
+                }
+
+                if let Some(font_basis_pt) = p_line_height_pt {
+                    // Renamed lh_pt to font_basis_pt for clarity
+                    if font_basis_pt > 0.0 {
+                        // Get lineSpacing from the current paragraph's merged style.
+                        // lineSpacing is a percentage (e.g., 100.0 for 100%, 150.0 for 150%).
+                        // If None or effectively 0, default to 1.0 (100% of font size).
+                        let line_spacing_multiplier =
+                            current_paragraph_style.line_spacing.map_or(1.0, |ls_val| {
+                                if ls_val > 0.0 {
+                                    ls_val / 100.0
+                                } else {
+                                    1.0
+                                }
+                            }) as f64;
+
+                        let final_p_line_height_pt = font_basis_pt * line_spacing_multiplier;
+                        if final_p_line_height_pt > 0.0 {
+                            write!(p_style, " line-height:{}pt;", final_p_line_height_pt)?;
+                        }
+                    }
+                }
 
                 // Write the opening <p> tag and the bullet span to the temp buffer
                 write!(
-                    temp_html_buffer, // Write to temp buffer
-                    "<p style=\"{}\">{}",
+                    temp_html_buffer,
+                    r#"<p xmlns="http://www.w3.org/1999/xhtml" style="{}">{}"#,
                     p_style.trim_end(),
                     bullet_span
                 )?;
 
                 paragraph_open = true;
-                first_element_in_doc = false;
+                // first_element_in_doc = false; // Removed
             } // End ParagraphMarker handling
 
             Some(TextElementKind::TextRun(tr)) => {
@@ -839,15 +869,39 @@ pub(crate) fn convert_text_content_to_html(
                     write!(p_style, " text-align:{};", text_align)?;
 
                     // Fallback line-height based on run's font size if paragraph wasn't open
-                    if font_size_pt > 0.0 {
-                        // Check against base font size of the run
-                        let scaled_font_size_for_line_height =
-                            font_size_pt * font_scale.unwrap_or(1.0);
-                        // Default line spacing (e.g., 120% of font size) or a fixed multiplier for fallback
-                        let fallback_line_height = scaled_font_size_for_line_height * 1.2; // Example: 120%
-                        write!(p_style, " line-height:{}pt;", fallback_line_height)?;
+                    // font_size_pt here is the base (unscaled) font size from apply_html_text_style.
+                    let scaled_font_size_for_line_height = if font_size_pt > 0.0 {
+                        font_size_pt * font_scale.unwrap_or(1.0)
+                    } else {
+                        // If base font size was 0, use default scaled.
+                        DEFAULT_FONT_SIZE_PT * font_scale.unwrap_or(1.0)
+                    };
+
+                    if scaled_font_size_for_line_height > 0.0 {
+                        // For implicitly created paragraphs, use lineSpacing from the initial_paragraph_style.
+                        // If None or effectively 0, default to 1.0 (100% of font size).
+                        let line_spacing_multiplier = initial_paragraph_style
+                            .and_then(|ps| ps.line_spacing)
+                            .map_or(
+                                1.0,
+                                |ls_val| if ls_val > 0.0 { ls_val / 100.0 } else { 1.0 },
+                            ) as f64;
+
+                        let final_implicit_p_line_height_pt =
+                            scaled_font_size_for_line_height * line_spacing_multiplier;
+                        if final_implicit_p_line_height_pt > 0.0 {
+                            write!(
+                                p_style,
+                                " line-height:{}pt;",
+                                final_implicit_p_line_height_pt
+                            )?;
+                        }
                     }
-                    write!(temp_html_buffer, "<p style=\"{}\">", p_style.trim_end())?; // Write to temp buffer
+                    write!(
+                        temp_html_buffer,
+                        r#"<p xmlns="http://www.w3.org/1999/xhtml" style="{}">"#,
+                        p_style.trim_end()
+                    )?;
                     paragraph_open = true;
                 }
 
@@ -867,7 +921,7 @@ pub(crate) fn convert_text_content_to_html(
                         write!(temp_html_buffer, "{}", html_content)?; // Write to temp buffer
                     }
                 }
-                first_element_in_doc = false;
+                // first_element_in_doc = false; // Removed
             } // End TextRun handling
 
             Some(TextElementKind::AutoText(at)) => {
@@ -904,14 +958,39 @@ pub(crate) fn convert_text_content_to_html(
                     };
                     write!(p_style, " text-align:{};", text_align)?;
 
-                    if font_size_pt > 0.0 {
-                        // Check against base font size of the autotext
-                        let scaled_font_size_for_line_height =
-                            font_size_pt * font_scale.unwrap_or(1.0);
-                        let fallback_line_height = scaled_font_size_for_line_height * 1.2; // Example: 120%
-                        write!(p_style, " line-height:{}pt;", fallback_line_height)?;
+                    // font_size_pt here is the base (unscaled) font size from apply_html_text_style.
+                    let scaled_font_size_for_line_height = if font_size_pt > 0.0 {
+                        font_size_pt * font_scale.unwrap_or(1.0)
+                    } else {
+                        // If base font size was 0, use default scaled.
+                        DEFAULT_FONT_SIZE_PT * font_scale.unwrap_or(1.0)
+                    };
+
+                    if scaled_font_size_for_line_height > 0.0 {
+                        // For implicitly created paragraphs, use lineSpacing from the initial_paragraph_style.
+                        // If None or effectively 0, default to 1.0 (100% of font size).
+                        let line_spacing_multiplier = initial_paragraph_style
+                            .and_then(|ps| ps.line_spacing)
+                            .map_or(
+                                1.0,
+                                |ls_val| if ls_val > 0.0 { ls_val / 100.0 } else { 1.0 },
+                            ) as f64;
+
+                        let final_implicit_p_line_height_pt =
+                            scaled_font_size_for_line_height * line_spacing_multiplier;
+                        if final_implicit_p_line_height_pt > 0.0 {
+                            write!(
+                                p_style,
+                                " line-height:{}pt;",
+                                final_implicit_p_line_height_pt
+                            )?;
+                        }
                     }
-                    write!(temp_html_buffer, "<p style=\"{}\">", p_style.trim_end())?; // Write to temp buffer
+                    write!(
+                        temp_html_buffer,
+                        r#"<p xmlns="http://www.w3.org/1999/xhtml" style="{}">"#,
+                        p_style.trim_end()
+                    )?;
                     paragraph_open = true;
                 }
 
@@ -931,7 +1010,7 @@ pub(crate) fn convert_text_content_to_html(
                         write!(temp_html_buffer, "{}", html_content)?; // Write to temp buffer
                     }
                 }
-                first_element_in_doc = false;
+                // first_element_in_doc = false; // Removed
             }
             None => {} // Element kind is None
         } // End match element.kind
@@ -971,21 +1050,10 @@ fn apply_html_text_style(
     font_scale: Option<f64>,
     line_spacing_reduction: Option<f32>, // Added line_spacing_reduction parameter
 ) -> Result<f64> {
-    // Apply line_spacing_reduction first if present and non-zero
-    if let Some(reduction) = line_spacing_reduction {
-        if reduction != 0.0 {
-            // Google Slides UI shows reduction as a percentage (e.g., 20% for 0.2)
-            // CSS line-height is a multiplier. If reduction is 0.2 (20%), line-height should be 0.8.
-            let line_height_multiplier = 1.0 - reduction;
-            write!(
-                html_style,
-                "line-height: {:.2}; display:inline-block; ", // Format to 2 decimal places for CSS
-                line_height_multiplier
-            )?;
-        }
-    }
+    let mut base_font_size_pt_to_return = 0.0; // This will be the unscaled font size.
+                                               // Initialize with a default scaled font size, in case `style` is None but line-height is needed.
+    let mut effective_font_size_for_lh = DEFAULT_FONT_SIZE_PT * font_scale.unwrap_or(1.0);
 
-    let mut font_size_pt = 0.0;
     if let Some(ts) = style {
         // Font Family
         write!(
@@ -994,14 +1062,20 @@ fn apply_html_text_style(
             ts.font_family.as_deref().unwrap_or(DEFAULT_FONT_FAMILY)
         )?;
         // Font Size (Apply font_scale)
-        let base_font_size_pt = dimension_to_pt(ts.font_size.as_ref());
-        font_size_pt = base_font_size_pt;
-        let effective_font_size_pt = if base_font_size_pt > 0.0 {
-            base_font_size_pt * font_scale.unwrap_or(1.0) // Apply scale
+        let base_font_size = dimension_to_pt(ts.font_size.as_ref());
+        base_font_size_pt_to_return = base_font_size; // Set the return value (unscaled)
+
+        let current_effective_font_size_pt = if base_font_size > 0.0 {
+            base_font_size * font_scale.unwrap_or(1.0) // Apply scale
         } else {
             DEFAULT_FONT_SIZE_PT * font_scale.unwrap_or(1.0) // Apply scale to default
         };
-        write!(html_style, "font-size:{}pt; ", effective_font_size_pt)?;
+        effective_font_size_for_lh = current_effective_font_size_pt; // Update for line-height calculation
+        write!(
+            html_style,
+            "font-size:{}pt; ",
+            current_effective_font_size_pt
+        )?;
 
         // Foreground Color (HTML 'color')
         let (fg_color, _) = format_optional_color(ts.foreground_color.as_ref(), color_scheme);
@@ -1055,5 +1129,26 @@ fn apply_html_text_style(
         // Link - Add specific handling if links should be rendered as <a> tags
         // if let Some(link) = &ts.link { ... }
     }
-    Ok(font_size_pt)
+
+    // Apply line-height for the span
+    // This is placed after style processing so `effective_font_size_for_lh` is correctly set if `ts` was Some.
+    if let Some(reduction) = line_spacing_reduction {
+        if reduction != 0.0 {
+            // If reduction is, e.g., 0.2 (meaning 20% reduction), line-height is 0.8.
+            let line_height_multiplier = 1.0 - reduction;
+            write!(html_style, "line-height:{:.2}; ", line_height_multiplier)?;
+        } else {
+            // Reduction is 0.0, meaning 100% line height, so use the font size.
+            if effective_font_size_for_lh > 0.0 {
+                write!(html_style, "line-height:{}pt; ", effective_font_size_for_lh)?;
+            }
+        }
+    } else {
+        // No line_spacing_reduction defined, so line-height should match the font size.
+        if effective_font_size_for_lh > 0.0 {
+            write!(html_style, "line-height:{}pt; ", effective_font_size_for_lh)?;
+        }
+    }
+
+    Ok(base_font_size_pt_to_return)
 }

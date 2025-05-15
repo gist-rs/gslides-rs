@@ -458,6 +458,11 @@
                   "textRun": {
                     "content": "あのイーハトーヴォのすきとおった風、夏でも底に冷たさをもつ\n",
                     "style": {
+                      "foregroundColor": {
+                        "opaqueColor": {
+                          "themeColor": "ACCENT6"
+                        }
+                      },
                       "fontSize": {
                         "magnitude": 12,
                         "unit": "PT"
@@ -1581,10 +1586,25 @@
                   }
                 },
                 {
+                  "endIndex": 15,
+                  "textRun": {
+                    "content": "マスター テキストの書式設定 ",
+                    "style": {}
+                  }
+                },
+                {
+                  "startIndex": 15,
                   "endIndex": 20,
                   "textRun": {
-                    "content": "マスター テキストの書式設定 18pt\n",
-                    "style": {}
+                    "content": "18pt\n",
+                    "style": {
+                      "foregroundColor": {
+                        "opaqueColor": {
+                          "themeColor": "ACCENT3"
+                        }
+                      },
+                      "bold": true
+                    }
                   }
                 },
                 {
@@ -4094,7 +4114,7 @@
             "unit": "EMU"
           },
           "image": {
-            "contentUrl": "https://lh7-rt.googleusercontent.com/slidesz/AGV_vUeXn-VkMQzCDic3AQnD1_vY0qAITh3A8dgbl89LZwuth7Mb7nhBsgo73N06Kz2Vy7hvWmV6ee4wTfXl-_MgD-0SB1g0d8soQg21U6XbVO5cweF5-0savdWUZ02WHed0-JJToq-yDQ=s2048?key=YZW0O8p1vPqhHtD-KffBzw",
+            "contentUrl": "https://lh7-rt.googleusercontent.com/slidesz/AGV_vUdI5G_biqgWAtOTDpUWly1iPwB7B0fCvOIbquL4KH9R4K75mPiVIZPfEe2wUJYt8VEQ8DUeoDPBxCdTTqSi3wxaksv1n9UqlfKNeEB2h0jfvyAwvDSCEQVU5_3Y2H5axTYlMeH1GA=s2048?key=YZW0O8p1vPqhHtD-KffBzw",
             "imageProperties": {
               "outline": {
                 "outlineFill": {
@@ -5922,7 +5942,7 @@
             "unit": "EMU"
           },
           "image": {
-            "contentUrl": "https://lh7-rt.googleusercontent.com/slidesz/AGV_vUewtK0ymTwDJkbst32Zdlw-MRAm0cmEiFXNhi1-RvwkusNuD7etBrtYKRh49p08-afUz4DcKhRlwnivn9_cwSiHFyIBDyiE4FHVFj82E8vdJMov5JonnXeW1x6BFTYS8zUnLM90jfs=s2048?key=YZW0O8p1vPqhHtD-KffBzw",
+            "contentUrl": "https://lh7-rt.googleusercontent.com/slidesz/AGV_vUcHk2Iu-aUjyocPk3QgPxCkm_dpUQYpi1aa8UiBPyB2T7fkrPYRZc_EXg3pSA6mTi1E5MiAIxWUJ5Zva7iyGN1lK24Wyry3WhOxUIhUSUmYPWfv35ptrpIbrUp64ZpaHcSZ4anxm0Y=s2048?key=YZW0O8p1vPqhHtD-KffBzw",
             "imageProperties": {
               "outline": {
                 "outlineFill": {
@@ -25501,7 +25521,7 @@
     }
   ],
   "locale": "ja-JP",
-  "revisionId": "GcoDFaGCeOaFjg",
+  "revisionId": "BlkGmZTZ__lBLw",
   "notesMaster": {
     "objectId": "n",
     "pageType": "NOTES_MASTER",

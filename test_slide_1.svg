@@ -1,43 +1,128 @@
-<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="960pt" height="540pt" viewBox="0 0 960 540">
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="960pt" height="720pt" viewBox="0 0 960 720">
 <defs>
           <style type="text/css">
             @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@100..900');
          </style>
         </defs>
   <rect width="100%" height="100%" fill="#ffffff" />
-<foreignObject x="0" y="0" width="314.96062992125985" height="314.96062992125985" overflow="visible" data-object-id="g358a98a7ee0_0_17" transform="matrix(1 0 0 1 33.240314960629924 56.07629921259843)">
-  <div xmlns="http://www.w3.org/1999/xhtml" style="display: inline-block; transform: scale(1, 1); transform-origin: 0 0; box-sizing: border-box;">
-    <table style="border-collapse: collapse; width:294.755905511811px; height:68.70603674540682px; table-layout: fixed;">
-      <colgroup>
-        <col style="width:72.48228346456693pt;" />
-        <col style="width:148.58464566929135pt;" />
-      </colgroup>
+<g data-object-id="g358f0cf80cf_0_1" transform="translate(-0.010498687664041995 -0.013123359580052493)">
+  <rect x="0" y="0" width="314.96062992125985" height="314.96062992125985" style="fill:#f3f3f3; fill-opacity:1.00; stroke:#bf9d6d; stroke-opacity:1.00; stroke-width:0.75pt;" transform="matrix(3.048 0 0 2.286 0 0)" />
+</g>
 
-      <tr style="height:51.52952755905512pt;">
-        <td style="padding: 3pt; overflow: hidden; box-sizing:border-box; background-color:#cee2fd; vertical-align: middle; border-top:1pt solid #7f7f7f; border-bottom:1pt solid #7f7f7f; border-left:1pt solid #7f7f7f; border-right:1pt solid #7f7f7f;"><p xmlns="http://www.w3.org/1999/xhtml" style="margin:0; padding:0; position:relative; text-align:center; line-height:8pt;"><span style="font-family:'Arial'; font-size:8pt; color:#0857c3; font-weight:bold; line-height:8pt;">Day3</span><span style="font-family:'Arial'; font-size:8pt; color:#0857c3; font-weight:bold; line-height:8pt;"><br/></span></p></td>
-        <td style="padding: 3pt; overflow: hidden; box-sizing:border-box; background-color:#ffffff; vertical-align: top; border-top:1pt solid #7f7f7f; border-bottom:1pt solid #7f7f7f; border-left:1pt solid #7f7f7f; border-right:1pt solid #7f7f7f;"><p xmlns="http://www.w3.org/1999/xhtml" style="margin:0; padding:0; position:relative; text-align:start; line-height:8pt;"><span style="font-family:'Arial'; font-size:8pt; color:#000000; font-weight:bold; line-height:8pt;">【レクチャー】<br/></span></p>
-<p xmlns="http://www.w3.org/1999/xhtml" style="margin:0; padding:0; position:relative; text-align:start; line-height:8pt;"><span style="font-family:'Arial'; font-size:8pt; color:#000000; font-weight:bold; line-height:8pt;">ネットワークとセキュリティ<br/></span></p></td>
-      </tr>
-    </table>
-  </div>
-</foreignObject>
-<g data-object-id="g358a98a7ee0_0_18" transform="translate(35.333333333333336 160.07338582677164)">
+<g data-object-id="p10_i2" transform="translate(35.333333333333336 18.490918635170605)">
+  <rect x="0" y="0" width="314.96062992125985" height="314.96062992125985" style="fill:none; stroke:none;" transform="matrix(1.1933 0 0 0.072 0 0)" />
+  <foreignObject x="0" y="0" width="375.8425196850394" height="22.677165354330707" overflow="visible">
+    <div xmlns="http://www.w3.org/1999/xhtml" style="width:100%; height:100%; box-sizing: border-box; padding: 2pt 3pt 2pt 3pt;">
+<p style="margin:0; padding:0; position:relative; text-align:start; line-height:7.199999809265137pt;"><span style="font-family:'Noto Sans JP'; font-size:8pt; color:#000000; line-height:8pt;">BLOCK TITLE<br/></span></p>
+    </div>
+  </foreignObject>
+</g>
+
+<g data-object-id="p10_i3" transform="translate(34 40.378372703412076)">
+  <rect x="0" y="0" width="314.96062992125985" height="314.96062992125985" style="fill:none; stroke:none;" transform="matrix(1.4161 0 0 0.0905 0 0)" />
+  <foreignObject x="0" y="0" width="446.01574803149606" height="28.503937007874015" overflow="visible">
+    <div xmlns="http://www.w3.org/1999/xhtml" style="width:100%; height:100%; box-sizing: border-box; padding: 2pt 3pt 2pt 3pt;">
+<p style="margin:0; padding:0; position:relative; text-align:start; line-height:16.199999570846558pt;"><span style="font-family:'Noto Sans JP'; font-size:18pt; color:#000000; font-weight:bold; line-height:18pt;">メインタイトル<br/></span></p>
+    </div>
+  </foreignObject>
+</g>
+
+<g data-object-id="p10_i4" transform="translate(223 45.61354330708661)">
+  <rect x="0" y="0" width="314.96062992125985" height="314.96062992125985" style="fill:none; stroke:none;" transform="matrix(1.9392 0 0 0.0731 0 0)" />
+  <foreignObject x="0" y="0" width="610.7716535433071" height="23.023622047244096" overflow="visible">
+    <div xmlns="http://www.w3.org/1999/xhtml" style="width:100%; height:100%; box-sizing: border-box; padding: 2pt 3pt 2pt 3pt;">
+<p style="margin:0; padding:0; position:relative; text-align:start; line-height:8.999999761581421pt;"><span style="font-family:'Noto Sans JP'; font-size:10pt; color:#000000; line-height:10pt;">サブタイトル<br/></span></p>
+    </div>
+  </foreignObject>
+</g>
+
+<g data-object-id="p10_i5" transform="translate(906.0946981627296 682.5230446194225)">
+  <rect x="0" y="0" width="314.96062992125985" height="314.96062992125985" style="fill:none; stroke:none;" transform="matrix(0.1253 0 0 0.0874 0 0)" />
+  <foreignObject x="0" y="0" width="39.46456692913386" height="27.52755905511811" overflow="visible">
+    <div xmlns="http://www.w3.org/1999/xhtml" style="width:100%; height:100%; box-sizing: border-box; padding: 2pt 3pt 2pt 3pt;">
+<p style="margin:0; padding:0; position:relative; text-align:end; line-height:8pt;"><span style="font-family:'Noto Sans JP'; font-size:8pt; color:#000000; line-height:8pt;">1</span><span style="font-family:'Noto Sans JP'; font-size:8pt; color:#000000; line-height:8pt;"><br/></span></p>
+    </div>
+  </foreignObject>
+</g>
+
+<g data-object-id="p10_i8" transform="translate(35.333333333333336 160.07338582677164)">
   <rect x="0" y="0" width="314.96062992125985" height="314.96062992125985" style="fill:none; stroke:none;" transform="matrix(0.8957 0 0 0.2081 0 0)" />
   <foreignObject x="0" y="0" width="282.1102362204725" height="65.54330708661418" overflow="visible">
     <div xmlns="http://www.w3.org/1999/xhtml" style="width:100%; height:100%; box-sizing: border-box; padding: 2pt 3pt 2pt 3pt;">
-<p xmlns="http://www.w3.org/1999/xhtml" style="margin:0; padding:0; position:relative; text-align:start; line-height:15.96000051498413pt;"><span style="font-family:'Noto Sans JP'; font-size:12pt; color:#000000; line-height:12pt;">あのイーハトーヴォのすきとおった風、夏でも底に冷たさをもつ<br/></span></p>
+<p style="margin:0; padding:0; position:relative; text-align:start; line-height:15.96000051498413pt;"><span style="font-family:'Noto Sans JP'; font-size:12pt; color:#000000; line-height:12pt;">あのイーハトーヴォのすきとおった風、夏でも底に冷たさをもつ<br/></span></p>
     </div>
   </foreignObject>
 </g>
 
-<g data-object-id="g358a98a7ee0_0_19" transform="translate(35.973333333333336 236.8158530183727)">
+<line x1="45.333333333333336" y1="225.8823097112861" x2="304.6404199475066" y2="225.8823097112861" style="stroke:#bf9d6d; stroke-opacity:1; stroke-width:0.75pt;" data-object-id="p10_i10"/>
+<g data-object-id="p10_i11" transform="translate(35.973333333333336 236.8158530183727)">
   <rect x="0" y="0" width="314.96062992125985" height="314.96062992125985" style="fill:none; stroke:none;" transform="matrix(0.8937 0 0 0.8243 0 0)" />
   <foreignObject x="0" y="0" width="281.4803149606299" height="259.6220472440945" overflow="visible">
     <div xmlns="http://www.w3.org/1999/xhtml" style="width:100%; height:100%; box-sizing: border-box; padding: 2pt 3pt 2pt 3pt;">
-<p xmlns="http://www.w3.org/1999/xhtml" style="margin:0; padding:0; position:relative; text-align:start; line-height:10.800000190734863pt;"><span style="font-family:'Noto Sans JP'; font-size:8pt; color:#000000; line-height:8pt;">あのイーハトーヴォのすきとおった風、夏でも底に冷たさをもつ青いそら、うつくしい森で飾られたモリーオ市、郊外のぎらぎらひかる草の波。またそのなかでいっしょになったたくさんのひとたち、ファゼーロとロザーロ、羊飼のミーロや、顔の赤いこどもたち、地主のテーモ、山猫博士のボーガント・デストゥパーゴなど、いまこの暗い巨きな石の建物のなかで考えていると、みんなむかし風のなつかしい青い幻燈のように思われます。あのイーハトーヴォのすきとおった風、夏でも底に冷たさをもつ青いそら、<br/></span></p>
+<p style="margin:0; padding:0; position:relative; text-align:start; line-height:10.800000190734863pt;"><span style="font-family:'Noto Sans JP'; font-size:8pt; color:#000000; line-height:8pt;">あのイーハトーヴォのすきとおった風、夏でも底に冷たさをもつ青いそら、うつくしい森で飾られたモリーオ市、郊外のぎらぎらひかる草の波。またそのなかでいっしょになったたくさんのひとたち、ファゼーロとロザーロ、羊飼のミーロや、顔の赤いこどもたち、地主のテーモ、山猫博士のボーガント・デストゥパーゴなど、いまこの暗い巨きな石の建物のなかで考えていると、みんなむかし風のなつかしい青い幻燈のように思われます。あのイーハトーヴォのすきとおった風、夏でも底に冷たさをもつ青いそら、<br/></span></p>
     </div>
   </foreignObject>
 </g>
 
-<line x1="27.900262467191602" y1="413.0997375328084" x2="399.6167979002625" y2="413.0997375328084" style="stroke:#595959; stroke-opacity:1; stroke-width:0.75pt;" data-object-id="g358a98a7ee0_0_20"/>
+<g data-object-id="p10_i12" transform="translate(0 573.0901837270342)">
+  <rect x="0" y="0" width="314.96062992125985" height="314.96062992125985" style="fill:none; stroke:#bf9d6d; stroke-opacity:1.00; stroke-width:0.75pt;" transform="matrix(0.8233 0 0 0.4664 0 0)" />
+</g>
+
+<g data-object-id="p10_i23" transform="translate(645.1372178477691 160.07338582677164)">
+  <rect x="0" y="0" width="314.96062992125985" height="314.96062992125985" style="fill:none; stroke:none;" transform="matrix(0.8957 0 0 0.2081 0 0)" />
+  <foreignObject x="0" y="0" width="282.1102362204725" height="65.54330708661418" overflow="visible">
+    <div xmlns="http://www.w3.org/1999/xhtml" style="width:100%; height:100%; box-sizing: border-box; padding: 2pt 3pt 2pt 3pt;">
+<p style="margin:0; padding:0; position:relative; text-align:start; line-height:15.96000051498413pt;"><span style="font-family:'Noto Sans JP'; font-size:12pt; color:#000000; line-height:12pt;">あのイーハトーヴォのすきとおった風、夏でも底に冷たさをもつ<br/></span></p>
+    </div>
+  </foreignObject>
+</g>
+
+<line x1="655.1372178477691" y1="225.8823097112861" x2="914.4443044619424" y2="225.8823097112861" style="stroke:#bf9d6d; stroke-opacity:1; stroke-width:0.75pt;" data-object-id="p10_i24"/>
+<g data-object-id="p10_i25" transform="translate(645.7772178477691 236.8158530183727)">
+  <rect x="0" y="0" width="314.96062992125985" height="314.96062992125985" style="fill:none; stroke:none;" transform="matrix(0.8937 0 0 0.8243 0 0)" />
+  <foreignObject x="0" y="0" width="281.4803149606299" height="259.6220472440945" overflow="visible">
+    <div xmlns="http://www.w3.org/1999/xhtml" style="width:100%; height:100%; box-sizing: border-box; padding: 2pt 3pt 2pt 3pt;">
+<p style="margin:0; padding:0; position:relative; text-align:start; line-height:10.800000190734863pt;"><span style="font-family:'Noto Sans JP'; font-size:8pt; color:#000000; line-height:8pt;">あのイーハトーヴォのすきとおった風、夏でも底に冷たさをもつ青いそら、うつくしい森で飾られたモリーオ市、郊外のぎらぎらひかる草の波。またそのなかでいっしょになったたくさんのひとたち、ファゼーロとロザーロ、羊飼のミーロや、顔の赤いこどもたち、地主のテーモ、山猫博士のボーガント・デストゥパーゴなど、いまこの暗い巨きな石の建物のなかで考えていると、みんなむかし風のなつかしい青い幻燈のように思われます。あのイーハトーヴォのすきとおった風、夏でも底に冷たさをもつ青いそら、<br/></span></p>
+    </div>
+  </foreignObject>
+</g>
+
+<g data-object-id="p10_i26" transform="translate(700.6824146981627 -0.013123359580052493)">
+  <rect x="0" y="0" width="314.96062992125985" height="314.96062992125985" style="fill:none; stroke:#bf9d6d; stroke-opacity:1.00; stroke-width:0.75pt;" transform="matrix(0.8233 0 0 0.4664 0 0)" />
+</g>
+
+<g data-object-id="p10_i27" transform="translate(340.19601049868766 339.32241469816273)">
+  <rect x="0" y="0" width="314.96062992125985" height="314.96062992125985" style="fill:none; stroke:none;" transform="matrix(0.8957 0 0 0.2081 0 0)" />
+  <foreignObject x="0" y="0" width="282.1102362204725" height="65.54330708661418" overflow="visible">
+    <div xmlns="http://www.w3.org/1999/xhtml" style="width:100%; height:100%; box-sizing: border-box; padding: 2pt 3pt 2pt 3pt;">
+<p style="margin:0; padding:0; position:relative; text-align:start; line-height:15.96000051498413pt;"><span style="font-family:'Noto Sans JP'; font-size:12pt; color:#000000; line-height:12pt;">あのイーハトーヴォのすきとおった風、夏でも底に冷たさをもつ<br/></span></p>
+    </div>
+  </foreignObject>
+</g>
+
+<line x1="350.19601049868766" y1="405.1313385826772" x2="609.5030971128609" y2="405.1313385826772" style="stroke:#bf9d6d; stroke-opacity:1; stroke-width:0.75pt;" data-object-id="p10_i28"/>
+<g data-object-id="p10_i29" transform="translate(340.83601049868764 416.0648818897638)">
+  <rect x="0" y="0" width="314.96062992125985" height="314.96062992125985" style="fill:none; stroke:none;" transform="matrix(0.8937 0 0 0.8243 0 0)" />
+  <foreignObject x="0" y="0" width="281.4803149606299" height="259.6220472440945" overflow="visible">
+    <div xmlns="http://www.w3.org/1999/xhtml" style="width:100%; height:100%; box-sizing: border-box; padding: 2pt 3pt 2pt 3pt;">
+<p style="margin:0; padding:0; position:relative; text-align:start; line-height:10.800000190734863pt;"><span style="font-family:'Noto Sans JP'; font-size:8pt; color:#000000; line-height:8pt;">あのイーハトーヴォのすきとおった風、夏でも底に冷たさをもつ青いそら、うつくしい森で飾られたモリーオ市、郊外のぎらぎらひかる草の波。またそのなかでいっしょになったたくさんのひとたち、ファゼーロとロザーロ、羊飼のミーロや、顔の赤いこどもたち、地主のテーモ、山猫博士のボーガント・デストゥパーゴなど、いまこの暗い巨きな石の建物のなかで考えていると、みんなむかし風のなつかしい青い幻燈のように思われます。あのイーハトーヴォのすきとおった風、夏でも底に冷たさをもつ青いそら、<br/></span></p>
+    </div>
+  </foreignObject>
+</g>
+
+<g data-object-id="p10_i30" transform="translate(350.19601049868766 167.29438320209974)">
+  <rect x="0" y="0" width="314.96062992125985" height="314.96062992125985" style="fill:none; stroke:#bf9d6d; stroke-opacity:1.00; stroke-width:0.75pt;" transform="matrix(0.8233 0 0 0.4664 0 0)" />
+</g>
+
+<g data-object-id="g358f0cf80cf_0_2" transform="translate(350.19710524934385 114.29396325459318)">
+  <rect x="0" y="0" width="314.96062992125985" height="314.96062992125985" style="fill:none; stroke:none;" transform="matrix(1.7866 0 0 1.6961 0 0)" />
+  <foreignObject x="0" y="0" width="562.7086614173228" height="534.2047244094488" overflow="visible">
+    <div xmlns="http://www.w3.org/1999/xhtml" style="width:100%; height:100%; box-sizing: border-box; padding: 2pt 3pt 2pt 3pt;">
+<p style="margin:0; padding:0; position:relative; text-align:start; text-indent:9pt; white-space:nowrap; line-height:22.5pt;"><span aria-hidden="true" style="font-family:'Noto Sans JP'; font-size:18pt; color:#000000; line-height:18pt;">•</span><span style="font-family:'Noto Sans JP'; font-size:18pt; color:#000000; line-height:18pt;">マスター テキストの書式設定 18pt<br/></span></p>
+<p style="margin:0; padding:0; position:relative; text-align:start; text-indent:42pt; white-space:nowrap; line-height:15pt;"><span aria-hidden="true" style="font-family:'Noto Sans JP'; font-size:12pt; color:#000000; line-height:12pt;">•</span><span style="font-family:'Noto Sans JP'; font-size:12pt; color:#000000; line-height:12pt;">第 2 レベル 12pt<br/></span></p>
+<p style="margin:0; padding:0; position:relative; text-align:start; text-indent:76pt; white-space:nowrap; line-height:10pt;"><span aria-hidden="true" style="font-family:'Noto Sans JP'; font-size:8pt; color:#000000; line-height:8pt;">•</span><span style="font-family:'Noto Sans JP'; font-size:8pt; color:#000000; line-height:8pt;">第 3 レベル 8pt</span><span style="font-family:'Noto Sans JP'; font-size:8pt; color:#000000; line-height:8pt;"><br/></span></p>
+    </div>
+  </foreignObject>
+</g>
+
 </svg>

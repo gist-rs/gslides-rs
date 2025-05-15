@@ -826,7 +826,7 @@ pub(crate) fn convert_text_content_to_html(
                 // Write the opening <p> tag and the bullet span to the temp buffer
                 write!(
                     temp_html_buffer,
-                    r#"<p xmlns="http://www.w3.org/1999/xhtml" style="{}">{}"#,
+                    r#"<p style="{}">{}"#,
                     p_style.trim_end(),
                     bullet_span
                 )?;
@@ -899,7 +899,7 @@ pub(crate) fn convert_text_content_to_html(
                     }
                     write!(
                         temp_html_buffer,
-                        r#"<p xmlns="http://www.w3.org/1999/xhtml" style="{}">"#,
+                        r#"<p style="{}">"#,
                         p_style.trim_end()
                     )?;
                     paragraph_open = true;
@@ -988,7 +988,7 @@ pub(crate) fn convert_text_content_to_html(
                     }
                     write!(
                         temp_html_buffer,
-                        r#"<p xmlns="http://www.w3.org/1999/xhtml" style="{}">"#,
+                        r#"<p style="{}">"#,
                         p_style.trim_end()
                     )?;
                     paragraph_open = true;

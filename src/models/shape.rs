@@ -172,6 +172,7 @@ pub enum ShapeType {
     /// Snip 2 diagonal rectangle shape.
     Snip2DiagonalRectangle,
     /// Snip 2 same rectangle shape.
+    #[serde(alias = "SNIP_2_SAME_RECTANGLE")]
     Snip2SameRectangle,
     /// Snip round rectangle shape.
     SnipRoundRectangle,
@@ -225,6 +226,12 @@ pub enum ShapeType {
     WedgeRoundRectangleCallout,
     /// Speech bubble shape.
     Speech,
+    /// Flow chart multidocument shape.
+    FlowChartMultidocument,
+    /// Flow chart magnetic disk shape.
+    FlowChartMagneticDisk,
+    /// Flow chart internal storage shape.
+    FlowChartInternalStorage,
     /// Custom shape.
     Custom,
     // Note: The API lists many more shapes. This list captures those explicitly named in the enum documentation.
